@@ -5,7 +5,16 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	// Load .env.local first (for local development), then .env
+	// Existing env vars take precedence
+	_ = godotenv.Load(".env.local")
+	_ = godotenv.Load(".env")
+}
 
 // Config holds all application configuration.
 type Config struct {
