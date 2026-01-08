@@ -1,0 +1,126 @@
+{{define "title"}}Dashboard - Hausdog{{end}}
+
+{{define "content"}}
+<div class="flex flex-col gap-6">
+    {{if not .User}}
+    <!-- Not logged in -->
+    <div class="hero bg-base-100 rounded-xl shadow">
+        <div class="hero-content text-center py-12">
+            <div class="max-w-md">
+                <h1 class="text-4xl font-bold">Welcome to Hausdog</h1>
+                <p class="py-6 text-base-content/70">
+                    Keep track of your home's systems, appliances, and maintenance history.
+                    Upload receipts and documents - AI will automatically extract and organize the information.
+                </p>
+                <a href="/login" class="btn btn-primary">Get Started</a>
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <!-- Dashboard for logged in users -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold">Dashboard</h1>
+        <a href="/upload" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats shadow w-full">
+        <div class="stat">
+            <div class="stat-figure text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+            </div>
+            <div class="stat-title">Properties</div>
+            <div class="stat-value text-primary">{{if .Data}}{{len .Data.Properties}}{{else}}0{{end}}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            <div class="stat-title">Systems</div>
+            <div class="stat-value text-secondary">{{if .Data}}{{.Data.TotalSystems}}{{else}}0{{end}}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-figure text-accent">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div class="stat-title">Documents</div>
+            <div class="stat-value text-accent">{{if .Data}}{{.Data.TotalDocuments}}{{else}}0{{end}}</div>
+        </div>
+        {{if .Data}}{{if .Data.DocumentCounts}}{{if index .Data.DocumentCounts "complete"}}
+        <div class="stat">
+            <div class="stat-figure text-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="stat-title">To Review</div>
+            <div class="stat-value text-warning">{{index .Data.DocumentCounts "complete"}}</div>
+            <div class="stat-actions">
+                <a href="/review" class="btn btn-xs btn-warning">Review Now</a>
+            </div>
+        </div>
+        {{end}}{{end}}{{end}}
+    </div>
+
+    <!-- Categories Grid -->
+    {{if .Data}}{{if .Data.Categories}}
+    <h2 class="text-xl font-semibold">Categories</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {{range .Data.Categories}}
+        <a href="/systems?category={{.ID}}" class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+            <div class="card-body items-center text-center p-4">
+                <div class="text-3xl mb-2">
+                    {{if eq .Name "HVAC"}}🌡️{{else if eq .Name "Plumbing"}}💧{{else if eq .Name "Electrical"}}⚡{{else if eq .Name "Appliances"}}🏠{{else if eq .Name "Roofing"}}🏗️{{else if eq .Name "Exterior"}}☀️{{else if eq .Name "Interior"}}🪑{{else if eq .Name "Landscaping"}}🌳{{else if eq .Name "Security"}}🔒{{else}}📦{{end}}
+                </div>
+                <h3 class="font-medium">{{.Name}}</h3>
+                {{if .SystemCount}}
+                <div class="badge badge-primary badge-sm">{{.SystemCount}} systems</div>
+                {{else}}
+                <div class="badge badge-ghost badge-sm">No systems</div>
+                {{end}}
+            </div>
+        </a>
+        {{end}}
+    </div>
+    {{end}}{{end}}
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a href="/upload" class="card bg-primary text-primary-content shadow hover:shadow-lg transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Upload Document
+                </h2>
+                <p>Upload receipts, manuals, and warranty documents. AI will automatically extract key information.</p>
+            </div>
+        </a>
+        <a href="/systems/new" class="card bg-secondary text-secondary-content shadow hover:shadow-lg transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add System
+                </h2>
+                <p>Manually add a new system, appliance, or equipment to track.</p>
+            </div>
+        </a>
+    </div>
+    {{end}}
+</div>
+{{end}}

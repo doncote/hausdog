@@ -1,0 +1,451 @@
+{{define "title"}}Upload Documents - Hausdog{{end}}
+
+{{define "content"}}
+<div class="max-w-2xl mx-auto" x-data="uploadManager()">
+    <h1 class="text-2xl font-bold mb-6">Upload Documents</h1>
+
+    <!-- Drop Zone -->
+    <div
+        class="border-2 border-dashed rounded-xl p-8 text-center transition-colors"
+        :class="isDragging ? 'border-primary bg-primary/10' : 'border-base-300 hover:border-primary'"
+        @dragover.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
+        @drop.prevent="handleDrop($event)"
+    >
+        <div class="flex flex-col items-center gap-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-base-content/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <div>
+                <p class="text-lg font-medium">Drag & drop files here</p>
+                <p class="text-sm text-base-content/70">or click to browse</p>
+            </div>
+            <div class="flex flex-wrap gap-2 justify-center">
+                <label class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Browse Files
+                    <input type="file" class="hidden" multiple accept="image/jpeg,image/png,image/heic,image/heif,image/webp,application/pdf" @change="handleFileSelect($event)">
+                </label>
+                <!-- Camera button for mobile -->
+                <label class="btn btn-outline lg:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Camera
+                    <input type="file" class="hidden" accept="image/*" capture="environment" @change="handleFileSelect($event)">
+                </label>
+            </div>
+            <p class="text-xs text-base-content/50">Supports: Images (JPEG, PNG, HEIC) and PDFs up to 50MB</p>
+        </div>
+    </div>
+
+    <!-- Upload Queue -->
+    <div x-show="queue.length > 0" class="mt-6 space-y-3">
+        <h2 class="text-lg font-semibold">Upload Queue</h2>
+        <template x-for="item in queue" :key="item.id">
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-4">
+                        <!-- Thumbnail -->
+                        <div class="w-16 h-16 bg-base-200 rounded flex-shrink-0 overflow-hidden">
+                            <template x-if="item.preview">
+                                <img :src="item.preview" class="w-full h-full object-cover" alt="">
+                            </template>
+                            <template x-if="!item.preview && item.isHeic">
+                                <div class="w-full h-full flex flex-col items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-base-content/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="text-[10px] text-base-content/50 mt-1">HEIC</span>
+                                </div>
+                            </template>
+                            <template x-if="!item.preview && !item.isHeic">
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium truncate" x-text="item.file.name"></p>
+                            <p class="text-sm text-base-content/70" x-text="formatSize(item.file.size)"></p>
+
+                            <!-- Progress -->
+                            <template x-if="item.status === 'uploading'">
+                                <progress class="progress progress-primary w-full mt-2" :value="item.progress" max="100"></progress>
+                            </template>
+
+                            <!-- Status -->
+                            <template x-if="item.status === 'complete'">
+                                <div class="badge badge-success gap-1 mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Uploaded
+                                </div>
+                            </template>
+                            <template x-if="item.status === 'error'">
+                                <div class="flex items-center gap-2 mt-2">
+                                    <div class="badge badge-error gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Failed
+                                    </div>
+                                    <span class="text-xs text-error" x-text="item.error"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex-shrink-0 flex gap-1">
+                            <template x-if="item.status === 'pending'">
+                                <button class="btn btn-ghost btn-sm btn-circle" @click="removeFromQueue(item.id)" title="Remove">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </template>
+                            <template x-if="item.status === 'uploading'">
+                                <span class="loading loading-spinner loading-sm"></span>
+                            </template>
+                            <template x-if="item.status === 'error'">
+                                <div class="flex gap-1">
+                                    <button class="btn btn-ghost btn-sm btn-circle" @click="retryItem(item.id)" title="Retry">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm btn-circle" @click="removeFromQueue(item.id)" title="Remove">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="item.status === 'complete'">
+                                <button class="btn btn-ghost btn-sm btn-circle text-success" @click="removeFromQueue(item.id)" title="Remove">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Upload Actions -->
+    <div x-show="queue.length > 0" class="mt-6 flex flex-wrap gap-2">
+        <button
+            x-show="hasPending"
+            class="btn btn-primary flex-1"
+            @click="uploadAll()"
+            :disabled="isUploading"
+        >
+            <template x-if="isUploading">
+                <span class="loading loading-spinner"></span>
+            </template>
+            <span x-text="isUploading ? 'Uploading...' : 'Upload All'"></span>
+        </button>
+        <button
+            x-show="hasErrors && !isUploading"
+            class="btn btn-warning"
+            @click="retryFailed()"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Retry Failed
+        </button>
+        <button
+            x-show="!isUploading"
+            class="btn btn-ghost"
+            @click="clearAll()"
+        >
+            Clear All
+        </button>
+    </div>
+
+    <!-- Recent Uploads -->
+    <div class="mt-8" id="recent-uploads">
+        <h2 class="text-lg font-semibold mb-4">Recent Uploads</h2>
+        <div
+            hx-get="/api/documents/recent"
+            hx-trigger="load, uploadComplete from:body"
+            hx-swap="innerHTML"
+            hx-indicator="#htmx-indicator"
+            class="space-y-2"
+        >
+            <!-- Skeleton loader while loading -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-base-200 rounded skeleton-pulse"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-4 bg-base-200 rounded w-3/4 skeleton-pulse"></div>
+                            <div class="h-3 bg-base-200 rounded w-1/2 skeleton-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-base-200 rounded skeleton-pulse"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-4 bg-base-200 rounded w-2/3 skeleton-pulse"></div>
+                            <div class="h-3 bg-base-200 rounded w-1/3 skeleton-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function uploadManager() {
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'];
+
+    return {
+        queue: [],
+        isDragging: false,
+        isUploading: false,
+
+        get hasPending() {
+            return this.queue.some(item => item.status === 'pending');
+        },
+
+        get hasErrors() {
+            return this.queue.some(item => item.status === 'error');
+        },
+
+        handleDrop(event) {
+            this.isDragging = false;
+            const files = event.dataTransfer.files;
+            this.addFiles(files);
+        },
+
+        handleFileSelect(event) {
+            const files = event.target.files;
+            this.addFiles(files);
+            event.target.value = '';
+        },
+
+        validateFile(file) {
+            // Check file size
+            if (file.size > MAX_FILE_SIZE) {
+                return `File too large (${this.formatSize(file.size)}). Maximum size is 50MB.`;
+            }
+
+            // Check file type
+            if (!ALLOWED_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
+                return `Invalid file type (${file.type || 'unknown'}). Supported: JPEG, PNG, HEIC, PDF.`;
+            }
+
+            return null;
+        },
+
+        addFiles(files) {
+            for (const file of files) {
+                const validationError = this.validateFile(file);
+
+                const item = {
+                    id: crypto.randomUUID(),
+                    file: file,
+                    preview: null,
+                    status: validationError ? 'error' : 'pending',
+                    progress: 0,
+                    error: validationError,
+                    isHeic: this.isHeicFile(file)
+                };
+
+                // Generate preview for images (except HEIC which browsers can't display)
+                if (file.type.startsWith('image/') && !item.isHeic) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        item.preview = e.target.result;
+                    };
+                    reader.onerror = () => {
+                        // Preview failed, that's ok
+                        item.preview = null;
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                this.queue.push(item);
+            }
+
+            // Show toast if any files were rejected
+            const rejectedCount = Array.from(files).filter(f => this.validateFile(f)).length;
+            if (rejectedCount > 0) {
+                this.showToast(`${rejectedCount} file(s) couldn't be added due to validation errors`, 'warning');
+            }
+        },
+
+        isHeicFile(file) {
+            const name = file.name.toLowerCase();
+            return name.endsWith('.heic') || name.endsWith('.heif') ||
+                   file.type === 'image/heic' || file.type === 'image/heif';
+        },
+
+        removeFromQueue(id) {
+            this.queue = this.queue.filter(item => item.id !== id);
+        },
+
+        formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        },
+
+        async uploadAll() {
+            this.isUploading = true;
+
+            const pending = this.queue.filter(item => item.status === 'pending');
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const item of pending) {
+                await this.uploadFile(item);
+                if (item.status === 'complete') successCount++;
+                else if (item.status === 'error') failCount++;
+            }
+
+            this.isUploading = false;
+
+            // Show summary toast
+            if (successCount > 0 && failCount === 0) {
+                this.showToast(`Successfully uploaded ${successCount} file(s)`, 'success');
+            } else if (successCount > 0 && failCount > 0) {
+                this.showToast(`Uploaded ${successCount} file(s), ${failCount} failed`, 'warning');
+            } else if (failCount > 0) {
+                this.showToast(`Failed to upload ${failCount} file(s)`, 'error');
+            }
+
+            // Trigger HTMX refresh of recent uploads
+            document.body.dispatchEvent(new CustomEvent('uploadComplete'));
+        },
+
+        async uploadFile(item) {
+            item.status = 'uploading';
+            item.progress = 0;
+            item.error = null;
+
+            const formData = new FormData();
+            formData.append('file', item.file);
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        item.progress = Math.round((e.loaded / e.total) * 100);
+                    }
+                });
+
+                await new Promise((resolve, reject) => {
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            try {
+                                const error = JSON.parse(xhr.responseText);
+                                reject(new Error(error.error || this.getErrorMessage(xhr.status)));
+                            } catch {
+                                reject(new Error(this.getErrorMessage(xhr.status)));
+                            }
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Network error. Please check your connection.'));
+                    xhr.ontimeout = () => reject(new Error('Request timed out. Please try again.'));
+
+                    xhr.timeout = 120000; // 2 minute timeout
+                    xhr.open('POST', '/api/upload');
+                    xhr.send(formData);
+                });
+
+                item.status = 'complete';
+                item.progress = 100;
+            } catch (error) {
+                item.status = 'error';
+                item.error = error.message;
+            }
+        },
+
+        getErrorMessage(status) {
+            switch (status) {
+                case 400: return 'Invalid file. Please check the file format.';
+                case 401: return 'Session expired. Please log in again.';
+                case 413: return 'File too large. Maximum size is 50MB.';
+                case 415: return 'Unsupported file type.';
+                case 500: return 'Server error. Please try again later.';
+                case 503: return 'Service unavailable. Please try again later.';
+                default: return `Upload failed (error ${status})`;
+            }
+        },
+
+        retryFailed() {
+            // Reset all failed items to pending
+            this.queue.forEach(item => {
+                if (item.status === 'error' && !this.validateFile(item.file)) {
+                    item.status = 'pending';
+                    item.error = null;
+                    item.progress = 0;
+                }
+            });
+        },
+
+        async retryItem(id) {
+            const item = this.queue.find(i => i.id === id);
+            if (item && item.status === 'error') {
+                // Check if it's a validation error (can't be retried)
+                if (this.validateFile(item.file)) {
+                    this.showToast('This file cannot be uploaded due to validation errors', 'error');
+                    return;
+                }
+                await this.uploadFile(item);
+                document.body.dispatchEvent(new CustomEvent('uploadComplete'));
+            }
+        },
+
+        clearCompleted() {
+            this.queue = this.queue.filter(item => item.status !== 'complete');
+        },
+
+        clearAll() {
+            this.queue = [];
+        },
+
+        showToast(message, type = 'info') {
+            const alertClass = {
+                'info': 'alert-info',
+                'success': 'alert-success',
+                'warning': 'alert-warning',
+                'error': 'alert-error'
+            }[type] || 'alert-info';
+
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-end z-50';
+            toast.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+    };
+}
+</script>
+{{end}}

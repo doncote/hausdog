@@ -1,0 +1,318 @@
+{{define "title"}}Review Document - Hausdog{{end}}
+
+{{define "content"}}
+<div x-data="reviewItem()" class="h-full">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+            <a href="/review" class="btn btn-ghost btn-sm btn-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <h1 class="text-xl font-bold truncate">{{.Data.Document.Filename}}</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="hidden lg:flex items-center gap-1 text-xs text-base-content/50 mr-2">
+                <kbd class="kbd kbd-xs">E</kbd>
+                <span>Edit</span>
+            </div>
+            <button class="btn btn-error btn-sm gap-1" @click="reject()" :disabled="saving">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject
+                <kbd class="kbd kbd-xs hidden lg:inline-flex">Esc</kbd>
+            </button>
+            <button class="btn btn-success btn-sm gap-1" @click="confirm()" :disabled="saving">
+                <span x-show="!saving">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </span>
+                <span x-show="saving" class="loading loading-spinner loading-xs"></span>
+                Confirm
+                <kbd class="kbd kbd-xs hidden lg:inline-flex">Enter</kbd>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content - Side by Side -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-12rem)]">
+        <!-- Left: Document Preview -->
+        <div class="card bg-base-100 shadow overflow-hidden">
+            <div class="card-body p-0 h-full">
+                {{if hasPrefix .Data.Document.ContentType "image/"}}
+                <img
+                    src="/api/documents/{{.Data.Document.ID}}/preview"
+                    alt="{{.Data.Document.Filename}}"
+                    class="w-full h-full object-contain bg-base-200"
+                >
+                {{else if eq .Data.Document.ContentType "application/pdf"}}
+                <iframe
+                    src="/api/documents/{{.Data.Document.ID}}/preview"
+                    class="w-full h-full"
+                    title="{{.Data.Document.Filename}}"
+                ></iframe>
+                {{else}}
+                <div class="flex items-center justify-center h-full bg-base-200">
+                    <div class="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-base-content/50">Preview not available</p>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Right: Extracted Data Form -->
+        <div class="card bg-base-100 shadow overflow-auto">
+            <div class="card-body">
+                <h2 class="card-title">Extracted Information</h2>
+
+                {{if .Data.Document.Extraction}}
+                {{with .Data.Document.Extraction}}
+                <form id="review-form" class="space-y-4">
+                    <!-- Document Type -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Document Type</span>
+                            {{if .Confidence}}
+                            <span class="label-text-alt">{{printf "%.0f" (mul .Confidence 100)}}% confident</span>
+                            {{end}}
+                        </label>
+                        <select name="document_type" class="select select-bordered w-full">
+                            <option value="receipt" {{if eq .DocumentType "receipt"}}selected{{end}}>Receipt</option>
+                            <option value="invoice" {{if eq .DocumentType "invoice"}}selected{{end}}>Invoice</option>
+                            <option value="manual" {{if eq .DocumentType "manual"}}selected{{end}}>Manual</option>
+                            <option value="warranty" {{if eq .DocumentType "warranty"}}selected{{end}}>Warranty</option>
+                            <option value="permit" {{if eq .DocumentType "permit"}}selected{{end}}>Permit</option>
+                            <option value="inspection" {{if eq .DocumentType "inspection"}}selected{{end}}>Inspection</option>
+                            <option value="service_record" {{if eq .DocumentType "service_record"}}selected{{end}}>Service Record</option>
+                            <option value="photo" {{if eq .DocumentType "photo"}}selected{{end}}>Photo</option>
+                            <option value="other" {{if eq .DocumentType "other"}}selected{{end}}>Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Title -->
+                    {{if .Title}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Title</span></label>
+                        <input type="text" name="title" value="{{.Title}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+
+                    <!-- Category -->
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Category</span></label>
+                        <select name="category" class="select select-bordered w-full">
+                            <option value="">Select category...</option>
+                            {{range $.Data.Categories}}
+                            <option value="{{.ID}}" {{if eq $.Data.Document.Extraction.SuggestedCategory .Name}}selected{{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+
+                    <!-- Equipment Info -->
+                    {{if .Equipment}}
+                    <div class="divider">Equipment Details</div>
+                    {{with .Equipment}}
+                    {{if .Manufacturer}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Manufacturer</span></label>
+                        <input type="text" name="manufacturer" value="{{.Manufacturer}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{if .Model}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Model</span></label>
+                        <input type="text" name="model" value="{{.Model}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{if .SerialNumber}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Serial Number</span></label>
+                        <input type="text" name="serial_number" value="{{.SerialNumber}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{end}}
+                    {{end}}
+
+                    <!-- Financial Info -->
+                    {{if .Financial}}
+                    <div class="divider">Financial Details</div>
+                    {{with .Financial}}
+                    {{if .Vendor}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Vendor</span></label>
+                        <input type="text" name="vendor" value="{{.Vendor}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{if .Amount}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Amount</span></label>
+                        <input type="number" step="0.01" name="amount" value="{{.Amount}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{end}}
+                    {{end}}
+
+                    <!-- Service Info -->
+                    {{if .Service}}
+                    <div class="divider">Service Details</div>
+                    {{with .Service}}
+                    {{if .ServiceType}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Service Type</span></label>
+                        <input type="text" name="service_type" value="{{.ServiceType}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{if .Provider}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Provider</span></label>
+                        <input type="text" name="provider" value="{{.Provider}}" class="input input-bordered w-full">
+                    </div>
+                    {{end}}
+                    {{if .WorkPerformed}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Work Performed</span></label>
+                        <textarea name="work_performed" class="textarea textarea-bordered w-full" rows="3">{{.WorkPerformed}}</textarea>
+                    </div>
+                    {{end}}
+                    {{end}}
+                    {{end}}
+
+                    <!-- Link to System -->
+                    <div class="divider">Link to System</div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">System</span></label>
+                        <select name="system_id" class="select select-bordered w-full">
+                            <option value="">Select or create new...</option>
+                            <!-- Systems will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Notes -->
+                    {{if .Notes}}
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">AI Notes</span></label>
+                        <div class="p-3 bg-base-200 rounded-lg text-sm">{{.Notes}}</div>
+                    </div>
+                    {{end}}
+                </form>
+                {{end}}
+                {{else}}
+                <div class="alert alert-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>No extraction data available</span>
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function reviewItem() {
+    return {
+        docId: '{{.Data.Document.ID}}',
+        saving: false,
+
+        init() {
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Don't trigger shortcuts when typing in inputs
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    // Only allow Escape in form fields
+                    if (e.key === 'Escape') {
+                        e.target.blur();
+                    }
+                    return;
+                }
+
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    this.confirm();
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.confirm();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.reject();
+                } else if (e.key === 'e' || e.key === 'E') {
+                    // Focus first form field for editing
+                    e.preventDefault();
+                    const firstInput = document.querySelector('#review-form input, #review-form select');
+                    if (firstInput) firstInput.focus();
+                }
+            });
+        },
+
+        async confirm() {
+            if (this.saving) return;
+            this.saving = true;
+
+            const form = document.getElementById('review-form');
+            const formData = new FormData(form);
+
+            try {
+                const resp = await fetch(`/api/documents/${this.docId}/confirm`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (resp.ok) {
+                    window.location.href = '/review';
+                } else {
+                    const text = await resp.text();
+                    this.showError('Failed to confirm document: ' + (text || resp.statusText));
+                    this.saving = false;
+                }
+            } catch (err) {
+                this.showError('Error: ' + err.message);
+                this.saving = false;
+            }
+        },
+
+        async reject() {
+            if (this.saving) return;
+            this.saving = true;
+
+            try {
+                const resp = await fetch(`/api/documents/${this.docId}/reject`, {
+                    method: 'POST'
+                });
+
+                if (resp.ok) {
+                    window.location.href = '/review';
+                } else {
+                    const text = await resp.text();
+                    this.showError('Failed to reject document: ' + (text || resp.statusText));
+                    this.saving = false;
+                }
+            } catch (err) {
+                this.showError('Error: ' + err.message);
+                this.saving = false;
+            }
+        },
+
+        showError(message) {
+            // Use DaisyUI toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-end';
+            toast.innerHTML = `
+                <div class="alert alert-error">
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+    };
+}
+</script>
+{{end}}
