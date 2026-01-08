@@ -134,7 +134,13 @@ func (r *Renderer) Render(w io.Writer, name string, data *PageData) error {
 		return fmt.Errorf("template %s not found", name)
 	}
 
-	return tmpl.ExecuteTemplate(w, filepath.Base(name)+".html", data)
+	// Execute the layout template (base.html or login.html)
+	// The page template defines blocks that override the layout's blocks
+	layoutName := "base.html"
+	if name == "login" {
+		layoutName = "login.html"
+	}
+	return tmpl.ExecuteTemplate(w, layoutName, data)
 }
 
 // RenderPartial renders a partial template.
