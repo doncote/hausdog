@@ -26,12 +26,15 @@ type Config struct {
 	SupabaseURL        string
 	SupabaseKey        string
 	SupabaseServiceKey string
+	SupabaseJWTSecret  string
 
 	// Database
 	DatabaseURL string
 
-	// Claude API
+	// LLM Provider for document extraction
+	LLMProvider  string // "claude" or "gemini"
 	ClaudeAPIKey string
+	GeminiAPIKey string
 
 	// Session
 	SessionSecret string
@@ -46,8 +49,11 @@ func Load() (*Config, error) {
 		SupabaseURL:        os.Getenv("SUPABASE_URL"),
 		SupabaseKey:        os.Getenv("SUPABASE_KEY"),
 		SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
+		SupabaseJWTSecret:  os.Getenv("SUPABASE_JWT_SECRET"),
 		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		LLMProvider:        getEnv("LLM_PROVIDER", "claude"), // Default to Claude
 		ClaudeAPIKey:       os.Getenv("CLAUDE_API_KEY"),
+		GeminiAPIKey:       os.Getenv("GEMINI_API_KEY"),
 		SessionSecret:      os.Getenv("SESSION_SECRET"),
 	}
 
@@ -114,4 +120,21 @@ func getEnvBool(key string, defaultValue bool) bool {
 // IsDevelopment returns true if running in development mode.
 func (c *Config) IsDevelopment() bool {
 	return c.LogLevel == "debug"
+}
+
+// LLMAPIKey returns the API key for the configured LLM provider.
+func (c *Config) LLMAPIKey() string {
+	switch c.LLMProvider {
+	case "gemini":
+		return c.GeminiAPIKey
+	case "claude":
+		fallthrough
+	default:
+		return c.ClaudeAPIKey
+	}
+}
+
+// HasLLMConfig returns true if an LLM provider is properly configured.
+func (c *Config) HasLLMConfig() bool {
+	return c.LLMAPIKey() != ""
 }

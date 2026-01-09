@@ -1,8 +1,12 @@
 package auth
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -41,20 +45,45 @@ type Session struct {
 	User         *User  `json:"user"`
 }
 
-// GetOAuthURL returns the OAuth authorization URL for a provider.
-func (c *Client) GetOAuthURL(provider, redirectURL string) string {
+// generateCodeVerifier creates a random code verifier for PKCE.
+func generateCodeVerifier() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// generateCodeChallenge creates a code challenge from a verifier using S256.
+func generateCodeChallenge(verifier string) string {
+	h := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(h[:])
+}
+
+// GetOAuthURL returns the OAuth authorization URL and code verifier for PKCE flow.
+func (c *Client) GetOAuthURL(provider, redirectURL string) (authURL string, codeVerifier string, err error) {
+	codeVerifier, err = generateCodeVerifier()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate code verifier: %w", err)
+	}
+	codeChallenge := generateCodeChallenge(codeVerifier)
+
 	params := url.Values{}
 	params.Set("provider", provider)
 	params.Set("redirect_to", redirectURL)
+	params.Set("code_challenge", codeChallenge)
+	params.Set("code_challenge_method", "S256")
 
-	return fmt.Sprintf("%s/auth/v1/authorize?%s", c.baseURL, params.Encode())
+	authURL = fmt.Sprintf("%s/auth/v1/authorize?%s", c.baseURL, params.Encode())
+	return authURL, codeVerifier, nil
 }
 
-// ExchangeCodeForSession exchanges an OAuth code for a session.
-func (c *Client) ExchangeCodeForSession(code string) (*Session, error) {
-	reqURL := fmt.Sprintf("%s/auth/v1/token?grant_type=authorization_code", c.baseURL)
+// ExchangeCodeForSession exchanges an OAuth code for a session using PKCE.
+func (c *Client) ExchangeCodeForSession(code, codeVerifier string) (*Session, error) {
+	reqURL := fmt.Sprintf("%s/auth/v1/token?grant_type=pkce", c.baseURL)
 
-	body := fmt.Sprintf(`{"code":"%s"}`, code)
+	body := fmt.Sprintf(`{"auth_code":"%s","code_verifier":"%s"}`, code, codeVerifier)
+
 	req, err := http.NewRequest("POST", reqURL, strings.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -70,7 +99,8 @@ func (c *Client) ExchangeCodeForSession(code string) (*Session, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("exchange failed with status: %d", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("exchange failed with status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	var session Session

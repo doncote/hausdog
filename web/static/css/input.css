@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .modal-content {
+    @apply w-11/12 max-w-lg p-8;
+  }
+}

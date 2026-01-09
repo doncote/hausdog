@@ -1,13 +1,15 @@
-// Package extraction handles AI-powered document data extraction using Claude.
+// Package extraction handles AI-powered document data extraction using LLM providers.
 package extraction
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,20 +19,48 @@ const (
 	claudeModel      = "claude-sonnet-4-20250514"
 )
 
-// Client handles Claude API interactions for document extraction.
-type Client struct {
+// ClaudeClient handles Claude API interactions for document extraction.
+type ClaudeClient struct {
 	apiKey     string
 	httpClient *http.Client
 }
 
-// NewClient creates a new Claude extraction client.
-func NewClient(apiKey string) *Client {
-	return &Client{
+// NewClaudeClient creates a new Claude extraction client.
+func NewClaudeClient(apiKey string) *ClaudeClient {
+	return &ClaudeClient{
 		apiKey: apiKey,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second, // Long timeout for vision requests
 		},
 	}
+}
+
+// Name returns the provider name.
+func (c *ClaudeClient) Name() string {
+	return "Claude"
+}
+
+// SupportsTools returns whether this provider supports tool calling.
+func (c *ClaudeClient) SupportsTools() bool {
+	return false // TODO: Implement Claude tool calling
+}
+
+// SupportsStreaming returns whether this provider supports streaming responses.
+func (c *ClaudeClient) SupportsStreaming() bool {
+	return true
+}
+
+// ExtractWithTools sends document data with tools for agentic extraction.
+// Not yet implemented for Claude - falls back to regular extraction.
+func (c *ClaudeClient) ExtractWithTools(data []byte, contentType string, systemPrompt, userPrompt string, tools []Tool) (*ExtractionResult, []ToolCall, error) {
+	result, err := c.Extract(data, contentType, systemPrompt, userPrompt)
+	return result, nil, err
+}
+
+// ContinueWithToolResults continues the conversation after tool execution.
+// Not yet implemented for Claude.
+func (c *ClaudeClient) ContinueWithToolResults(results []ToolResult) (*ExtractionResult, []ToolCall, error) {
+	return nil, nil, fmt.Errorf("tool calling not implemented for Claude")
 }
 
 // Message represents a Claude API message.
@@ -59,6 +89,20 @@ type Request struct {
 	MaxTokens int       `json:"max_tokens"`
 	System    string    `json:"system,omitempty"`
 	Messages  []Message `json:"messages"`
+	Stream    bool      `json:"stream,omitempty"`
+}
+
+// StreamEvent represents a Server-Sent Event from Claude's streaming API.
+type StreamEvent struct {
+	Type  string          `json:"type"`
+	Index int             `json:"index,omitempty"`
+	Delta json.RawMessage `json:"delta,omitempty"`
+}
+
+// ContentBlockDelta represents a delta in a content block.
+type ContentBlockDelta struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 // Response represents a Claude API response.
@@ -93,7 +137,7 @@ type APIError struct {
 
 // Extract sends a document to Claude for extraction.
 // It accepts the document data, content type, and extraction prompt.
-func (c *Client) Extract(data []byte, contentType string, systemPrompt, userPrompt string) (*ExtractionResult, error) {
+func (c *ClaudeClient) Extract(data []byte, contentType string, systemPrompt, userPrompt string) (*ExtractionResult, error) {
 	// Build the message content
 	content := []Content{
 		{
@@ -202,6 +246,151 @@ func (c *Client) Extract(data []byte, contentType string, systemPrompt, userProm
 	return result, nil
 }
 
+// ExtractStreaming sends a document to Claude for extraction with streaming response.
+// The callback is called for each chunk of text received.
+func (c *ClaudeClient) ExtractStreaming(data []byte, contentType string, systemPrompt, userPrompt string, callback StreamCallback) (*ExtractionResult, error) {
+	// Build the message content
+	content := []Content{
+		{
+			Type: "image",
+			Source: &Source{
+				Type:      "base64",
+				MediaType: contentType,
+				Data:      base64.StdEncoding.EncodeToString(data),
+			},
+		},
+		{
+			Type: "text",
+			Text: userPrompt,
+		},
+	}
+
+	// For PDFs, we need to handle differently
+	if contentType == "application/pdf" {
+		content = []Content{
+			{
+				Type: "document",
+				Source: &Source{
+					Type:      "base64",
+					MediaType: contentType,
+					Data:      base64.StdEncoding.EncodeToString(data),
+				},
+			},
+			{
+				Type: "text",
+				Text: userPrompt,
+			},
+		}
+	}
+
+	req := Request{
+		Model:     claudeModel,
+		MaxTokens: 4096,
+		System:    systemPrompt,
+		Stream:    true,
+		Messages: []Message{
+			{
+				Role:    "user",
+				Content: content,
+			},
+		},
+	}
+
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequest("POST", claudeAPIURL, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-api-key", c.apiKey)
+	httpReq.Header.Set("anthropic-version", claudeAPIVersion)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		var apiErr struct {
+			Error APIError `json:"error"`
+		}
+		if err := json.Unmarshal(respBody, &apiErr); err == nil {
+			return nil, fmt.Errorf("API error (%d): %s - %s", resp.StatusCode, apiErr.Error.Type, apiErr.Error.Message)
+		}
+		return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(respBody))
+	}
+
+	// Process SSE stream
+	var fullText strings.Builder
+	chunkIndex := 0
+	scanner := bufio.NewScanner(resp.Body)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, ":") {
+			continue
+		}
+
+		// Parse SSE data line
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+
+		data := strings.TrimPrefix(line, "data: ")
+
+		// Check for end of stream
+		if data == "[DONE]" {
+			break
+		}
+
+		var event StreamEvent
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			continue // Skip malformed events
+		}
+
+		// Handle content_block_delta events
+		if event.Type == "content_block_delta" {
+			var delta ContentBlockDelta
+			if err := json.Unmarshal(event.Delta, &delta); err == nil && delta.Type == "text_delta" {
+				fullText.WriteString(delta.Text)
+				if callback != nil {
+					callback(delta.Text, chunkIndex, false)
+					chunkIndex++
+				}
+			}
+		}
+
+		// Handle message_stop event
+		if event.Type == "message_stop" {
+			if callback != nil {
+				callback("", chunkIndex, true)
+			}
+			break
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading stream: %w", err)
+	}
+
+	// Parse the accumulated text
+	result, err := parseExtractionResult(fullText.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse extraction result: %w", err)
+	}
+
+	return result, nil
+}
+
 // parseExtractionResult extracts JSON from Claude's response.
 func parseExtractionResult(text string) (*ExtractionResult, error) {
 	// Try to find JSON in the response (it might be wrapped in markdown code blocks)
@@ -248,9 +437,3 @@ func parseExtractionResult(text string) (*ExtractionResult, error) {
 	return &result, nil
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

@@ -1,0 +1,233 @@
+{{/* Processing status component - expects documentId to be set */}}
+<div
+    x-data="processingStatus('{{.DocumentID}}')"
+    x-init="init()"
+    class="card bg-base-100 shadow-lg"
+>
+    <div class="card-body">
+        <!-- Header with status -->
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="card-title text-base">Processing Status</h3>
+            <template x-if="status === 'processing'">
+                <span class="badge badge-primary badge-sm">
+                    <span class="loading loading-spinner loading-xs mr-1"></span>
+                    Processing
+                </span>
+            </template>
+            <template x-if="status === 'completed'">
+                <span class="badge badge-success badge-sm">Complete</span>
+            </template>
+            <template x-if="status === 'error'">
+                <span class="badge badge-error badge-sm">Error</span>
+            </template>
+        </div>
+
+        <!-- Progress Steps -->
+        <ul class="steps steps-vertical lg:steps-horizontal w-full mb-4">
+            <li class="step" :class="{ 'step-primary': currentStep >= 0 }">
+                <span class="text-xs">Queued</span>
+            </li>
+            <li class="step" :class="{ 'step-primary': currentStep >= 1 }">
+                <span class="text-xs">Downloading</span>
+            </li>
+            <li class="step" :class="{ 'step-primary': currentStep >= 2 }">
+                <span class="text-xs">Analyzing</span>
+            </li>
+            <li class="step" :class="{ 'step-primary': currentStep >= 3 }">
+                <span class="text-xs">Complete</span>
+            </li>
+        </ul>
+
+        <!-- Streaming LLM Output -->
+        <template x-if="llmOutput.length > 0 || status === 'processing'">
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span class="text-sm font-medium">AI Analysis</span>
+                </div>
+                <div class="bg-base-200 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs">
+                    <span x-text="llmOutput"></span>
+                    <span x-show="status === 'processing' && currentStep >= 2" class="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5"></span>
+                </div>
+            </div>
+        </template>
+
+        <!-- Extracted Fields Preview -->
+        <template x-if="extractedFields.length > 0">
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium">Extracted Information</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <template x-for="field in extractedFields" :key="field.field">
+                        <div class="bg-base-200 rounded px-2 py-1">
+                            <span class="text-xs text-base-content/70" x-text="field.field"></span>
+                            <p class="text-sm font-medium truncate" x-text="field.value"></p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Error State -->
+        <template x-if="status === 'error'">
+            <div class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <h3 class="font-bold">Processing Failed</h3>
+                    <div class="text-xs" x-text="errorMessage"></div>
+                </div>
+                <button
+                    class="btn btn-sm"
+                    hx-post="/documents/{{.DocumentID}}/reprocess"
+                    hx-swap="none"
+                    @click="resetAndRetry()"
+                >
+                    Retry
+                </button>
+            </div>
+        </template>
+
+        <!-- Duration (when complete) -->
+        <template x-if="status === 'completed' && durationMs > 0">
+            <div class="text-xs text-base-content/50 text-right">
+                Processed in <span x-text="(durationMs / 1000).toFixed(1)"></span>s
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function processingStatus(documentId) {
+    return {
+        documentId: documentId,
+        status: 'processing', // processing, completed, error
+        currentStep: 0, // 0=queued, 1=downloading, 2=extracting, 3=complete
+        llmOutput: '',
+        extractedFields: [],
+        errorMessage: '',
+        durationMs: 0,
+        subscription: null,
+
+        init() {
+            if (!window.supabaseClient) {
+                console.warn('Supabase client not initialized');
+                return;
+            }
+
+            // Load existing events
+            this.loadHistory();
+
+            // Subscribe to new events
+            this.subscribe();
+        },
+
+        async loadHistory() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('document_processing_events')
+                    .select('*')
+                    .eq('document_id', this.documentId)
+                    .order('sequence_num', { ascending: true });
+
+                if (error) {
+                    console.error('Failed to load event history:', error);
+                    return;
+                }
+
+                // Replay events to rebuild state
+                for (const event of data || []) {
+                    this.handleEvent(event);
+                }
+            } catch (err) {
+                console.error('Error loading history:', err);
+            }
+        },
+
+        subscribe() {
+            this.subscription = window.supabaseClient
+                .channel('processing-' + this.documentId)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'document_processing_events',
+                        filter: 'document_id=eq.' + this.documentId
+                    },
+                    (payload) => {
+                        this.handleEvent(payload.new);
+                    }
+                )
+                .subscribe();
+        },
+
+        handleEvent(event) {
+            const data = event.event_data || {};
+
+            switch (event.event_type) {
+                case 'started':
+                    this.status = 'processing';
+                    this.currentStep = 1; // downloading
+                    break;
+
+                case 'step':
+                    if (data.step === 'extracting') {
+                        this.currentStep = 2;
+                    }
+                    break;
+
+                case 'llm_chunk':
+                    if (data.content) {
+                        this.llmOutput += data.content;
+                    }
+                    break;
+
+                case 'extracted_field':
+                    this.extractedFields.push({
+                        field: data.field,
+                        value: data.value
+                    });
+                    break;
+
+                case 'completed':
+                    this.status = 'completed';
+                    this.currentStep = 3;
+                    this.durationMs = data.duration_ms || 0;
+                    // Optionally reload page to show full results
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                    break;
+
+                case 'error':
+                    this.status = 'error';
+                    this.errorMessage = data.error || 'Unknown error';
+                    break;
+            }
+        },
+
+        resetAndRetry() {
+            this.status = 'processing';
+            this.currentStep = 0;
+            this.llmOutput = '';
+            this.extractedFields = [];
+            this.errorMessage = '';
+            this.durationMs = 0;
+        },
+
+        destroy() {
+            if (this.subscription) {
+                this.subscription.unsubscribe();
+            }
+        }
+    };
+}
+</script>

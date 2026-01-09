@@ -148,9 +148,9 @@ func (c *Client) GetSignedURL(storagePath string, expiresIn time.Duration) (stri
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// The signedURL is relative, prepend the base URL
+	// The signedURL is relative, prepend the base URL and storage path
 	if !strings.HasPrefix(result.SignedURL, "http") {
-		return c.baseURL + result.SignedURL, nil
+		return c.baseURL + "/storage/v1" + result.SignedURL, nil
 	}
 
 	return result.SignedURL, nil

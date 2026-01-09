@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -40,6 +41,8 @@ func NewMiddleware(jwtSecret string, client *Client) *Middleware {
 // It extracts the user from the token and adds it to the request context.
 func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isAPI := strings.HasPrefix(r.URL.Path, "/api/")
+
 		// Try to get token from Authorization header
 		token := extractBearerToken(r)
 
@@ -51,7 +54,14 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		if token == "" {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			log.Printf("RequireAuth: no token found for %s", r.URL.Path)
+			if isAPI {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"unauthorized"}`))
+			} else {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+			}
 			return
 		}
 
@@ -62,15 +72,70 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !parsedToken.Valid {
-			// Token is invalid, redirect to login
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			log.Printf("RequireAuth: JWT validation failed for %s: %v", r.URL.Path, err)
+			if isAPI {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"invalid token"}`))
+			} else {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+			}
 			return
 		}
 
 		// Extract user ID from the subject claim
 		userID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			log.Printf("RequireAuth: failed to parse user ID from claims: %v", err)
+			if isAPI {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"invalid token"}`))
+			} else {
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+			}
+			return
+		}
+
+		// Create user and add to context
+		user := &User{
+			ID:    userID,
+			Email: claims.Email,
+		}
+
+		ctx := context.WithValue(r.Context(), UserContextKey, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// OptionalAuth is middleware that extracts the user if authenticated, but doesn't require it.
+// Use this for pages that show different content for logged-in vs anonymous users.
+func (m *Middleware) OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Try to get token from cookie
+		cookie, err := r.Cookie("access_token")
+		if err != nil || cookie.Value == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Parse and validate the JWT
+		claims := &Claims{}
+		parsedToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+			return m.jwtSecret, nil
+		})
+
+		if err != nil || !parsedToken.Valid {
+			// Token is invalid, continue without user
+			log.Printf("JWT validation failed: %v", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Extract user ID from the subject claim
+		userID, err := uuid.Parse(claims.Subject)
+		if err != nil {
+			next.ServeHTTP(w, r)
 			return
 		}
 

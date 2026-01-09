@@ -132,6 +132,18 @@ func (db *DB) ListSystemsByUser(ctx context.Context, userID uuid.UUID) ([]*Syste
 	return scanSystems(rows)
 }
 
+// CountSystemsByProperty returns the count of systems for a property.
+func (db *DB) CountSystemsByProperty(ctx context.Context, propertyID uuid.UUID) (int, error) {
+	var count int
+	err := db.Pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM systems WHERE property_id = $1
+	`, propertyID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count systems: %w", err)
+	}
+	return count, nil
+}
+
 // CountSystemsByCategory returns counts of systems by category for a user.
 func (db *DB) CountSystemsByCategory(ctx context.Context, userID uuid.UUID) (map[string]int, error) {
 	rows, err := db.Pool.Query(ctx, `
@@ -164,10 +176,10 @@ func (db *DB) CountSystemsByCategory(ctx context.Context, userID uuid.UUID) (map
 func (db *DB) UpdateSystem(ctx context.Context, id uuid.UUID, params CreateSystemParams) error {
 	_, err := db.Pool.Exec(ctx, `
 		UPDATE systems SET
-			name = $2, manufacturer = $3, model = $4, serial_number = $5,
-			install_date = $6, warranty_expires = $7, notes = $8, updated_at = $9
+			category_id = $2, name = $3, manufacturer = $4, model = $5, serial_number = $6,
+			install_date = $7, warranty_expires = $8, notes = $9, updated_at = $10
 		WHERE id = $1
-	`, id, params.Name, params.Manufacturer, params.Model, params.SerialNumber,
+	`, id, params.CategoryID, params.Name, params.Manufacturer, params.Model, params.SerialNumber,
 		params.InstallDate, params.WarrantyExpires, params.Notes, time.Now())
 
 	if err != nil {

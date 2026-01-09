@@ -1,0 +1,123 @@
+{{define "title"}}Properties - Hausdog{{end}}
+
+{{define "content"}}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">Properties</h1>
+            <p class="text-base-content/70">Manage your homes and buildings</p>
+        </div>
+        {{if .Data}}{{if .Data.Properties}}
+        <a href="/properties/new" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Property
+        </a>
+        {{end}}{{end}}
+    </div>
+
+    <!-- Properties List -->
+    {{if .Data}}
+        {{if .Data.Properties}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {{range .Data.Properties}}
+                <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+                    <div class="card-body">
+                        <div class="flex items-start justify-between">
+                            <a href="/properties/{{.ID}}" class="flex items-center gap-3 flex-1">
+                                <div class="bg-primary/10 p-3 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="card-title text-lg">{{.Name}}</h2>
+                                    {{if .Address}}
+                                    <p class="text-sm text-base-content/60">{{.Address}}</p>
+                                    {{end}}
+                                </div>
+                            </a>
+                            <!-- Actions dropdown -->
+                            <div class="dropdown dropdown-end">
+                                <label tabindex="0" class="btn btn-ghost btn-sm btn-square">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                    </svg>
+                                </label>
+                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-40">
+                                    <li><a href="/properties/{{.ID}}">View</a></li>
+                                    <li><a href="/properties/{{.ID}}/edit">Edit</a></li>
+                                    <li>
+                                        <button class="text-error"
+                                            onclick="if(confirm('Delete {{.Name}}? This cannot be undone.')) {
+                                                fetch('/properties/{{.ID}}', {method: 'DELETE'})
+                                                .then(() => window.location.reload());
+                                            }">
+                                            Delete
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <a href="/properties/{{.ID}}" class="mt-4 flex items-center gap-4 text-sm text-base-content/70">
+                            <div class="flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <span>{{.SystemCount}} systems</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        {{else}}
+            <!-- Empty State with inline form -->
+            <div class="card bg-base-100 shadow-md max-w-lg mx-auto">
+                <div class="card-body">
+                    <div class="text-center mb-6">
+                        <div class="bg-base-200 p-4 rounded-full inline-block mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold">Add your first property</h3>
+                        <p class="text-base-content/60">Start by adding a home or building to track.</p>
+                    </div>
+                    <form method="POST" action="/properties" class="space-y-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Property Name *</span>
+                            </label>
+                            <input type="text" name="name" placeholder="e.g., Main House, Beach Condo"
+                                   class="input input-bordered w-full" required autofocus />
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Address (optional)</span>
+                            </label>
+                            <input type="text" name="address" placeholder="123 Main St, City, State"
+                                   class="input input-bordered w-full" />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Property
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {{end}}
+    {{else}}
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body items-center text-center py-12">
+                <p class="text-base-content/60">Please log in to manage your properties.</p>
+                <a href="/login" class="btn btn-primary mt-4">Log In</a>
+            </div>
+        </div>
+    {{end}}
+</div>
+{{end}}

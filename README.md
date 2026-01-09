@@ -53,39 +53,33 @@ pnpm run build:css
 
 ### 3. Configure Environment
 
-Create a `.env` file:
+This project uses [Doppler](https://doppler.com) for secrets management.
 
 ```bash
-cp .env.example .env
+# Install Doppler CLI (macOS)
+brew install dopplerhq/cli/doppler
+
+# Login and set up project
+doppler login
+doppler setup  # Select 'web' project, 'dev' config
 ```
 
-Fill in your credentials:
-
-```env
-PORT=8080
-LOG_LEVEL=debug
-
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-key
-DATABASE_URL=postgresql://postgres:[password]@db.your-project.supabase.co:5432/postgres
-
-# Claude API
-CLAUDE_API_KEY=your-claude-api-key
-
-# Session
-SESSION_SECRET=your-random-secret-key
-```
+Alternatively, create a `.env.local` file for local development without Doppler.
 
 ### 4. Run the Server
 
 ```bash
-# Development (with CSS watch)
-pnpm run dev
+# Start server with Doppler secrets
+make dev
 
-# Or just run the Go server
-go run ./cmd/server
+# Or run without Doppler (uses .env.local)
+make run
+
+# Build CSS
+make css
+
+# Watch CSS for changes (in separate terminal)
+make css-watch
 ```
 
 Visit http://localhost:8080

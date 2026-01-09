@@ -1,6 +1,53 @@
 package extraction
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
+
+// FlexibleDate handles date parsing from multiple formats (YYYY-MM-DD or RFC3339).
+type FlexibleDate struct {
+	time.Time
+}
+
+// UnmarshalJSON parses dates in multiple formats.
+func (fd *FlexibleDate) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	if s == "" {
+		return nil
+	}
+
+	// Try RFC3339 first
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		fd.Time = t
+		return nil
+	}
+
+	// Try date-only format
+	if t, err := time.Parse("2006-01-02", s); err == nil {
+		fd.Time = t
+		return nil
+	}
+
+	// Try other common formats
+	formats := []string{
+		"2006-01-02T15:04:05",
+		"01/02/2006",
+		"Jan 2, 2006",
+		"January 2, 2006",
+	}
+	for _, format := range formats {
+		if t, err := time.Parse(format, s); err == nil {
+			fd.Time = t
+			return nil
+		}
+	}
+
+	return nil // Silently ignore unparseable dates
+}
 
 // ExtractionResult represents the structured data extracted from a document.
 type ExtractionResult struct {
@@ -9,9 +56,9 @@ type ExtractionResult struct {
 	Confidence   float64 `json:"confidence"`    // 0.0 to 1.0
 
 	// Common fields
-	Title       string     `json:"title,omitempty"`
-	Date        *time.Time `json:"date,omitempty"`
-	Description string     `json:"description,omitempty"`
+	Title       string        `json:"title,omitempty"`
+	Date        *FlexibleDate `json:"date,omitempty"`
+	Description string        `json:"description,omitempty"`
 
 	// Equipment/System identification
 	Equipment *EquipmentInfo `json:"equipment,omitempty"`
@@ -70,14 +117,14 @@ type ServiceInfo struct {
 
 // WarrantyInfo contains warranty details.
 type WarrantyInfo struct {
-	WarrantyType   string     `json:"warranty_type,omitempty"`   // manufacturer, extended, labor
-	Coverage       string     `json:"coverage,omitempty"`
-	StartDate      *time.Time `json:"start_date,omitempty"`
-	EndDate        *time.Time `json:"end_date,omitempty"`
-	DurationMonths int        `json:"duration_months,omitempty"`
-	Provider       string     `json:"provider,omitempty"`
-	ClaimPhone     string     `json:"claim_phone,omitempty"`
-	PolicyNumber   string     `json:"policy_number,omitempty"`
+	WarrantyType   string        `json:"warranty_type,omitempty"` // manufacturer, extended, labor
+	Coverage       string        `json:"coverage,omitempty"`
+	StartDate      *FlexibleDate `json:"start_date,omitempty"`
+	EndDate        *FlexibleDate `json:"end_date,omitempty"`
+	DurationMonths int           `json:"duration_months,omitempty"`
+	Provider       string        `json:"provider,omitempty"`
+	ClaimPhone     string        `json:"claim_phone,omitempty"`
+	PolicyNumber   string        `json:"policy_number,omitempty"`
 }
 
 // SystemPrompt is the system prompt for document extraction.
@@ -160,3 +207,40 @@ const UserPrompt = `Please analyze this document and extract all relevant inform
 }
 
 Only include fields that you can extract from the document. Omit fields that aren't present or can't be determined. The confidence score should reflect how certain you are about the document type classification.`
+
+// AgentSystemPrompt is the system prompt for agentic document extraction with tool use.
+const AgentSystemPrompt = `You are an expert at extracting structured information from home-related documents and managing home inventory records.
+
+Your task is to:
+1. Analyze the uploaded document (receipt, invoice, manual, warranty, service record, equipment photo, etc.)
+2. Review the user's existing home inventory (properties, systems, components)
+3. Decide whether this document relates to an existing system/component or represents something new
+4. Use the available tools to create or update inventory records and link the document appropriately
+
+Guidelines:
+- If the document shows equipment that matches an existing system (same type, manufacturer, or model), update that system or add a component to it
+- If the document shows new equipment not in the inventory, create a new system
+- If the document shows a part of a larger system (pump, motor, valve, etc.), create it as a component under the appropriate system
+- Always link the document to the most specific item (component > system > property)
+- Use the suggested_category to help determine the right system category
+- Extract all relevant details: manufacturer, model, serial number, install date, specifications
+
+Categories for home systems: HVAC, Plumbing, Electrical, Appliances, Roofing, Exterior, Interior, Landscaping, Security, Other
+
+IMPORTANT: After analyzing the document and inventory, you MUST use the tools to create/update records. Do not just describe what you would do - actually do it.`
+
+// AgentUserPrompt is the user prompt template for agentic document extraction.
+const AgentUserPrompt = `Please analyze this document and manage my home inventory accordingly.
+
+%s
+
+Based on this document:
+1. First, extract the key information (equipment type, manufacturer, model, serial number, dates, etc.)
+2. Check if this relates to any existing systems or components in my inventory
+3. Use the tools to either:
+   - Create a new system if this is new equipment
+   - Create a component if this is a part of an existing system
+   - Update an existing system/component if you find a match
+4. Link this document to the appropriate item
+
+After making changes, provide a brief JSON summary of what you extracted from the document.`

@@ -4,6 +4,17 @@
 <div class="max-w-2xl mx-auto" x-data="uploadManager()">
     <h1 class="text-2xl font-bold mb-6">Upload Documents</h1>
 
+    <!-- Upload Target Banner -->
+    <template x-if="systemId">
+        <div class="alert alert-info mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Documents will be linked to the selected system</span>
+            <a :href="'/systems/' + systemId" class="btn btn-sm btn-ghost">View System</a>
+        </div>
+    </template>
+
     <!-- Drop Zone -->
     <div
         class="border-2 border-dashed rounded-xl p-8 text-center transition-colors"
@@ -82,12 +93,40 @@
                             </template>
 
                             <!-- Status -->
-                            <template x-if="item.status === 'complete'">
-                                <div class="badge badge-success gap-1 mt-2">
+                            <template x-if="item.status === 'complete' && item.processingStatus === 'pending'">
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="badge badge-success badge-sm gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Uploaded
+                                    </span>
+                                    <span class="text-xs text-base-content/70">Waiting for processing...</span>
+                                </div>
+                            </template>
+                            <template x-if="item.status === 'complete' && item.processingStatus === 'processing'">
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="badge badge-primary badge-sm gap-1">
+                                        <span class="loading loading-spinner loading-xs"></span>
+                                        Analyzing
+                                    </span>
+                                    <span x-show="item.processingStep" class="text-xs text-base-content/70" x-text="item.processingStep"></span>
+                                </div>
+                            </template>
+                            <template x-if="item.status === 'complete' && item.processingStatus === 'completed'">
+                                <div class="badge badge-success badge-sm gap-1 mt-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
-                                    Uploaded
+                                    Ready
+                                </div>
+                            </template>
+                            <template x-if="item.status === 'complete' && item.processingStatus === 'error'">
+                                <div class="badge badge-error badge-sm gap-1 mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Processing Failed
                                 </div>
                             </template>
                             <template x-if="item.status === 'error'">
@@ -217,10 +256,17 @@ function uploadManager() {
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'];
 
+    // Get system_id and property_id from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const systemId = urlParams.get('system_id');
+    const propertyId = urlParams.get('property_id');
+
     return {
         queue: [],
         isDragging: false,
         isUploading: false,
+        systemId: systemId,
+        propertyId: propertyId,
 
         get hasPending() {
             return this.queue.some(item => item.status === 'pending');
@@ -267,7 +313,11 @@ function uploadManager() {
                     status: validationError ? 'error' : 'pending',
                     progress: 0,
                     error: validationError,
-                    isHeic: this.isHeicFile(file)
+                    isHeic: this.isHeicFile(file),
+                    documentId: null,
+                    processingStatus: null, // pending, processing, completed, error
+                    processingStep: null,
+                    subscription: null
                 };
 
                 // Generate preview for images (except HEIC which browsers can't display)
@@ -344,6 +394,8 @@ function uploadManager() {
 
             const formData = new FormData();
             formData.append('file', item.file);
+            if (this.systemId) formData.append('system_id', this.systemId);
+            if (this.propertyId) formData.append('property_id', this.propertyId);
 
             try {
                 const xhr = new XMLHttpRequest();
@@ -354,7 +406,7 @@ function uploadManager() {
                     }
                 });
 
-                await new Promise((resolve, reject) => {
+                const response = await new Promise((resolve, reject) => {
                     xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
                             resolve(JSON.parse(xhr.responseText));
@@ -377,6 +429,11 @@ function uploadManager() {
 
                 item.status = 'complete';
                 item.progress = 100;
+                item.documentId = response.id;
+                item.processingStatus = 'pending';
+
+                // Subscribe to processing events
+                this.subscribeToProcessing(item);
             } catch (error) {
                 item.status = 'error';
                 item.error = error.message;
@@ -444,6 +501,88 @@ function uploadManager() {
             `;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 5000);
+        },
+
+        async subscribeToProcessing(item) {
+            if (!item.documentId) {
+                return;
+            }
+
+            // Wait for Supabase client if not ready yet
+            const client = await window.waitForSupabase();
+            if (!client) {
+                console.warn('Supabase client not available, skipping realtime subscription');
+                return;
+            }
+
+            console.log('Subscribing to processing events for document:', item.documentId);
+            item.subscription = client
+                .channel('upload-processing-' + item.documentId)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'document_processing_events',
+                        filter: 'document_id=eq.' + item.documentId
+                    },
+                    (payload) => {
+                        this.handleProcessingEvent(item, payload.new);
+                    }
+                )
+                .subscribe();
+        },
+
+        handleProcessingEvent(item, event) {
+            // Parse event_data if it's a string
+            let data = event.event_data || {};
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (e) {
+                    data = {};
+                }
+            }
+
+            console.log('Processing event for', item.documentId, ':', event.event_type, data);
+
+            switch (event.event_type) {
+                case 'started':
+                    item.processingStatus = 'processing';
+                    item.processingStep = 'Downloading...';
+                    break;
+
+                case 'step':
+                    item.processingStatus = 'processing';
+                    if (data.step === 'extracting') {
+                        item.processingStep = data.message || 'Analyzing...';
+                    } else {
+                        item.processingStep = data.step;
+                    }
+                    break;
+
+                case 'completed':
+                    item.processingStatus = 'completed';
+                    item.processingStep = null;
+                    // Refresh the recent uploads list
+                    document.body.dispatchEvent(new CustomEvent('uploadComplete'));
+                    // Unsubscribe
+                    if (item.subscription) {
+                        item.subscription.unsubscribe();
+                        item.subscription = null;
+                    }
+                    break;
+
+                case 'error':
+                    item.processingStatus = 'error';
+                    item.processingStep = data.error || 'Processing failed';
+                    // Unsubscribe
+                    if (item.subscription) {
+                        item.subscription.unsubscribe();
+                        item.subscription = null;
+                    }
+                    break;
+            }
         }
     };
 }

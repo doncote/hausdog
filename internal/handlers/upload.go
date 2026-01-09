@@ -10,7 +10,9 @@ import (
 
 	"github.com/don/hausdog/internal/auth"
 	"github.com/don/hausdog/internal/database"
+	"github.com/don/hausdog/internal/extraction"
 	"github.com/don/hausdog/internal/storage"
+	"github.com/google/uuid"
 )
 
 const maxUploadSize = 50 << 20 // 50MB
@@ -28,15 +30,17 @@ var allowedMimeTypes = map[string]bool{
 
 // UploadHandler handles document uploads.
 type UploadHandler struct {
-	db      *database.DB
-	storage *storage.Client
+	db        *database.DB
+	storage   *storage.Client
+	processor *extraction.Processor
 }
 
 // NewUploadHandler creates a new upload handler.
-func NewUploadHandler(db *database.DB, storage *storage.Client) *UploadHandler {
+func NewUploadHandler(db *database.DB, storage *storage.Client, processor *extraction.Processor) *UploadHandler {
 	return &UploadHandler{
-		db:      db,
-		storage: storage,
+		db:        db,
+		storage:   storage,
+		processor: processor,
 	}
 }
 
@@ -109,9 +113,26 @@ func (h *UploadHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse optional system_id and property_id
+	var systemID *uuid.UUID
+	var propertyID *uuid.UUID
+
+	if sid := r.FormValue("system_id"); sid != "" {
+		if id, err := uuid.Parse(sid); err == nil {
+			systemID = &id
+		}
+	}
+	if pid := r.FormValue("property_id"); pid != "" {
+		if id, err := uuid.Parse(pid); err == nil {
+			propertyID = &id
+		}
+	}
+
 	// Create database record
 	doc, err := h.db.CreateDocument(r.Context(), database.CreateDocumentParams{
 		UserID:      user.ID,
+		PropertyID:  propertyID,
+		SystemID:    systemID,
 		Filename:    header.Filename,
 		StoragePath: result.Path,
 		ContentType: mediaType,
@@ -123,6 +144,11 @@ func (h *UploadHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		_ = h.storage.Delete(result.Path)
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to save document"})
 		return
+	}
+
+	// Enqueue for extraction if processor is available
+	if h.processor != nil {
+		h.processor.Enqueue(doc.ID)
 	}
 
 	writeJSON(w, http.StatusCreated, UploadResponse{

@@ -2,6 +2,7 @@
 package templates
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -16,8 +17,10 @@ import (
 
 // Renderer handles template rendering.
 type Renderer struct {
-	templates map[string]*template.Template
-	funcMap   template.FuncMap
+	templates   map[string]*template.Template
+	funcMap     template.FuncMap
+	supabaseURL string
+	supabaseKey string
 }
 
 // Flash holds flash message data.
@@ -33,6 +36,11 @@ type PageData struct {
 	Flash       *Flash
 	CurrentPath string
 	Data        any
+	// Supabase config for frontend realtime
+	SupabaseURL   string
+	SupabaseKey   string
+	AccessToken   string // For Supabase JS client auth
+	RefreshToken  string
 }
 
 // NewFromDir creates a new template renderer from a directory path.
@@ -77,6 +85,32 @@ func New(templatesFS fs.FS) (*Renderer, error) {
 			},
 			"sub": func(a, b int) int {
 				return a - b
+			},
+			"formatBytes": func(bytes int64) string {
+				if bytes < 1024 {
+					return fmt.Sprintf("%d B", bytes)
+				}
+				kb := float64(bytes) / 1024.0
+				if kb < 1024 {
+					return fmt.Sprintf("%.1f KB", kb)
+				}
+				mb := kb / 1024.0
+				return fmt.Sprintf("%.1f MB", mb)
+			},
+			"formatJSON": func(data *json.RawMessage) string {
+				if data == nil {
+					return ""
+				}
+				// Pretty print the JSON
+				var prettyJSON map[string]any
+				if err := json.Unmarshal(*data, &prettyJSON); err != nil {
+					return string(*data)
+				}
+				pretty, err := json.MarshalIndent(prettyJSON, "", "  ")
+				if err != nil {
+					return string(*data)
+				}
+				return string(pretty)
 			},
 		},
 	}
@@ -153,12 +187,28 @@ func (r *Renderer) RenderPartial(w io.Writer, name string, data any) error {
 	return tmpl.ExecuteTemplate(w, name+".html", data)
 }
 
+// SetSupabaseConfig sets the Supabase URL and key for frontend realtime.
+func (r *Renderer) SetSupabaseConfig(url, key string) {
+	r.supabaseURL = url
+	r.supabaseKey = key
+}
+
 // RenderPage is a convenience method for HTTP handlers.
 func (r *Renderer) RenderPage(w http.ResponseWriter, req *http.Request, name string, data any) error {
 	pageData := &PageData{
 		User:        auth.GetUser(req.Context()),
 		CurrentPath: req.URL.Path,
 		Data:        data,
+		SupabaseURL: r.supabaseURL,
+		SupabaseKey: r.supabaseKey,
+	}
+
+	// Get access token from cookie for Supabase JS client
+	if cookie, err := req.Cookie("access_token"); err == nil {
+		pageData.AccessToken = cookie.Value
+	}
+	if cookie, err := req.Cookie("refresh_token"); err == nil {
+		pageData.RefreshToken = cookie.Value
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

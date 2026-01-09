@@ -4,6 +4,16 @@ module.exports = {
     "./web/templates/**/*.html",
     "./web/static/js/**/*.js",
   ],
+  // Safelist classes that are dynamically added via JS/Alpine
+  safelist: [
+    'step-primary',
+    'step-secondary',
+    'step-accent',
+    'step-info',
+    'step-success',
+    'step-warning',
+    'step-error',
+  ],
   theme: {
     extend: {},
   },

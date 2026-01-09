@@ -6,6 +6,7 @@
 *.dylib
 /hausdog
 /server
+/bin/
 
 # Test binary
 *.test
@@ -46,3 +47,4 @@ Thumbs.db
 # Local development
 *.log
 tmp/
+/tmp/

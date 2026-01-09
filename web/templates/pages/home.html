@@ -122,7 +122,7 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm">
+        <a href="/properties" class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm hover:shadow-md hover:border-sky-200 transition-all">
             <div class="flex items-center justify-between mb-3">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,9 +132,9 @@
             </div>
             <p class="text-2xl font-bold text-zinc-800">{{if .Data}}{{len .Data.Properties}}{{else}}0{{end}}</p>
             <p class="text-sm text-zinc-500">Properties</p>
-        </div>
+        </a>
 
-        <div class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm">
+        <a href="/systems" class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm hover:shadow-md hover:border-rose-200 transition-all">
             <div class="flex items-center justify-between mb-3">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,9 +145,9 @@
             </div>
             <p class="text-2xl font-bold text-zinc-800">{{if .Data}}{{.Data.TotalSystems}}{{else}}0{{end}}</p>
             <p class="text-sm text-zinc-500">Systems</p>
-        </div>
+        </a>
 
-        <div class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm">
+        <a href="/documents" class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all">
             <div class="flex items-center justify-between mb-3">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,20 +157,20 @@
             </div>
             <p class="text-2xl font-bold text-zinc-800">{{if .Data}}{{.Data.TotalDocuments}}{{else}}0{{end}}</p>
             <p class="text-sm text-zinc-500">Documents</p>
-        </div>
+        </a>
 
-        {{if .Data}}{{if .Data.DocumentCounts}}{{if index .Data.DocumentCounts "complete"}}
-        <a href="/review" class="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
+        {{if .Data}}{{if .Data.DocumentCounts}}{{if index .Data.DocumentCounts "pending"}}
+        <a href="/documents?status=pending" class="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-3">
                 <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <span class="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-full">Action needed</span>
+                <span class="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-full">Processing</span>
             </div>
-            <p class="text-2xl font-bold text-zinc-800">{{index .Data.DocumentCounts "complete"}}</p>
-            <p class="text-sm text-amber-600">To Review</p>
+            <p class="text-2xl font-bold text-zinc-800">{{index .Data.DocumentCounts "pending"}}</p>
+            <p class="text-sm text-amber-600">Processing</p>
         </a>
         {{else}}
         <div class="p-5 rounded-2xl bg-white border border-zinc-100 shadow-sm">
@@ -182,32 +182,11 @@
                 </div>
             </div>
             <p class="text-2xl font-bold text-zinc-800">0</p>
-            <p class="text-sm text-zinc-500">To Review</p>
+            <p class="text-sm text-zinc-500">Processing</p>
         </div>
         {{end}}{{end}}{{end}}
     </div>
 
-    <!-- Categories Grid -->
-    {{if .Data}}{{if .Data.Categories}}
-    <div>
-        <h2 class="text-lg font-semibold text-zinc-800 mb-4">Browse by Category</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {{range .Data.Categories}}
-            <a href="/systems?category={{.ID}}" class="group p-4 rounded-2xl bg-white border border-zinc-100 hover:border-rose-200 hover:shadow-md transition-all text-center">
-                <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">
-                    {{if eq .Name "HVAC"}}🌡️{{else if eq .Name "Plumbing"}}💧{{else if eq .Name "Electrical"}}⚡{{else if eq .Name "Appliances"}}🏠{{else if eq .Name "Roofing"}}🏗️{{else if eq .Name "Exterior"}}☀️{{else if eq .Name "Interior"}}🪑{{else if eq .Name "Landscaping"}}🌳{{else if eq .Name "Security"}}🔒{{else}}📦{{end}}
-                </div>
-                <h3 class="font-medium text-zinc-800 text-sm">{{.Name}}</h3>
-                {{if .SystemCount}}
-                <p class="text-xs text-rose-500 mt-1">{{.SystemCount}} systems</p>
-                {{else}}
-                <p class="text-xs text-zinc-400 mt-1">No systems</p>
-                {{end}}
-            </a>
-            {{end}}
-        </div>
-    </div>
-    {{end}}{{end}}
 
     <!-- Quick Actions -->
     <div class="grid md:grid-cols-2 gap-4">
@@ -223,15 +202,15 @@
             </div>
         </a>
 
-        <a href="/systems/new" class="group relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-100 hover:border-sky-200 hover:shadow-lg transition-all">
+        <a href="/properties" class="group relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-100 hover:border-sky-200 hover:shadow-lg transition-all">
             <div class="relative">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-200 to-blue-200 flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                 </div>
-                <h3 class="text-xl font-semibold text-zinc-800 mb-2">Add System</h3>
-                <p class="text-zinc-500 text-sm">Manually add a new appliance, equipment, or system to track maintenance history.</p>
+                <h3 class="text-xl font-semibold text-zinc-800 mb-2">Manage Properties</h3>
+                <p class="text-zinc-500 text-sm">View your properties and add systems like HVAC, plumbing, appliances, and more.</p>
             </div>
         </a>
     </div>

@@ -3,21 +3,24 @@ package extraction
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/don/hausdog/internal/database"
+	"github.com/don/hausdog/internal/realtime"
 	"github.com/don/hausdog/internal/storage"
 	"github.com/google/uuid"
 )
 
 // Processor handles async document extraction.
 type Processor struct {
-	db      *database.DB
-	storage *storage.Client
-	claude  *Client
+	db       *database.DB
+	storage  *storage.Client
+	provider Provider
+	emitter  *realtime.EventEmitter
 
 	// Processing queue
 	queue chan uuid.UUID
@@ -29,16 +32,17 @@ type Processor struct {
 }
 
 // NewProcessor creates a new extraction processor.
-func NewProcessor(db *database.DB, storage *storage.Client, claudeAPIKey string) *Processor {
+func NewProcessor(db *database.DB, storage *storage.Client, provider Provider, emitter *realtime.EventEmitter) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	p := &Processor{
-		db:      db,
-		storage: storage,
-		claude:  NewClient(claudeAPIKey),
-		queue:   make(chan uuid.UUID, 100),
-		ctx:     ctx,
-		cancel:  cancel,
+		db:       db,
+		storage:  storage,
+		provider: provider,
+		emitter:  emitter,
+		queue:    make(chan uuid.UUID, 100),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 
 	// Start worker goroutines
@@ -68,6 +72,15 @@ func (p *Processor) Stop() {
 	p.wg.Wait()
 }
 
+// emit safely emits an event if the emitter is configured.
+func (p *Processor) emit(ctx context.Context, docID, userID uuid.UUID, eventType realtime.EventType, data any) {
+	if p.emitter != nil {
+		if err := p.emitter.Emit(ctx, docID, userID, eventType, data); err != nil {
+			log.Printf("Failed to emit %s event for doc %s: %v", eventType, docID, err)
+		}
+	}
+}
+
 // worker processes documents from the queue.
 func (p *Processor) worker(id int) {
 	defer p.wg.Done()
@@ -90,6 +103,7 @@ func (p *Processor) worker(id int) {
 // processDocument extracts data from a single document.
 func (p *Processor) processDocument(docID uuid.UUID) {
 	ctx := context.Background()
+	startTime := time.Now()
 	log.Printf("Processing document %s", docID)
 
 	// Update status to processing
@@ -102,7 +116,7 @@ func (p *Processor) processDocument(docID uuid.UUID) {
 	doc, err := p.db.GetDocument(ctx, docID)
 	if err != nil {
 		log.Printf("Failed to get document %s: %v", docID, err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, uuid.Nil, "get_document", err.Error())
 		return
 	}
 
@@ -111,11 +125,14 @@ func (p *Processor) processDocument(docID uuid.UUID) {
 		return
 	}
 
+	// Emit started event
+	p.emit(ctx, docID, doc.UserID, realtime.EventStarted, realtime.StartedData{Step: "downloading"})
+
 	// Download from storage
 	reader, contentType, err := p.storage.Download(doc.StoragePath)
 	if err != nil {
 		log.Printf("Failed to download document %s: %v", docID, err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, doc.UserID, "download", err.Error())
 		return
 	}
 	defer reader.Close()
@@ -123,7 +140,7 @@ func (p *Processor) processDocument(docID uuid.UUID) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		log.Printf("Failed to read document %s: %v", docID, err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, doc.UserID, "read", err.Error())
 		return
 	}
 
@@ -132,11 +149,58 @@ func (p *Processor) processDocument(docID uuid.UUID) {
 		contentType = doc.ContentType
 	}
 
-	// Extract data using Claude
-	result, err := p.claude.Extract(data, contentType, SystemPrompt, UserPrompt)
+	// Emit extraction step
+	p.emit(ctx, docID, doc.UserID, realtime.EventStep, realtime.StepData{
+		Step:    "extracting",
+		Message: "Analyzing document with AI",
+	})
+
+	// Try agentic extraction if provider supports it
+	if p.provider.SupportsTools() {
+		result, err := p.processDocumentWithTools(ctx, doc, data, contentType)
+		if err != nil {
+			log.Printf("Agentic extraction failed for document %s: %v, falling back to simple extraction", docID, err)
+		} else {
+			// Save extraction result
+			resultJSON, err := json.Marshal(result)
+			if err != nil {
+				log.Printf("Failed to marshal extraction result: %v", err)
+				p.markFailed(ctx, docID, doc.UserID, "marshal", err.Error())
+				return
+			}
+
+			if err := p.db.UpdateDocumentExtraction(ctx, docID, resultJSON); err != nil {
+				log.Printf("Failed to save extraction result: %v", err)
+				p.markFailed(ctx, docID, doc.UserID, "save", err.Error())
+				return
+			}
+
+			// Emit completed event
+			p.emit(ctx, docID, doc.UserID, realtime.EventCompleted, realtime.CompletedData{
+				Result:     result,
+				DurationMs: time.Since(startTime).Milliseconds(),
+			})
+
+			log.Printf("Successfully extracted document %s with agentic processing (type: %s, confidence: %.2f)",
+				docID, result.DocumentType, result.Confidence)
+			return
+		}
+	}
+
+	// Fall back to simple extraction (with streaming if supported)
+	var result *ExtractionResult
+	if p.provider.SupportsStreaming() && p.emitter != nil {
+		// Use streaming extraction with chunk callback
+		result, err = p.provider.ExtractStreaming(data, contentType, SystemPrompt, UserPrompt, func(chunk string, index int, isFinal bool) {
+			p.emitter.EmitChunk(docID, doc.UserID, chunk, index, isFinal)
+		})
+	} else {
+		// Non-streaming extraction
+		result, err = p.provider.Extract(data, contentType, SystemPrompt, UserPrompt)
+	}
 	if err != nil {
 		log.Printf("Failed to extract from document %s: %v", docID, err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, doc.UserID, "extraction", err.Error())
 		return
 	}
 
@@ -144,24 +208,92 @@ func (p *Processor) processDocument(docID uuid.UUID) {
 	resultJSON, err := json.Marshal(result)
 	if err != nil {
 		log.Printf("Failed to marshal extraction result: %v", err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, doc.UserID, "marshal", err.Error())
 		return
 	}
 
 	if err := p.db.UpdateDocumentExtraction(ctx, docID, resultJSON); err != nil {
 		log.Printf("Failed to save extraction result: %v", err)
-		p.markFailed(ctx, docID)
+		p.markFailed(ctx, docID, doc.UserID, "save", err.Error())
 		return
 	}
+
+	// Emit completed event
+	p.emit(ctx, docID, doc.UserID, realtime.EventCompleted, realtime.CompletedData{
+		Result:     result,
+		DurationMs: time.Since(startTime).Milliseconds(),
+	})
 
 	log.Printf("Successfully extracted document %s (type: %s, confidence: %.2f)",
 		docID, result.DocumentType, result.Confidence)
 }
 
+// processDocumentWithTools uses agentic extraction with tool calling.
+func (p *Processor) processDocumentWithTools(ctx context.Context, doc *database.Document, data []byte, contentType string) (*ExtractionResult, error) {
+	// Load user's inventory for context
+	inventory, err := BuildInventoryContext(ctx, p.db, doc.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build inventory context: %w", err)
+	}
+
+	// Format inventory as text for the prompt
+	inventoryText := FormatInventoryContext(inventory)
+
+	// Build user prompt with inventory context
+	userPrompt := fmt.Sprintf(AgentUserPrompt, inventoryText)
+
+	// Get tools
+	tools := GetInventoryTools()
+
+	// Create tool executor
+	executor := NewToolExecutor(p.db, doc.ID, doc.UserID)
+
+	// Initial extraction with tools
+	result, toolCalls, err := p.provider.ExtractWithTools(data, contentType, AgentSystemPrompt, userPrompt, tools)
+	if err != nil {
+		return nil, fmt.Errorf("extraction failed: %w", err)
+	}
+
+	// Process tool calls in a loop (max 10 iterations to prevent infinite loops)
+	for i := 0; i < 10 && len(toolCalls) > 0; i++ {
+		log.Printf("Document %s: executing %d tool calls (iteration %d)", doc.ID, len(toolCalls), i+1)
+
+		// Execute each tool call
+		var results []ToolResult
+		for _, call := range toolCalls {
+			log.Printf("  Executing tool: %s", call.Name)
+			result := executor.Execute(ctx, call)
+			log.Printf("  Result: %s (error: %v)", result.Content, result.IsError)
+			results = append(results, result)
+		}
+
+		// Continue conversation with tool results
+		result, toolCalls, err = p.provider.ContinueWithToolResults(results)
+		if err != nil {
+			return nil, fmt.Errorf("failed to continue after tool calls: %w", err)
+		}
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("no extraction result after tool processing")
+	}
+
+	return result, nil
+}
+
 // markFailed marks a document as failed and increments retry count.
-func (p *Processor) markFailed(ctx context.Context, docID uuid.UUID) {
+func (p *Processor) markFailed(ctx context.Context, docID, userID uuid.UUID, step, errMsg string) {
 	if err := p.db.MarkDocumentFailed(ctx, docID); err != nil {
 		log.Printf("Failed to mark document %s as failed: %v", docID, err)
+	}
+
+	// Emit error event if we have a user ID
+	if userID != uuid.Nil {
+		p.emit(ctx, docID, userID, realtime.EventError, realtime.ErrorData{
+			Error:     errMsg,
+			Step:      step,
+			Retriable: true,
+		})
 	}
 }
 
