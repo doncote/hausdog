@@ -1,0 +1,18 @@
+{
+  "name": "@hausdog/domain",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./properties": "./src/properties.ts",
+    "./systems": "./src/systems.ts",
+    "./categories": "./src/categories.ts",
+    "./components": "./src/components.ts",
+    "./documents": "./src/documents.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.36"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

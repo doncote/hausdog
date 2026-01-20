@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { requireAuthFromContext } from '@/lib/auth'
-import { useDeleteProperty, useProperties } from '@/lib/queries/properties'
+import { useDeleteProperty, useProperties } from '@/features/properties'
 
 export const Route = createFileRoute('/properties/')({
   beforeLoad: ({ context }) => {

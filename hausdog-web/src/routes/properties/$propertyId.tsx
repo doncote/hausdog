@@ -16,8 +16,8 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { requireAuthFromContext } from '@/lib/auth'
-import { updatePropertySchema } from '@/lib/domain/property'
-import { useDeleteProperty, useProperty, useUpdateProperty } from '@/lib/queries/properties'
+import { updatePropertySchema } from '@hausdog/domain/properties'
+import { useDeleteProperty, useProperty, useUpdateProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/properties/$propertyId')({
   beforeLoad: ({ context }) => {

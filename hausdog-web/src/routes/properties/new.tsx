@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { requireAuthFromContext } from '@/lib/auth'
-import { createPropertySchema } from '@/lib/domain/property'
-import { useCreateProperty } from '@/lib/queries/properties'
+import { createPropertySchema } from '@hausdog/domain/properties'
+import { useCreateProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/properties/new')({
   beforeLoad: ({ context }) => {
