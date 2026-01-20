@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/r
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { CategoryIcon } from '@/components/category-icon'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -18,6 +19,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { requireAuthFromContext } from '@/lib/auth'
 import { updatePropertySchema } from '@hausdog/domain/properties'
 import { useDeleteProperty, useProperty, useUpdateProperty } from '@/features/properties'
+import { useSystemsForProperty, useCreateSystem, type SystemWithCounts } from '@/features/systems'
+import { useCategories } from '@/features/categories'
+import { createSystemSchema } from '@hausdog/domain/systems'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export const Route = createFileRoute('/properties/$propertyId')({
   beforeLoad: ({ context }) => {
@@ -32,11 +43,15 @@ function PropertyDetailPage() {
   const navigate = useNavigate()
 
   const { data: property, isPending, error } = useProperty(propertyId, user?.id)
+  const { data: systems, isPending: systemsPending } = useSystemsForProperty(propertyId, user?.id)
+  const { data: categories } = useCategories()
   const updateProperty = useUpdateProperty()
   const deleteProperty = useDeleteProperty()
+  const createSystem = useCreateSystem()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showCreateSystemDialog, setShowCreateSystemDialog] = useState(false)
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -211,23 +226,33 @@ function PropertyDetailPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Systems</h2>
-          <Link to="/properties/$propertyId/systems/new" params={{ propertyId }}>
-            <Button>Add System</Button>
-          </Link>
+          <Button onClick={() => setShowCreateSystemDialog(true)}>Add System</Button>
         </div>
 
-        {/* TODO: Systems list will be added with Systems CRUD */}
-        <Card>
-          <CardContent className="py-12 text-center">
-            <h3 className="text-lg font-medium mb-2">No systems yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Add systems like HVAC, plumbing, or appliances to track
-            </p>
-            <Link to="/properties/$propertyId/systems/new" params={{ propertyId }}>
-              <Button variant="outline">Add Your First System</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        {systemsPending ? (
+          <div className="space-y-3">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : systems && systems.length > 0 ? (
+          <div className="space-y-3">
+            {systems.map((system) => (
+              <SystemCard key={system.id} system={system} propertyId={propertyId} />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <h3 className="text-lg font-medium mb-2">No systems yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Add systems like HVAC, plumbing, or appliances to track
+              </p>
+              <Button variant="outline" onClick={() => setShowCreateSystemDialog(true)}>
+                Add Your First System
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -254,6 +279,227 @@ function PropertyDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create System Dialog */}
+      <CreateSystemDialog
+        open={showCreateSystemDialog}
+        onOpenChange={setShowCreateSystemDialog}
+        propertyId={propertyId}
+        userId={user?.id}
+        categories={categories ?? []}
+        createSystem={createSystem}
+      />
     </div>
   )
 }
+
+function SystemCard({ system, propertyId }: { system: SystemWithCounts; propertyId: string }) {
+  return (
+    <Link
+      to="/properties/$propertyId/systems/$systemId"
+      params={{ propertyId, systemId: system.id }}
+      className="block"
+    >
+      <Card className="hover:bg-muted/50 transition-colors">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CategoryIcon icon={system.category?.icon ?? null} className="size-6 text-muted-foreground" />
+              <div>
+                <h3 className="font-medium">{system.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {system.category?.name}
+                  {system.manufacturer && ` · ${system.manufacturer}`}
+                  {system.model && ` ${system.model}`}
+                </p>
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {system._count.components} component{system._count.components !== 1 && 's'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
+interface CreateSystemDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  propertyId: string
+  userId: string | undefined
+  categories: Array<{ id: string; name: string; icon: string | null }>
+  createSystem: ReturnType<typeof useCreateSystem>
+}
+
+function CreateSystemDialog({
+  open,
+  onOpenChange,
+  propertyId,
+  userId,
+  categories,
+  createSystem,
+}: CreateSystemDialogProps) {
+  const [categoryId, setCategoryId] = useState('')
+  const [systemName, setSystemName] = useState('')
+  const [manufacturer, setManufacturer] = useState('')
+  const [model, setModel] = useState('')
+  const [serialNumber, setSerialNumber] = useState('')
+  const [notes, setNotes] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const resetForm = () => {
+    setCategoryId('')
+    setSystemName('')
+    setManufacturer('')
+    setModel('')
+    setSerialNumber('')
+    setNotes('')
+    setErrors({})
+  }
+
+  const handleCreate = async () => {
+    if (!userId) return
+    setErrors({})
+
+    const result = createSystemSchema.safeParse({
+      propertyId,
+      categoryId,
+      name: systemName,
+      manufacturer: manufacturer || undefined,
+      model: model || undefined,
+      serialNumber: serialNumber || undefined,
+      notes: notes || undefined,
+    })
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
+    try {
+      await createSystem.mutateAsync({
+        userId,
+        input: result.data,
+      })
+      toast.success('System created')
+      resetForm()
+      onOpenChange(false)
+    } catch {
+      toast.error('Failed to create system')
+    }
+  }
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm()
+    }
+    onOpenChange(newOpen)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add System</DialogTitle>
+          <DialogDescription>
+            Add a new system to track for this property.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger aria-invalid={!!errors.categoryId}>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span className="flex items-center gap-2">
+                      <CategoryIcon icon={cat.icon} className="size-4" />
+                      {cat.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.categoryId && (
+              <p className="text-sm text-destructive">{errors.categoryId}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="systemName">Name *</Label>
+            <Input
+              id="systemName"
+              value={systemName}
+              onChange={(e) => setSystemName(e.target.value)}
+              placeholder="e.g., Main HVAC Unit"
+              aria-invalid={!!errors.name}
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="manufacturer">Manufacturer</Label>
+              <Input
+                id="manufacturer"
+                value={manufacturer}
+                onChange={(e) => setManufacturer(e.target.value)}
+                placeholder="e.g., Carrier"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="model">Model</Label>
+              <Input
+                id="model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="e.g., 24ACC636"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="serialNumber">Serial Number</Label>
+            <Input
+              id="serialNumber"
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreate} disabled={createSystem.isPending}>
+            {createSystem.isPending ? 'Creating...' : 'Create System'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
