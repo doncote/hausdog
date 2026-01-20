@@ -1,4 +1,4 @@
-.PHONY: dev watch run build css css-watch supabase-start supabase-stop clean test
+.PHONY: dev watch run build css css-watch supabase-start supabase-stop clean test web
 
 # Development with Doppler secrets
 dev:
@@ -39,3 +39,7 @@ test:
 # Clean build artifacts
 clean:
 	rm -rf bin/
+
+# Start TanStack Start web app with Doppler secrets
+web:
+	cd hausdog-web && doppler run -- pnpm dev
