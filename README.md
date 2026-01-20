@@ -4,149 +4,109 @@ Home documentation management app that helps you track your property's systems, 
 
 ## Features
 
-- **Document Upload**: Drag & drop or use camera to capture receipts, manuals, and warranty documents
-- **AI Extraction**: Claude AI automatically extracts key information from uploaded documents
-- **Review Queue**: Review and confirm AI-extracted data before saving
+- **Document Upload**: Drag & drop multiple files to capture receipts, manuals, and warranty documents
+- **AI Extraction**: Gemini AI automatically extracts equipment info, costs, and warranty details
 - **Property Management**: Organize systems by property and category (HVAC, Plumbing, Electrical, etc.)
+- **Components**: Track individual parts and replaceable items within systems
 - **Service History**: Track maintenance and service records
 
 ## Tech Stack
 
-- **Backend**: Go 1.23 with standard library HTTP server
+- **Framework**: TanStack Start (React 19, Vite 7)
+- **Language**: TypeScript
 - **Database**: PostgreSQL via Supabase
+- **ORM**: Prisma 7
 - **Auth**: Supabase Auth with Google OAuth
 - **Storage**: Supabase Storage
-- **AI**: Claude API for document extraction
-- **Frontend**: DaisyUI + Tailwind CSS + Alpine.js + HTMX
-- **Deployment**: Fly.io
+- **AI**: Gemini 2.0 Flash for document extraction
+- **UI**: shadcn/ui + Tailwind CSS v4
+- **State**: TanStack Query
 
 ## Prerequisites
 
-- Go 1.23+
-- Node.js 18+ with pnpm
-- Supabase project
-- Claude API key
-- Fly.io account (for deployment)
+- Bun 1.0+
+- Supabase project (local or cloud)
+- Gemini API key
+- Doppler account (for secrets management)
 
 ## Local Development
 
-### 1. Clone and Install Dependencies
+### 1. Clone and Install
 
 ```bash
 git clone https://github.com/don/hausdog
 cd hausdog
-
-# Install Go dependencies
-go mod download
-
-# Install Node dependencies and build CSS
-pnpm install
-pnpm run build:css
+bun install
 ```
 
 ### 2. Set Up Supabase
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Run the migration in `migrations/001_initial_schema.sql` via the SQL Editor
-3. Enable Google OAuth in Authentication > Providers > Google
-4. Create a storage bucket named `documents` (private, 50MB file size limit)
+```bash
+# Start local Supabase
+supabase start
 
-### 3. Configure Environment
+# Apply migrations
+cd hausdog-web
+bunx prisma db push
+```
+
+### 3. Configure Secrets
 
 This project uses [Doppler](https://doppler.com) for secrets management.
 
 ```bash
-# Install Doppler CLI (macOS)
+# Install Doppler CLI
 brew install dopplerhq/cli/doppler
 
-# Login and set up project
+# Login and set up
 doppler login
-doppler setup  # Select 'web' project, 'dev' config
+doppler setup
 ```
 
-Alternatively, create a `.env.local` file for local development without Doppler.
+Required secrets:
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+- `DATABASE_URL`
+- `GEMINI_API_KEY`
 
-### 4. Run the Server
+### 4. Run Development Server
 
 ```bash
-# Start server with Doppler secrets
 make dev
-
-# Or run without Doppler (uses .env.local)
-make run
-
-# Build CSS
-make css
-
-# Watch CSS for changes (in separate terminal)
-make css-watch
 ```
 
-Visit http://localhost:8080
-
-## Deployment to Fly.io
-
-### 1. Install Fly CLI
-
-```bash
-curl -L https://fly.io/install.sh | sh
-fly auth login
-```
-
-### 2. Create App and Set Secrets
-
-```bash
-fly apps create hausdog
-
-fly secrets set \
-  SUPABASE_URL="https://your-project.supabase.co" \
-  SUPABASE_KEY="your-anon-key" \
-  SUPABASE_SERVICE_KEY="your-service-key" \
-  DATABASE_URL="postgresql://..." \
-  CLAUDE_API_KEY="your-claude-key" \
-  SESSION_SECRET="your-session-secret"
-```
-
-### 3. Deploy
-
-```bash
-fly deploy
-```
+Visit http://localhost:3333
 
 ## Project Structure
 
 ```
 hausdog/
-├── cmd/server/          # Main application entry point
-├── internal/
-│   ├── auth/            # Supabase auth client and middleware
-│   ├── config/          # Environment configuration
-│   ├── database/        # Database models and queries
-│   ├── extraction/      # Claude AI document extraction
-│   ├── handlers/        # HTTP handlers
-│   ├── storage/         # Supabase storage client
-│   └── templates/       # Template rendering
-├── migrations/          # SQL migrations
-├── web/
-│   ├── static/css/      # Tailwind CSS output
-│   └── templates/       # HTML templates
-├── Dockerfile
-├── fly.toml
-└── tailwind.config.js
+├── hausdog-web/           # TanStack Start app
+│   ├── src/
+│   │   ├── routes/        # File-based routing
+│   │   ├── features/      # Feature modules (properties, systems, documents, etc.)
+│   │   ├── components/    # Shared UI components
+│   │   └── lib/           # Utilities, DB client, auth
+│   └── prisma/
+│       └── schema.prisma
+├── packages/
+│   └── domain/            # Shared Zod schemas and types
+├── supabase/
+│   └── migrations/        # Database migrations
+└── Makefile
 ```
 
-## Environment Variables
+## Commands
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Server port (default: 8080) |
-| `LOG_LEVEL` | No | Log level (default: info) |
-| `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_KEY` | Yes | Supabase anon key |
-| `SUPABASE_SERVICE_KEY` | Yes | Supabase service role key |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `CLAUDE_API_KEY` | Yes | Anthropic Claude API key |
-| `SESSION_SECRET` | Yes | Secret for session encryption |
+```bash
+make dev              # Start dev server
+make build            # Production build
+make test             # Run tests
+make lint             # Run linter
+make tc               # TypeScript check
+make supabase-start   # Start local Supabase
+make supabase-stop    # Stop local Supabase
+```
 
 ## License
 

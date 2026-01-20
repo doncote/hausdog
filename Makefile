@@ -1,28 +1,24 @@
-.PHONY: dev watch run build css css-watch supabase-start supabase-stop clean test web tc
+.PHONY: dev build test lint supabase-start supabase-stop clean tc
 
-# Development with Doppler secrets
+# Start development server with Doppler secrets
 dev:
-	doppler run -- go run ./cmd/server
+	cd hausdog-web && doppler run -- bun run dev
 
-# Development with hot reload (requires: go install github.com/air-verse/air@latest)
-watch:
-	doppler run -- air
-
-# Run without Doppler (uses .env.local)
-run:
-	go run ./cmd/server
-
-# Build binary
+# Build for production
 build:
-	go build -o bin/server ./cmd/server
+	cd hausdog-web && bun run build
 
-# Build CSS
-css:
-	pnpm run build:css
+# Run tests
+test:
+	cd hausdog-web && bun run test
 
-# Watch CSS for changes
-css-watch:
-	pnpm run watch:css
+# Run linter
+lint:
+	cd hausdog-web && bun run lint
+
+# Run TypeScript type checking
+tc:
+	cd hausdog-web && bunx tsc --noEmit
 
 # Start local Supabase
 supabase-start:
@@ -32,18 +28,6 @@ supabase-start:
 supabase-stop:
 	supabase stop
 
-# Run tests
-test:
-	go test ./...
-
 # Clean build artifacts
 clean:
-	rm -rf bin/
-
-# Start TanStack Start web app with Doppler secrets
-web:
-	cd hausdog-web && doppler run -- pnpm dev
-
-# Run TypeScript type checking
-tc:
-	cd hausdog-web && bunx tsc --noEmit
+	rm -rf hausdog-web/.output hausdog-web/node_modules/.vite

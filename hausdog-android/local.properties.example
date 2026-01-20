@@ -1,0 +1,9 @@
+# This file should not be checked into version control.
+# Copy this to local.properties and fill in your values.
+
+sdk.dir=/path/to/your/Android/Sdk
+
+# Supabase configuration
+# These are injected into BuildConfig at build time
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key
