@@ -2,10 +2,10 @@ import type { PrismaClient, properties as PrismaProperty } from '@generated/pris
 import type {
   CreatePropertyInput,
   Property,
-  PropertyWithSystems,
+  PropertyWithCounts,
   UpdatePropertyInput,
-} from '../domain/property'
-import type { Logger } from '../logger'
+} from '@hausdog/domain/properties'
+import type { Logger } from '@/lib/logger'
 
 export interface PropertyServiceDeps {
   db: PrismaClient
@@ -30,7 +30,7 @@ export class PropertyService {
     return records.map(this.toDomain)
   }
 
-  async findAllForUserWithCounts(userId: string): Promise<PropertyWithSystems[]> {
+  async findAllForUserWithCounts(userId: string): Promise<PropertyWithCounts[]> {
     this.logger.debug('Finding all properties with counts for user', { userId })
     const records = await this.db.properties.findMany({
       where: { user_id: userId },
@@ -92,7 +92,7 @@ export class PropertyService {
       id: record.id,
       userId: record.user_id,
       name: record.name,
-      address: record.address ?? undefined,
+      address: record.address,
       createdAt: record.created_at,
       updatedAt: record.updated_at,
     }

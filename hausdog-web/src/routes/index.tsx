@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouteContext } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useProperties } from '@/lib/queries/properties'
+import { useProperties } from '@/features/properties'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 

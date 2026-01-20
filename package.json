@@ -2,6 +2,7 @@
   "name": "hausdog",
   "version": "0.1.0",
   "private": true,
+  "workspaces": ["packages/*", "hausdog-web"],
   "scripts": {
     "build:css": "tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --minify",
     "watch:css": "tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --watch"
