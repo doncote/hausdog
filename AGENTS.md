@@ -23,21 +23,24 @@ Home documentation management app for tracking property systems, appliances, and
 hausdog-web/
 ├── src/
 │   ├── routes/           # TanStack Start file-based routes
+│   ├── features/         # Feature modules
+│   │   ├── properties/   # service, api, queries, mutations
+│   │   ├── systems/
+│   │   ├── components/
+│   │   ├── documents/
+│   │   └── categories/
 │   ├── components/
-│   │   ├── ui/           # shadcn/ui primitives
-│   │   └── ...           # Feature components
-│   ├── lib/
-│   │   ├── db/           # Prisma client
-│   │   ├── domain/       # Zod schemas + types
-│   │   ├── services/     # Business logic
-│   │   ├── queries/      # TanStack Query + server functions
-│   │   ├── supabase.ts   # Supabase client setup
-│   │   └── auth.ts       # Auth helpers
-│   └── styles/           # Tailwind globals
-├── generated/prisma/     # Prisma generated client
+│   │   └── ui/           # shadcn/ui primitives
+│   └── lib/
+│       ├── db/           # Prisma client
+│       ├── supabase.ts   # Supabase client setup
+│       └── auth.ts       # Auth helpers
 ├── prisma/
 │   └── schema.prisma     # Database schema
-└── supabase/             # Supabase config + migrations
+packages/
+└── domain/               # Shared Zod schemas + types
+supabase/
+└── migrations/           # Database migrations
 ```
 
 ## Key Patterns
@@ -94,7 +97,7 @@ cd hausdog-web && doppler run -- bun run dev
 Managed via Doppler:
 - `SUPABASE_URL`, `SUPABASE_KEY`
 - `DATABASE_URL`
-- `CLAUDE_API_KEY` (for document extraction)
+- `GEMINI_API_KEY` (for document extraction)
 
 ## Database Schema
 
