@@ -12,6 +12,7 @@
     "format": "biome format --write src"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@epegzz/winston-dev-console": "^1.3.4",
     "@hausdog/domain": "workspace:*",
     "@prisma/adapter-pg": "^7.2.0",
@@ -31,6 +32,7 @@
     "@tanstack/react-router-ssr-query": "^1.131.7",
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
+    "@types/uuid": "^11.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
@@ -43,6 +45,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
+    "uuid": "^13.0.0",
     "vite-tsconfig-paths": "^6.0.2",
     "winston": "^3.19.0",
     "zod": "^4.3.5"

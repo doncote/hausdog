@@ -30,6 +30,13 @@ import { useProperty } from '@/features/properties'
 import { useCategories } from '@/features/categories'
 import { useComponentsForSystem, useCreateComponent, type Component } from '@/features/components'
 import { createComponentSchema } from '@hausdog/domain/components'
+import {
+  useDocumentsForSystem,
+  useUploadDocument,
+  useExtractDocument,
+  type Document,
+} from '@/features/documents'
+import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/properties/$propertyId/systems/$systemId')({
   beforeLoad: ({ context }) => {
@@ -56,8 +63,12 @@ function SystemDetailPage() {
   const deleteSystem = useDeleteSystem()
   const { data: components, isPending: componentsPending } = useComponentsForSystem(systemId, user?.id)
   const createComponentMutation = useCreateComponent()
+  const { data: documents, isPending: documentsPending } = useDocumentsForSystem(systemId, user?.id)
+  const uploadDocument = useUploadDocument()
+  const extractDocument = useExtractDocument()
 
   const [isEditing, setIsEditing] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [showCreateComponentDialog, setShowCreateComponentDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [categoryId, setCategoryId] = useState('')
@@ -385,6 +396,83 @@ function SystemDetailPage() {
         )}
       </div>
 
+      {/* Documents Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Documents</h2>
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*,application/pdf"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file || !user) return
+
+                setIsUploading(true)
+                try {
+                  // Convert file to base64
+                  const arrayBuffer = await file.arrayBuffer()
+                  const base64 = Buffer.from(arrayBuffer).toString('base64')
+
+                  // Upload document
+                  const doc = await uploadDocument.mutateAsync({
+                    userId: user.id,
+                    filename: file.name,
+                    contentType: file.type,
+                    fileData: base64,
+                    systemId,
+                    propertyId,
+                  })
+
+                  toast.success('Document uploaded, extracting...')
+
+                  // Trigger extraction
+                  await extractDocument.mutateAsync({
+                    documentId: doc.id,
+                    userId: user.id,
+                    systemId,
+                  })
+
+                  toast.success('Document processed!')
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : 'Upload failed')
+                } finally {
+                  setIsUploading(false)
+                  e.target.value = ''
+                }
+              }}
+              disabled={isUploading}
+            />
+            <Button asChild disabled={isUploading}>
+              <span>{isUploading ? 'Uploading...' : 'Upload Document'}</span>
+            </Button>
+          </label>
+        </div>
+
+        {documentsPending ? (
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : documents && documents.length > 0 ? (
+          <div className="space-y-3">
+            {documents.map((doc) => (
+              <DocumentCard key={doc.id} document={doc} />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <h3 className="text-lg font-medium mb-2">No documents yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Upload receipts, manuals, or photos to extract information
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       {/* Create Component Dialog */}
       <CreateComponentDialog
         open={showCreateComponentDialog}
@@ -608,5 +696,55 @@ function CreateComponentDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function DocumentCard({ document }: { document: Document }) {
+  const statusColors: Record<string, string> = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    processing: 'bg-blue-100 text-blue-800',
+    complete: 'bg-green-100 text-green-800',
+    failed: 'bg-red-100 text-red-800',
+  }
+
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium truncate">{document.filename}</h3>
+              <Badge className={statusColors[document.processingStatus] || ''}>
+                {document.processingStatus}
+              </Badge>
+            </div>
+            {document.extractedData && (
+              <div className="mt-1 text-sm text-muted-foreground">
+                {document.extractedData.documentType && (
+                  <span className="capitalize">{document.extractedData.documentType}</span>
+                )}
+                {document.extractedData.equipment?.manufacturer && (
+                  <span> · {document.extractedData.equipment.manufacturer}</span>
+                )}
+                {document.extractedData.equipment?.model && (
+                  <span> {document.extractedData.equipment.model}</span>
+                )}
+              </div>
+            )}
+            {document.extractedData?.financial?.amount && (
+              <div className="mt-1 text-sm">
+                ${document.extractedData.financial.amount.toFixed(2)}
+                {document.extractedData.financial.vendor && (
+                  <span className="text-muted-foreground"> from {document.extractedData.financial.vendor}</span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {new Date(document.createdAt).toLocaleDateString()}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
