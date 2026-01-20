@@ -27,7 +27,7 @@ export class PropertyService {
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
     })
-    return records.map(this.toDomain)
+    return records.map((r) => this.toDomain(r))
   }
 
   async findAllForUserWithCounts(userId: string): Promise<PropertyWithCounts[]> {

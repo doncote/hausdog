@@ -19,9 +19,11 @@ import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.se
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
+import { Route as PropertiesPropertyIdSystemsSystemIdRouteImport } from './routes/properties/$propertyId/systems/$systemId'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
+import { Route as PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRouteImport } from './routes/properties/$propertyId/systems/$systemId/components/$componentId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -73,6 +75,12 @@ const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   path: '/demo/start/ssr/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertiesPropertyIdSystemsSystemIdRoute =
+  PropertiesPropertyIdSystemsSystemIdRouteImport.update({
+    id: '/systems/$systemId',
+    path: '/systems/$systemId',
+    getParentRoute: () => PropertiesPropertyIdRoute,
+  } as any)
 const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
   id: '/demo/start/ssr/spa-mode',
   path: '/demo/start/ssr/spa-mode',
@@ -88,12 +96,18 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute =
+  PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRouteImport.update({
+    id: '/components/$componentId',
+    path: '/components/$componentId',
+    getParentRoute: () => PropertiesPropertyIdSystemsSystemIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/properties/$propertyId': typeof PropertiesPropertyIdRoute
+  '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
   '/properties/': typeof PropertiesIndexRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -102,13 +116,15 @@ export interface FileRoutesByFullPath {
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/properties/$propertyId/systems/$systemId': typeof PropertiesPropertyIdSystemsSystemIdRouteWithChildren
   '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
+  '/properties/$propertyId/systems/$systemId/components/$componentId': typeof PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/properties/$propertyId': typeof PropertiesPropertyIdRoute
+  '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
   '/properties': typeof PropertiesIndexRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -117,14 +133,16 @@ export interface FileRoutesByTo {
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/properties/$propertyId/systems/$systemId': typeof PropertiesPropertyIdSystemsSystemIdRouteWithChildren
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
+  '/properties/$propertyId/systems/$systemId/components/$componentId': typeof PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/properties/$propertyId': typeof PropertiesPropertyIdRoute
+  '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
   '/properties/': typeof PropertiesIndexRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -133,7 +151,9 @@ export interface FileRoutesById {
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/properties/$propertyId/systems/$systemId': typeof PropertiesPropertyIdSystemsSystemIdRouteWithChildren
   '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
+  '/properties/$propertyId/systems/$systemId/components/$componentId': typeof PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,7 +170,9 @@ export interface FileRouteTypes {
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/properties/$propertyId/systems/$systemId'
     | '/demo/start/ssr/'
+    | '/properties/$propertyId/systems/$systemId/components/$componentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,7 +187,9 @@ export interface FileRouteTypes {
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/properties/$propertyId/systems/$systemId'
     | '/demo/start/ssr'
+    | '/properties/$propertyId/systems/$systemId/components/$componentId'
   id:
     | '__root__'
     | '/'
@@ -180,14 +204,16 @@ export interface FileRouteTypes {
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/properties/$propertyId/systems/$systemId'
     | '/demo/start/ssr/'
+    | '/properties/$propertyId/systems/$systemId/components/$componentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  PropertiesPropertyIdRoute: typeof PropertiesPropertyIdRoute
+  PropertiesPropertyIdRoute: typeof PropertiesPropertyIdRouteWithChildren
   PropertiesNewRoute: typeof PropertiesNewRoute
   PropertiesIndexRoute: typeof PropertiesIndexRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
@@ -271,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/properties/$propertyId/systems/$systemId': {
+      id: '/properties/$propertyId/systems/$systemId'
+      path: '/systems/$systemId'
+      fullPath: '/properties/$propertyId/systems/$systemId'
+      preLoaderRoute: typeof PropertiesPropertyIdSystemsSystemIdRouteImport
+      parentRoute: typeof PropertiesPropertyIdRoute
+    }
     '/demo/start/ssr/spa-mode': {
       id: '/demo/start/ssr/spa-mode'
       path: '/demo/start/ssr/spa-mode'
@@ -292,14 +325,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/properties/$propertyId/systems/$systemId/components/$componentId': {
+      id: '/properties/$propertyId/systems/$systemId/components/$componentId'
+      path: '/components/$componentId'
+      fullPath: '/properties/$propertyId/systems/$systemId/components/$componentId'
+      preLoaderRoute: typeof PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRouteImport
+      parentRoute: typeof PropertiesPropertyIdSystemsSystemIdRoute
+    }
   }
 }
+
+interface PropertiesPropertyIdSystemsSystemIdRouteChildren {
+  PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute: typeof PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute
+}
+
+const PropertiesPropertyIdSystemsSystemIdRouteChildren: PropertiesPropertyIdSystemsSystemIdRouteChildren =
+  {
+    PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute:
+      PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute,
+  }
+
+const PropertiesPropertyIdSystemsSystemIdRouteWithChildren =
+  PropertiesPropertyIdSystemsSystemIdRoute._addFileChildren(
+    PropertiesPropertyIdSystemsSystemIdRouteChildren,
+  )
+
+interface PropertiesPropertyIdRouteChildren {
+  PropertiesPropertyIdSystemsSystemIdRoute: typeof PropertiesPropertyIdSystemsSystemIdRouteWithChildren
+}
+
+const PropertiesPropertyIdRouteChildren: PropertiesPropertyIdRouteChildren = {
+  PropertiesPropertyIdSystemsSystemIdRoute:
+    PropertiesPropertyIdSystemsSystemIdRouteWithChildren,
+}
+
+const PropertiesPropertyIdRouteWithChildren =
+  PropertiesPropertyIdRoute._addFileChildren(PropertiesPropertyIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  PropertiesPropertyIdRoute: PropertiesPropertyIdRoute,
+  PropertiesPropertyIdRoute: PropertiesPropertyIdRouteWithChildren,
   PropertiesNewRoute: PropertiesNewRoute,
   PropertiesIndexRoute: PropertiesIndexRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
