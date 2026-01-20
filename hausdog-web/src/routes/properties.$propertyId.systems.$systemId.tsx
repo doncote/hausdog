@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouteContext, Outlet, useMatch } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,12 @@ function SystemDetailPage() {
   const { propertyId, systemId } = Route.useParams()
   const { user } = useRouteContext({ from: '/properties/$propertyId/systems/$systemId' })
   const navigate = useNavigate()
+
+  // Check if we're on a child route (component detail)
+  const componentMatch = useMatch({ from: '/properties/$propertyId/systems/$systemId/components/$componentId', shouldThrow: false })
+  if (componentMatch) {
+    return <Outlet />
+  }
 
   const { data: property } = useProperty(propertyId, user?.id)
   const { data: system, isPending, error } = useSystem(systemId, user?.id)
