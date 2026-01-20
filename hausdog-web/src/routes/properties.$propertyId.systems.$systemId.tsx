@@ -34,9 +34,60 @@ import {
   useDocumentsForSystem,
   useUploadDocument,
   useExtractDocument,
+  useDeleteDocument,
   type Document,
 } from '@/features/documents'
 import { Badge } from '@/components/ui/badge'
+import {
+  ArrowLeft,
+  BookOpen,
+  ChevronRight,
+  Receipt,
+  FileText,
+  Shield,
+  FileCheck,
+  ClipboardCheck,
+  Wrench,
+  Camera,
+  File,
+  Box,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+function DocTypeIcon({ type }: { type?: string }) {
+  const iconClass = 'size-5 text-muted-foreground'
+  switch (type) {
+    case 'manual':
+      return <BookOpen className={iconClass} />
+    case 'receipt':
+      return <Receipt className={iconClass} />
+    case 'invoice':
+      return <FileText className={iconClass} />
+    case 'warranty':
+      return <Shield className={iconClass} />
+    case 'permit':
+      return <FileCheck className={iconClass} />
+    case 'inspection':
+      return <ClipboardCheck className={iconClass} />
+    case 'service_record':
+      return <Wrench className={iconClass} />
+    case 'photo':
+      return <Camera className={iconClass} />
+    default:
+      return <File className={iconClass} />
+  }
+}
 
 export const Route = createFileRoute('/properties/$propertyId/systems/$systemId')({
   beforeLoad: ({ context }) => {
@@ -52,10 +103,8 @@ function SystemDetailPage() {
 
   // Check if we're on a child route (component detail)
   const componentMatch = useMatch({ from: '/properties/$propertyId/systems/$systemId/components/$componentId', shouldThrow: false })
-  if (componentMatch) {
-    return <Outlet />
-  }
 
+  // All hooks must be called before any conditional returns
   const { data: property } = useProperty(propertyId, user?.id)
   const { data: system, isPending, error } = useSystem(systemId, user?.id)
   const { data: categories } = useCategories()
@@ -66,6 +115,7 @@ function SystemDetailPage() {
   const { data: documents, isPending: documentsPending } = useDocumentsForSystem(systemId, user?.id)
   const uploadDocument = useUploadDocument()
   const extractDocument = useExtractDocument()
+  const deleteDocumentMutation = useDeleteDocument()
 
   const [isEditing, setIsEditing] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -90,6 +140,11 @@ function SystemDetailPage() {
       setNotes(system.notes ?? '')
     }
   }, [system])
+
+  // Now safe to do conditional return after all hooks
+  if (componentMatch) {
+    return <Outlet />
+  }
 
   const handleSave = async () => {
     setErrors({})
@@ -159,90 +214,142 @@ function SystemDetailPage() {
 
   if (isPending) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <Skeleton className="h-4 w-64 mb-6" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="h-5 w-48 bg-muted animate-pulse rounded mb-8" />
+          <div className="rounded-xl border bg-card p-6 mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-12 w-12 bg-muted animate-pulse rounded-lg" />
+              <div>
+                <div className="h-6 w-40 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (error || !system) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive">System not found</p>
-            <Link to="/properties/$propertyId" params={{ propertyId }} className="mt-4 inline-block">
-              <Button variant="outline">Back to Property</Button>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-8 text-center">
+            <p className="text-destructive font-medium mb-4">System not found</p>
+            <Link to="/properties/$propertyId" params={{ propertyId }}>
+              <Button variant="outline" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Property
+              </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link to="/properties" className="text-sm text-muted-foreground hover:text-foreground">
-          Properties
-        </Link>
-        <span className="text-sm text-muted-foreground mx-2">/</span>
-        <Link
-          to="/properties/$propertyId"
-          params={{ propertyId }}
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          {property?.name ?? 'Property'}
-        </Link>
-        <span className="text-sm text-muted-foreground mx-2">/</span>
-        <span className="text-sm">{system.name}</span>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm mb-8">
+          <Link to="/properties" className="text-muted-foreground hover:text-foreground transition-colors">
+            Properties
+          </Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <Link
+            to="/properties/$propertyId"
+            params={{ propertyId }}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {property?.name ?? 'Property'}
+          </Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">{system.name}</span>
+        </nav>
 
-      {/* System Details */}
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <CategoryIcon icon={category?.icon} className="size-8 text-muted-foreground" />
-              <div>
-                <CardTitle>{isEditing ? 'Edit System' : system.name}</CardTitle>
-                {!isEditing && (
-                  <CardDescription>
+        {/* System Header */}
+        <div className="rounded-xl border bg-card p-6 mb-8">
+          {isEditing ? (
+            <EditSystemForm />
+          ) : (
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-secondary p-3">
+                  <CategoryIcon icon={category?.icon} className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">{system.name}</h1>
+                  <p className="text-muted-foreground mt-1">
                     {category?.name}
                     {system.manufacturer && ` · ${system.manufacturer}`}
                     {system.model && ` ${system.model}`}
-                  </CardDescription>
-                )}
+                  </p>
+                </div>
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            {!isEditing && (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  Edit
-                </Button>
-                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-                  Delete
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardHeader>
+          )}
+        </div>
 
-        {isEditing ? (
-          <CardContent>
+        {/* System Details when not editing */}
+        {!isEditing && (system.serialNumber || system.installDate || system.warrantyExpires || system.notes) && (
+          <div className="rounded-xl border bg-card p-6 mb-8">
+            <h2 className="text-sm font-medium text-muted-foreground mb-4">Details</h2>
+            <dl className="grid gap-4 sm:grid-cols-2">
+              {system.serialNumber && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Serial Number</dt>
+                  <dd className="mt-1 font-medium">{system.serialNumber}</dd>
+                </div>
+              )}
+              {system.installDate && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Install Date</dt>
+                  <dd className="mt-1 font-medium">{new Date(system.installDate).toLocaleDateString()}</dd>
+                </div>
+              )}
+              {system.warrantyExpires && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Warranty Expires</dt>
+                  <dd className="mt-1 font-medium">{new Date(system.warrantyExpires).toLocaleDateString()}</dd>
+                </div>
+              )}
+              {system.notes && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm text-muted-foreground">Notes</dt>
+                  <dd className="mt-1 whitespace-pre-wrap">{system.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
+
+        {/* Edit Form - extracted to keep render function cleaner */}
+        {isEditing && (
+          <div className="rounded-xl border bg-card p-6 mb-8">
+            <h2 className="text-lg font-semibold mb-6">Edit System</h2>
             <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
@@ -259,230 +366,243 @@ function SystemDetailPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.categoryId && (
-                  <p className="text-sm text-destructive">{errors.categoryId}</p>
-                )}
+                {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  aria-invalid={!!errors.name}
-                />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!errors.name} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Input
-                    id="manufacturer"
-                    value={manufacturer}
-                    onChange={(e) => setManufacturer(e.target.value)}
-                  />
+                  <Input id="manufacturer" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="model">Model</Label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                  />
+                  <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="serialNumber">Serial Number</Label>
-                <Input
-                  id="serialNumber"
-                  value={serialNumber}
-                  onChange={(e) => setSerialNumber(e.target.value)}
-                />
+                <Input id="serialNumber" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                />
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
               </div>
 
-              <div className="flex gap-4">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
                 <Button onClick={handleSave} disabled={updateSystem.isPending}>
                   {updateSystem.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        ) : (
-          <CardContent>
-            <dl className="space-y-4">
-              {system.serialNumber && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Serial Number</dt>
-                  <dd className="mt-1">{system.serialNumber}</dd>
-                </div>
-              )}
-              {system.installDate && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Install Date</dt>
-                  <dd className="mt-1">{new Date(system.installDate).toLocaleDateString()}</dd>
-                </div>
-              )}
-              {system.warrantyExpires && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Warranty Expires</dt>
-                  <dd className="mt-1">{new Date(system.warrantyExpires).toLocaleDateString()}</dd>
-                </div>
-              )}
-              {system.notes && (
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Notes</dt>
-                  <dd className="mt-1 whitespace-pre-wrap">{system.notes}</dd>
-                </div>
-              )}
-              {!system.serialNumber && !system.installDate && !system.warrantyExpires && !system.notes && (
-                <p className="text-muted-foreground">No additional details.</p>
-              )}
-            </dl>
-          </CardContent>
+          </div>
         )}
-      </Card>
 
-      {/* Components Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Components</h2>
-          <Button onClick={() => setShowCreateComponentDialog(true)}>Add Component</Button>
+        {/* Components Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold">Components</h2>
+              <p className="text-sm text-muted-foreground">Individual parts and replaceable items</p>
+            </div>
+            <Button onClick={() => setShowCreateComponentDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Component
+            </Button>
+          </div>
+
+          {componentsPending ? (
+            <div className="space-y-3">
+              <div className="h-16 w-full bg-muted animate-pulse rounded-xl" />
+              <div className="h-16 w-full bg-muted animate-pulse rounded-xl" />
+            </div>
+          ) : components && components.length > 0 ? (
+            <div className="space-y-3">
+              {components.map((component) => (
+                <ComponentCard
+                  key={component.id}
+                  component={component}
+                  propertyId={propertyId}
+                  systemId={systemId}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+              <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+                <Box className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No components yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                Add components like filters, motors, or parts to track
+              </p>
+              <Button onClick={() => setShowCreateComponentDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Your First Component
+              </Button>
+            </div>
+          )}
         </div>
 
-        {componentsPending ? (
-          <div className="space-y-3">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+        {/* Documents Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold">Documents</h2>
+              <p className="text-sm text-muted-foreground">Receipts, manuals, warranties, and photos</p>
+            </div>
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*,application/pdf"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file || !user) return
+
+                  setIsUploading(true)
+                  try {
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader()
+                      reader.onload = () => {
+                        const result = reader.result as string
+                        const base64Data = result.split(',')[1]
+                        resolve(base64Data)
+                      }
+                      reader.onerror = reject
+                      reader.readAsDataURL(file)
+                    })
+
+                    const doc = await uploadDocument.mutateAsync({
+                      userId: user.id,
+                      filename: file.name,
+                      contentType: file.type,
+                      fileData: base64,
+                      systemId,
+                      propertyId,
+                    })
+
+                    toast.success('Document uploaded, extracting...')
+
+                    await extractDocument.mutateAsync({
+                      documentId: doc.id,
+                      userId: user.id,
+                      systemId,
+                    })
+
+                    toast.success('Document processed!')
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : 'Upload failed')
+                  } finally {
+                    setIsUploading(false)
+                    e.target.value = ''
+                  }
+                }}
+                disabled={isUploading}
+              />
+              <Button asChild disabled={isUploading} className="gap-2">
+                <span>
+                  <Upload className="h-4 w-4" />
+                  {isUploading ? 'Uploading...' : 'Upload Document'}
+                </span>
+              </Button>
+            </label>
           </div>
-        ) : components && components.length > 0 ? (
+
+          {documentsPending ? (
+            <div className="space-y-3">
+              <div className="h-20 w-full bg-muted animate-pulse rounded-xl" />
+              <div className="h-20 w-full bg-muted animate-pulse rounded-xl" />
+            </div>
+          ) : documents && documents.length > 0 ? (
           <div className="space-y-3">
-            {components.map((component) => (
-              <ComponentCard
-                key={component.id}
-                component={component}
-                propertyId={propertyId}
+            {documents.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                document={doc}
+                userId={user!.id}
                 systemId={systemId}
+                onDelete={async () => {
+                  try {
+                    await deleteDocumentMutation.mutateAsync({
+                      id: doc.id,
+                      userId: user!.id,
+                      systemId,
+                      propertyId,
+                    })
+                    toast.success('Document deleted')
+                  } catch {
+                    toast.error('Failed to delete document')
+                  }
+                }}
+                onCreateComponent={async () => {
+                  if (!doc.extractedData?.equipment) return
+                  const eq = doc.extractedData.equipment
+                  const name = eq.manufacturer && eq.model
+                    ? `${eq.manufacturer} ${eq.model}`
+                    : eq.manufacturer || eq.model || doc.extractedData.documentType || 'Component'
+                  try {
+                    await createComponentMutation.mutateAsync({
+                      userId: user!.id,
+                      input: {
+                        systemId,
+                        name,
+                        manufacturer: eq.manufacturer || undefined,
+                        model: eq.model || undefined,
+                        serialNumber: eq.serialNumber || undefined,
+                      },
+                    })
+                    toast.success(`Created component: ${name}`)
+                  } catch {
+                    toast.error('Failed to create component')
+                  }
+                }}
+                onUpdateSystem={async () => {
+                  if (!doc.extractedData?.equipment) return
+                  const eq = doc.extractedData.equipment
+                  try {
+                    await updateSystem.mutateAsync({
+                      id: systemId,
+                      userId: user!.id,
+                      propertyId,
+                      input: {
+                        categoryId: system!.categoryId,
+                        name: system!.name,
+                        manufacturer: eq.manufacturer || system!.manufacturer || undefined,
+                        model: eq.model || system!.model || undefined,
+                        serialNumber: eq.serialNumber || system!.serialNumber || undefined,
+                      },
+                    })
+                    toast.success('System updated with document data')
+                  } catch {
+                    toast.error('Failed to update system')
+                  }
+                }}
               />
             ))}
           </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <h3 className="text-lg font-medium mb-2">No components yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Add components like filters, motors, or parts to track
+          ) : (
+            <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+              <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                Upload receipts, manuals, or photos to extract information automatically
               </p>
-              <Button variant="outline" onClick={() => setShowCreateComponentDialog(true)}>
-                Add Your First Component
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Documents Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Documents</h2>
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*,application/pdf"
-              onChange={async (e) => {
-                const file = e.target.files?.[0]
-                if (!file || !user) return
-
-                setIsUploading(true)
-                try {
-                  // Convert file to base64 using FileReader (browser-compatible)
-                  const base64 = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    reader.onload = () => {
-                      const result = reader.result as string
-                      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
-                      const base64Data = result.split(',')[1]
-                      resolve(base64Data)
-                    }
-                    reader.onerror = reject
-                    reader.readAsDataURL(file)
-                  })
-
-                  // Upload document
-                  const doc = await uploadDocument.mutateAsync({
-                    userId: user.id,
-                    filename: file.name,
-                    contentType: file.type,
-                    fileData: base64,
-                    systemId,
-                    propertyId,
-                  })
-
-                  toast.success('Document uploaded, extracting...')
-
-                  // Trigger extraction
-                  await extractDocument.mutateAsync({
-                    documentId: doc.id,
-                    userId: user.id,
-                    systemId,
-                  })
-
-                  toast.success('Document processed!')
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : 'Upload failed')
-                } finally {
-                  setIsUploading(false)
-                  e.target.value = ''
-                }
-              }}
-              disabled={isUploading}
-            />
-            <Button asChild disabled={isUploading}>
-              <span>{isUploading ? 'Uploading...' : 'Upload Document'}</span>
-            </Button>
-          </label>
+            </div>
+          )}
         </div>
 
-        {documentsPending ? (
-          <div className="space-y-3">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ) : documents && documents.length > 0 ? (
-          <div className="space-y-3">
-            {documents.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <h3 className="text-lg font-medium mb-2">No documents yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Upload receipts, manuals, or photos to extract information
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Create Component Dialog */}
+        {/* Create Component Dialog */}
       <CreateComponentDialog
         open={showCreateComponentDialog}
         onOpenChange={setShowCreateComponentDialog}
@@ -514,9 +634,14 @@ function SystemDetailPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+        </Dialog>
+      </div>
     </div>
   )
+}
+
+function EditSystemForm() {
+  return null // Form is rendered inline above
 }
 
 function ComponentCard({
@@ -532,13 +657,16 @@ function ComponentCard({
     <Link
       to="/properties/$propertyId/systems/$systemId/components/$componentId"
       params={{ propertyId, systemId, componentId: component.id }}
-      className="block"
+      className="group block"
     >
-      <Card className="hover:bg-muted/50 transition-colors">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
+      <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-secondary p-2.5">
+              <Box className="h-5 w-5 text-muted-foreground" />
+            </div>
             <div>
-              <h3 className="font-medium">{component.name}</h3>
+              <h3 className="font-medium group-hover:text-primary transition-colors">{component.name}</h3>
               <p className="text-sm text-muted-foreground">
                 {component.manufacturer && component.manufacturer}
                 {component.manufacturer && component.model && ' '}
@@ -546,14 +674,15 @@ function ComponentCard({
                 {!component.manufacturer && !component.model && 'No details'}
               </p>
             </div>
-            {component.warrantyExpires && (
-              <div className="text-sm text-muted-foreground">
-                Warranty: {new Date(component.warrantyExpires).toLocaleDateString()}
-              </div>
-            )}
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {component.warrantyExpires && (
+              <span>Warranty: {new Date(component.warrantyExpires).toLocaleDateString()}</span>
+            )}
+            <ChevronRight className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
     </Link>
   )
 }
@@ -708,7 +837,35 @@ function CreateComponentDialog({
   )
 }
 
-function DocumentCard({ document }: { document: Document }) {
+function DocumentCard({
+  document,
+  userId,
+  systemId,
+  onDelete,
+  onCreateComponent,
+  onUpdateSystem,
+}: {
+  document: Document
+  userId: string
+  systemId: string
+  onDelete: () => void
+  onCreateComponent: () => void
+  onUpdateSystem: () => void
+}) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
+  const hasEquipmentData = document.extractedData?.equipment?.manufacturer || document.extractedData?.equipment?.model
+
+  useEffect(() => {
+    // Get signed URL for thumbnail
+    if (document.contentType.startsWith('image/')) {
+      import('@/features/documents').then(({ getSignedUrl }) => {
+        getSignedUrl({ data: { storagePath: document.storagePath, userId } })
+          .then((result) => setThumbnailUrl(result.signedUrl))
+          .catch(() => {}) // Ignore errors
+      })
+    }
+  }, [document.storagePath, document.contentType, userId])
+
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
     processing: 'bg-blue-100 text-blue-800',
@@ -719,38 +876,100 @@ function DocumentCard({ document }: { document: Document }) {
   return (
     <Card>
       <CardContent className="py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium truncate">{document.filename}</h3>
-              <Badge className={statusColors[document.processingStatus] || ''}>
-                {document.processingStatus}
-              </Badge>
-            </div>
-            {document.extractedData && (
-              <div className="mt-1 text-sm text-muted-foreground">
-                {document.extractedData.documentType && (
-                  <span className="capitalize">{document.extractedData.documentType}</span>
-                )}
-                {document.extractedData.equipment?.manufacturer && (
-                  <span> · {document.extractedData.equipment.manufacturer}</span>
-                )}
-                {document.extractedData.equipment?.model && (
-                  <span> {document.extractedData.equipment.model}</span>
-                )}
-              </div>
-            )}
-            {document.extractedData?.financial?.amount && (
-              <div className="mt-1 text-sm">
-                ${document.extractedData.financial.amount.toFixed(2)}
-                {document.extractedData.financial.vendor && (
-                  <span className="text-muted-foreground"> from {document.extractedData.financial.vendor}</span>
-                )}
+        <div className="flex items-center gap-4">
+          {/* Thumbnail */}
+          <div className="flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-muted">
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={document.filename}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                {document.contentType.startsWith('image/') ? '...' : 'PDF'}
               </div>
             )}
           </div>
-          <div className="text-sm text-muted-foreground">
-            {new Date(document.createdAt).toLocaleDateString()}
+
+          <div className="flex-1 min-w-0">
+            {document.extractedData ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <DocTypeIcon type={document.extractedData.documentType} />
+                  <h3 className="font-medium">
+                    {document.extractedData.equipment?.manufacturer && document.extractedData.equipment?.model
+                      ? `${document.extractedData.equipment.manufacturer} ${document.extractedData.equipment.model}`
+                      : document.extractedData.equipment?.manufacturer || document.extractedData.documentType || 'Document'}
+                  </h3>
+                  {document.processingStatus !== 'complete' && (
+                    <Badge className={statusColors[document.processingStatus] || ''}>
+                      {document.processingStatus}
+                    </Badge>
+                  )}
+                </div>
+                {document.extractedData.financial?.amount && (
+                  <div className="mt-1 text-sm">
+                    ${document.extractedData.financial.amount.toFixed(2)}
+                    {document.extractedData.financial.vendor && (
+                      <span className="text-muted-foreground"> from {document.extractedData.financial.vendor}</span>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1 truncate">{document.filename}</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium truncate">{document.filename}</h3>
+                  <Badge className={statusColors[document.processingStatus] || ''}>
+                    {document.processingStatus}
+                  </Badge>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {hasEquipmentData && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onCreateComponent()
+                  }}
+                >
+                  + Component
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onUpdateSystem()
+                  }}
+                >
+                  Update System
+                </Button>
+              </>
+            )}
+            <span className="text-sm text-muted-foreground">
+              {new Date(document.createdAt).toLocaleDateString()}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.preventDefault()
+                if (confirm('Delete this document?')) {
+                  onDelete()
+                }
+              }}
+            >
+              Delete
+            </Button>
           </div>
         </div>
       </CardContent>

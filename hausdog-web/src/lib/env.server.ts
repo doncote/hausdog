@@ -18,6 +18,7 @@ const serverEnvSchema = z.object({
 
   // AI
   CLAUDE_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 
   // Node
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

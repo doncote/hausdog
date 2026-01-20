@@ -1,4 +1,4 @@
-.PHONY: dev watch run build css css-watch supabase-start supabase-stop clean test web
+.PHONY: dev watch run build css css-watch supabase-start supabase-stop clean test web tc
 
 # Development with Doppler secrets
 dev:
@@ -43,3 +43,7 @@ clean:
 # Start TanStack Start web app with Doppler secrets
 web:
 	cd hausdog-web && doppler run -- pnpm dev
+
+# Run TypeScript type checking
+tc:
+	cd hausdog-web && bunx tsc --noEmit
