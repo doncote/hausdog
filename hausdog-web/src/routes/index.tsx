@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouteContext } from '@tanstack/react-router'
+import { Building2, FileText, Layers, Plus, ArrowRight, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProperties } from '@/features/properties'
@@ -80,17 +81,19 @@ function LandingPage() {
 }
 
 function Dashboard({ userId, userName }: { userId: string; userName: string }) {
+  const firstName = userName.split(' ')[0]
+  const greeting = getGreeting()
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, {userName.split(' ')[0]}
-          </h1>
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <header className="mb-10">
+          <p className="text-sm font-medium text-primary mb-1">{greeting}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{firstName}</h1>
           <p className="mt-2 text-muted-foreground">
             Here's an overview of your home documentation.
           </p>
-        </div>
+        </header>
 
         <DashboardContent userId={userId} />
       </div>
@@ -98,19 +101,25 @@ function Dashboard({ userId, userName }: { userId: string; userName: string }) {
   )
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning,'
+  if (hour < 17) return 'Good afternoon,'
+  return 'Good evening,'
+}
+
 function DashboardContent({ userId }: { userId: string }) {
   const { data: properties, isPending, error } = useProperties(userId)
 
   if (isPending) {
     return (
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="grid gap-6 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-              <div className="h-8 w-16 bg-muted animate-pulse rounded mt-2" />
-            </CardHeader>
-          </Card>
+          <div key={i} className="rounded-xl border bg-card p-6">
+            <div className="h-10 w-10 bg-muted animate-pulse rounded-lg mb-4" />
+            <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
+            <div className="h-8 w-12 bg-muted animate-pulse rounded" />
+          </div>
         ))}
       </div>
     )
@@ -118,11 +127,9 @@ function DashboardContent({ userId }: { userId: string }) {
 
   if (error) {
     return (
-      <Card className="border-destructive">
-        <CardContent className="pt-6">
-          <p className="text-destructive">Failed to load dashboard data</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-6">
+        <p className="text-destructive">Failed to load dashboard data</p>
+      </div>
     )
   }
 
@@ -130,63 +137,105 @@ function DashboardContent({ userId }: { userId: string }) {
   const systemCount = properties?.reduce((acc, p) => acc + (p._count?.systems ?? 0), 0) ?? 0
   const recentProperties = properties?.slice(0, 3) ?? []
 
+  const stats = [
+    {
+      label: 'Properties',
+      value: propertyCount,
+      icon: Building2,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+    },
+    {
+      label: 'Systems',
+      value: systemCount,
+      icon: Layers,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-500/10',
+    },
+    {
+      label: 'Documents',
+      value: 0,
+      icon: FileText,
+      color: 'text-amber-600',
+      bg: 'bg-amber-500/10',
+    },
+  ]
+
   return (
-    <>
+    <div className="space-y-8">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <Card>
-          <CardHeader>
-            <CardDescription>Properties</CardDescription>
-            <CardTitle className="text-3xl">{propertyCount}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Systems</CardDescription>
-            <CardTitle className="text-3xl">{systemCount}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Documents</CardDescription>
-            <CardTitle className="text-3xl">0</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="group rounded-xl border bg-card p-6 transition-all hover:shadow-md hover:border-primary/20"
+          >
+            <div className={`inline-flex rounded-lg p-2.5 ${stat.bg} mb-4`}>
+              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+            <p className="text-3xl font-semibold tracking-tight mt-1">{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex flex-wrap gap-3">
         <Link to="/properties/new">
-          <Button>Add Property</Button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Property
+          </Button>
         </Link>
         <Link to="/properties">
-          <Button variant="outline">View All Properties</Button>
+          <Button variant="outline" className="gap-2">
+            View All Properties
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </Link>
       </div>
 
       {/* Recent Properties */}
       {recentProperties.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">Recent Properties</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Your Properties</h2>
+            <Link
+              to="/properties"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {recentProperties.map((property) => (
               <Link
                 key={property.id}
                 to="/properties/$propertyId"
                 params={{ propertyId: property.id }}
+                className="group"
               >
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{property.name}</CardTitle>
-                    {property.address && <CardDescription>{property.address}</CardDescription>}
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {property._count?.systems ?? 0} system
-                      {(property._count?.systems ?? 0) !== 1 ? 's' : ''}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-xl border bg-card p-5 transition-all hover:shadow-md hover:border-primary/30">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-lg bg-secondary p-2.5">
+                      <Home className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate group-hover:text-primary transition-colors">
+                        {property.name}
+                      </h3>
+                      {property.address && (
+                        <p className="text-sm text-muted-foreground truncate mt-0.5">
+                          {property.address}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {property._count?.systems ?? 0} system
+                        {(property._count?.systems ?? 0) !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
@@ -195,16 +244,22 @@ function DashboardContent({ userId }: { userId: string }) {
 
       {/* Empty State */}
       {recentProperties.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <h3 className="text-lg font-medium mb-2">No properties yet</h3>
-            <p className="text-muted-foreground mb-4">Get started by adding your first property</p>
-            <Link to="/properties/new">
-              <Button>Add Your First Property</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+            <Building2 className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
+          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+            Add your first property to start tracking your home documentation
+          </p>
+          <Link to="/properties/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Your First Property
+            </Button>
+          </Link>
+        </div>
       )}
-    </>
+    </div>
   )
 }

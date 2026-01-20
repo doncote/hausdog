@@ -1,11 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
 import { getServerEnv } from '@/lib/env.server'
 import { prisma } from '@/lib/db/client'
 import { logger } from '@/lib/logger'
 import { DocumentService } from './service'
 import type { ExtractedData } from '@hausdog/domain/documents'
+
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
 const SYSTEM_PROMPT = `You are an expert at extracting structured information from home-related documents. Your task is to analyze documents (receipts, invoices, manuals, warranty cards, service records, equipment photos, permits, inspections) and extract relevant information in a structured JSON format.
 
@@ -37,46 +38,54 @@ Categories for home systems:
 const USER_PROMPT = `Please analyze this document and extract all relevant information. Return your response as a JSON object with the following structure:
 
 {
-  "document_type": "receipt|invoice|manual|warranty|permit|inspection|service_record|photo|other",
+  "documentType": "receipt|invoice|manual|warranty|permit|inspection|service_record|photo|other",
   "confidence": 0.95,
-  "title": "Brief descriptive title",
-  "date": "YYYY-MM-DD",
-  "description": "Brief description of what this document is",
   "equipment": {
     "manufacturer": "Brand name",
     "model": "Model number",
-    "serial_number": "Serial number",
+    "serialNumber": "Serial number",
     "capacity": "Size/capacity if applicable"
   },
   "financial": {
     "vendor": "Store or company name",
     "amount": 123.45,
     "currency": "USD",
-    "invoice_number": "Invoice/order number"
+    "invoiceNumber": "Invoice/order number"
   },
   "service": {
-    "service_type": "installation|repair|maintenance|inspection",
+    "serviceType": "installation|repair|maintenance|inspection",
     "provider": "Company name",
-    "work_performed": "Description of work"
+    "workPerformed": "Description of work"
   },
   "warranty": {
-    "warranty_type": "manufacturer|extended|labor",
-    "coverage": "What's covered",
-    "start_date": "YYYY-MM-DD",
-    "end_date": "YYYY-MM-DD",
+    "warrantyType": "manufacturer|extended|labor",
+    "coverageStart": "YYYY-MM-DD",
+    "coverageEnd": "YYYY-MM-DD",
     "provider": "Warranty provider",
-    "policy_number": "Policy/warranty number"
+    "policyNumber": "Policy/warranty number"
   },
-  "suggested_category": "HVAC|Plumbing|Electrical|Appliances|Roofing|Exterior|Interior|Landscaping|Security|Other",
-  "raw_text": "Key text content for searchability",
-  "notes": "Any additional relevant observations"
+  "suggestedCategory": "HVAC|Plumbing|Electrical|Appliances|Roofing|Exterior|Interior|Landscaping|Security|Other",
+  "rawText": "Key text content for searchability"
 }
 
-Only include fields that you can extract from the document. Omit fields that aren't present or can't be determined.`
+Only include fields that you can extract from the document. Omit fields that aren't present or can't be determined. Return ONLY valid JSON, no markdown.`
 
 interface ExtractInput {
   documentId: string
   userId: string
+}
+
+interface GeminiResponse {
+  candidates?: Array<{
+    content: {
+      parts: Array<{ text?: string }>
+    }
+  }>
+  error?: {
+    code: number
+    message: string
+    status: string
+  }
 }
 
 export const extractDocument = createServerFn({ method: 'POST' })
@@ -84,8 +93,8 @@ export const extractDocument = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const env = getServerEnv()
 
-    if (!env.CLAUDE_API_KEY) {
-      throw new Error('CLAUDE_API_KEY not configured')
+    if (!env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured')
     }
 
     const service = new DocumentService({ db: prisma, logger })
@@ -100,11 +109,10 @@ export const extractDocument = createServerFn({ method: 'POST' })
     await service.updateStatus(data.documentId, data.userId, 'processing')
 
     try {
-      // Get signed URL for the file
+      // Get file from Supabase Storage
       const supabaseServiceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY
       const supabase = createClient(env.SUPABASE_URL, supabaseServiceKey)
 
-      // Download the file
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('documents')
         .download(document.storagePath)
@@ -117,50 +125,71 @@ export const extractDocument = createServerFn({ method: 'POST' })
       const arrayBuffer = await fileData.arrayBuffer()
       const base64Data = Buffer.from(arrayBuffer).toString('base64')
 
-      // Determine media type for Claude
-      let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' = 'image/jpeg'
-      if (document.contentType === 'image/png') mediaType = 'image/png'
-      else if (document.contentType === 'image/gif') mediaType = 'image/gif'
-      else if (document.contentType === 'image/webp') mediaType = 'image/webp'
+      // Determine MIME type for Gemini
+      let mimeType = document.contentType
+      if (mimeType === 'image/heic') {
+        mimeType = 'image/jpeg' // Gemini doesn't support HEIC directly
+      }
 
-      logger.info('Calling Claude API for extraction', { documentId: document.id })
+      logger.info('Calling Gemini API for extraction', { documentId: document.id })
 
-      // Call Claude API
-      const anthropic = new Anthropic({ apiKey: env.CLAUDE_API_KEY })
-
-      const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: mediaType,
-                  data: base64Data,
-                },
-              },
-              {
-                type: 'text',
-                text: USER_PROMPT,
-              },
-            ],
+      // Call Gemini API
+      const response = await fetch(`${GEMINI_API_URL}?key=${env.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
           },
-        ],
+          contents: [
+            {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64Data,
+                  },
+                },
+                {
+                  text: USER_PROMPT,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 4096,
+          },
+        }),
       })
 
-      // Extract the text response
-      const textContent = message.content.find((c) => c.type === 'text')
-      if (!textContent || textContent.type !== 'text') {
-        throw new Error('No text response from Claude')
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
+      }
+
+      const geminiResponse: GeminiResponse = await response.json()
+
+      if (geminiResponse.error) {
+        throw new Error(`Gemini API error: ${geminiResponse.error.message}`)
+      }
+
+      if (!geminiResponse.candidates || geminiResponse.candidates.length === 0) {
+        throw new Error('No response from Gemini')
+      }
+
+      // Extract text from response
+      let textResponse = ''
+      for (const part of geminiResponse.candidates[0].content.parts) {
+        if (part.text) {
+          textResponse += part.text
+        }
       }
 
       // Parse JSON from response (handle markdown code blocks)
-      let jsonStr = textContent.text
+      let jsonStr = textResponse
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) {
         jsonStr = jsonMatch[1]
