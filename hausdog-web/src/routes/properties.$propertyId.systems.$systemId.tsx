@@ -411,9 +411,18 @@ function SystemDetailPage() {
 
                 setIsUploading(true)
                 try {
-                  // Convert file to base64
-                  const arrayBuffer = await file.arrayBuffer()
-                  const base64 = Buffer.from(arrayBuffer).toString('base64')
+                  // Convert file to base64 using FileReader (browser-compatible)
+                  const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                      const result = reader.result as string
+                      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+                      const base64Data = result.split(',')[1]
+                      resolve(base64Data)
+                    }
+                    reader.onerror = reject
+                    reader.readAsDataURL(file)
+                  })
 
                   // Upload document
                   const doc = await uploadDocument.mutateAsync({
