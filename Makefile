@@ -1,4 +1,4 @@
-.PHONY: dev build preview test lint tc db-pull db-generate db-push supabase-start supabase-stop clean
+.PHONY: dev build preview test lint tc db-pull db-generate db-push supabase-start supabase-stop clean trigger doppler
 
 # Start development server with Doppler secrets
 dev:
@@ -47,3 +47,11 @@ supabase-stop:
 # Clean build artifacts
 clean:
 	rm -rf apps/web/.output apps/web/node_modules/.vite
+
+# Run Trigger.dev dev server
+trigger:
+	cd apps/web && doppler secrets download --no-file --format env > .env.local && npx trigger.dev@latest dev --env-file .env.local
+
+# Setup Doppler non-interactively
+doppler:
+	doppler setup --project web --config dev --no-interactive

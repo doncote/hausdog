@@ -20,6 +20,13 @@ export const fetchRootItemsForProperty = createServerFn({ method: 'GET' })
     return service.findRootItemsForProperty(data.propertyId)
   })
 
+export const fetchItemsForSpace = createServerFn({ method: 'GET' })
+  .inputValidator((d: { spaceId: string }) => d)
+  .handler(async ({ data }) => {
+    const service = getItemService()
+    return service.findAllForSpace(data.spaceId)
+  })
+
 export const fetchItem = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {

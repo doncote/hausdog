@@ -15,11 +15,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCaptureRouteImport } from './routes/_authenticated/capture'
+import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
 import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties/index'
+import { Route as AuthenticatedSpacesSpaceIdRouteImport } from './routes/_authenticated/spaces/$spaceId'
 import { Route as AuthenticatedPropertiesNewRouteImport } from './routes/_authenticated/properties/new'
 import { Route as AuthenticatedPropertiesPropertyIdRouteImport } from './routes/_authenticated/properties/$propertyId'
 import { Route as AuthenticatedItemsNewRouteImport } from './routes/_authenticated/items/new'
@@ -58,6 +61,11 @@ const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
   path: '/review',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDocumentsRoute = AuthenticatedDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
@@ -78,10 +86,22 @@ const AuthenticatedCaptureRoute = AuthenticatedCaptureRouteImport.update({
   path: '/capture',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSpacesIndexRoute =
+  AuthenticatedSpacesIndexRouteImport.update({
+    id: '/spaces/',
+    path: '/spaces/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPropertiesIndexRoute =
   AuthenticatedPropertiesIndexRouteImport.update({
     id: '/properties/',
     path: '/properties/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSpacesSpaceIdRoute =
+  AuthenticatedSpacesSpaceIdRouteImport.update({
+    id: '/spaces/$spaceId',
+    path: '/spaces/$spaceId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPropertiesNewRoute =
@@ -139,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documents': typeof AuthenticatedDocumentsRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -146,7 +167,9 @@ export interface FileRoutesByFullPath {
   '/items/new': typeof AuthenticatedItemsNewRoute
   '/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
+  '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/properties/': typeof AuthenticatedPropertiesIndexRoute
+  '/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
   '/properties/$propertyId/spaces/$spaceId': typeof AuthenticatedPropertiesPropertyIdSpacesSpaceIdRoute
   '/properties/$propertyId/items/': typeof AuthenticatedPropertiesPropertyIdItemsIndexRoute
@@ -159,13 +182,16 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documents': typeof AuthenticatedDocumentsRoute
+  '/inventory': typeof AuthenticatedInventoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/items/$itemId': typeof AuthenticatedItemsItemIdRoute
   '/items/new': typeof AuthenticatedItemsNewRoute
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
+  '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/properties': typeof AuthenticatedPropertiesIndexRoute
+  '/spaces': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdIndexRoute
   '/properties/$propertyId/spaces/$spaceId': typeof AuthenticatedPropertiesPropertyIdSpacesSpaceIdRoute
   '/properties/$propertyId/items': typeof AuthenticatedPropertiesPropertyIdItemsIndexRoute
@@ -180,6 +206,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
+  '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -187,7 +214,9 @@ export interface FileRoutesById {
   '/_authenticated/items/new': typeof AuthenticatedItemsNewRoute
   '/_authenticated/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
   '/_authenticated/properties/new': typeof AuthenticatedPropertiesNewRoute
+  '/_authenticated/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
+  '/_authenticated/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/_authenticated/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
   '/_authenticated/properties/$propertyId/spaces/$spaceId': typeof AuthenticatedPropertiesPropertyIdSpacesSpaceIdRoute
   '/_authenticated/properties/$propertyId/items/': typeof AuthenticatedPropertiesPropertyIdItemsIndexRoute
@@ -202,6 +231,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/dashboard'
     | '/documents'
+    | '/inventory'
     | '/review'
     | '/settings'
     | '/auth/callback'
@@ -209,7 +239,9 @@ export interface FileRouteTypes {
     | '/items/new'
     | '/properties/$propertyId'
     | '/properties/new'
+    | '/spaces/$spaceId'
     | '/properties/'
+    | '/spaces/'
     | '/properties/$propertyId/'
     | '/properties/$propertyId/spaces/$spaceId'
     | '/properties/$propertyId/items/'
@@ -222,13 +254,16 @@ export interface FileRouteTypes {
     | '/chat'
     | '/dashboard'
     | '/documents'
+    | '/inventory'
     | '/review'
     | '/settings'
     | '/auth/callback'
     | '/items/$itemId'
     | '/items/new'
     | '/properties/new'
+    | '/spaces/$spaceId'
     | '/properties'
+    | '/spaces'
     | '/properties/$propertyId'
     | '/properties/$propertyId/spaces/$spaceId'
     | '/properties/$propertyId/items'
@@ -242,6 +277,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
     | '/_authenticated/documents'
+    | '/_authenticated/inventory'
     | '/_authenticated/review'
     | '/_authenticated/settings'
     | '/auth/callback'
@@ -249,7 +285,9 @@ export interface FileRouteTypes {
     | '/_authenticated/items/new'
     | '/_authenticated/properties/$propertyId'
     | '/_authenticated/properties/new'
+    | '/_authenticated/spaces/$spaceId'
     | '/_authenticated/properties/'
+    | '/_authenticated/spaces/'
     | '/_authenticated/properties/$propertyId/'
     | '/_authenticated/properties/$propertyId/spaces/$spaceId'
     | '/_authenticated/properties/$propertyId/items/'
@@ -307,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/documents': {
       id: '/_authenticated/documents'
       path: '/documents'
@@ -335,11 +380,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCaptureRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/spaces/': {
+      id: '/_authenticated/spaces/'
+      path: '/spaces'
+      fullPath: '/spaces/'
+      preLoaderRoute: typeof AuthenticatedSpacesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/properties/': {
       id: '/_authenticated/properties/'
       path: '/properties'
       fullPath: '/properties/'
       preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/spaces/$spaceId': {
+      id: '/_authenticated/spaces/$spaceId'
+      path: '/spaces/$spaceId'
+      fullPath: '/spaces/$spaceId'
+      preLoaderRoute: typeof AuthenticatedSpacesSpaceIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/properties/new': {
@@ -430,13 +489,16 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
+  AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedItemsItemIdRoute: typeof AuthenticatedItemsItemIdRoute
   AuthenticatedItemsNewRoute: typeof AuthenticatedItemsNewRoute
   AuthenticatedPropertiesPropertyIdRoute: typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
   AuthenticatedPropertiesNewRoute: typeof AuthenticatedPropertiesNewRoute
+  AuthenticatedSpacesSpaceIdRoute: typeof AuthenticatedSpacesSpaceIdRoute
   AuthenticatedPropertiesIndexRoute: typeof AuthenticatedPropertiesIndexRoute
+  AuthenticatedSpacesIndexRoute: typeof AuthenticatedSpacesIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -444,6 +506,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
+  AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedItemsItemIdRoute: AuthenticatedItemsItemIdRoute,
@@ -451,7 +514,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPropertiesPropertyIdRoute:
     AuthenticatedPropertiesPropertyIdRouteWithChildren,
   AuthenticatedPropertiesNewRoute: AuthenticatedPropertiesNewRoute,
+  AuthenticatedSpacesSpaceIdRoute: AuthenticatedSpacesSpaceIdRoute,
   AuthenticatedPropertiesIndexRoute: AuthenticatedPropertiesIndexRoute,
+  AuthenticatedSpacesIndexRoute: AuthenticatedSpacesIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

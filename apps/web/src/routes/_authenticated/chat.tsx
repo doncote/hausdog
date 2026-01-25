@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import Markdown from 'react-markdown'
 import {
   ChevronRight,
+  Home,
   Loader2,
   MessageSquare,
   Plus,
@@ -13,13 +15,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -27,12 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useProperties } from '@/features/properties'
+import { useCurrentProperty } from '@/hooks/use-current-property'
 import {
   useConversationsForProperty,
   useConversation,
   useCreateConversation,
-  useCreateMessage,
+  useSendChatMessage,
   useDeleteConversation,
   MessageRole,
   type ConversationWithLastMessage,
@@ -40,7 +35,6 @@ import {
 
 export const Route = createFileRoute('/_authenticated/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
-    propertyId: (search.propertyId as string) || undefined,
     conversationId: (search.conversationId as string) || undefined,
   }),
   component: ChatPage,
@@ -48,14 +42,11 @@ export const Route = createFileRoute('/_authenticated/chat')({
 
 function ChatPage() {
   const { user } = Route.useRouteContext()
-  const { propertyId: initialPropertyId, conversationId: initialConversationId } =
-    Route.useSearch()
+  const { conversationId: initialConversationId } = Route.useSearch()
+  const { currentProperty, isLoaded } = useCurrentProperty()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const { data: properties, isPending: propertiesLoading } = useProperties(user?.id)
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialPropertyId || '')
   const [selectedConversationId, setSelectedConversationId] = useState<string>(
     initialConversationId || '',
   )
@@ -65,13 +56,13 @@ function ChatPage() {
     useState<ConversationWithLastMessage | null>(null)
 
   const { data: conversations, isPending: conversationsLoading } =
-    useConversationsForProperty(selectedPropertyId || undefined)
+    useConversationsForProperty(currentProperty?.id)
 
   const { data: activeConversation, isPending: conversationLoading } =
     useConversation(selectedConversationId || undefined)
 
   const createConversation = useCreateConversation()
-  const createMessage = useCreateMessage()
+  const sendMessage = useSendChatMessage()
   const deleteConversation = useDeleteConversation()
 
   // Scroll to bottom when messages change
@@ -80,12 +71,12 @@ function ChatPage() {
   }, [activeConversation?.messages])
 
   const handleNewConversation = async () => {
-    if (!user || !selectedPropertyId) return
+    if (!user || !currentProperty) return
 
     try {
       const conversation = await createConversation.mutateAsync({
         userId: user.id,
-        input: { propertyId: selectedPropertyId },
+        input: { propertyId: currentProperty.id },
       })
       setSelectedConversationId(conversation.id)
     } catch (error) {
@@ -95,32 +86,17 @@ function ChatPage() {
   }
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !selectedConversationId) return
+    if (!inputMessage.trim() || !selectedConversationId || !currentProperty || !user) return
 
     const messageContent = inputMessage.trim()
     setInputMessage('')
 
     try {
-      // Create user message
-      await createMessage.mutateAsync({
+      await sendMessage.mutateAsync({
         conversationId: selectedConversationId,
-        input: {
-          conversationId: selectedConversationId,
-          role: MessageRole.USER,
-          content: messageContent,
-        },
-      })
-
-      // TODO: In a real implementation, this would call an AI endpoint
-      // For now, create a placeholder assistant response
-      await createMessage.mutateAsync({
-        conversationId: selectedConversationId,
-        input: {
-          conversationId: selectedConversationId,
-          role: MessageRole.ASSISTANT,
-          content:
-            "I'm your home assistant! I can help answer questions about your property, items, and maintenance history. AI responses are not yet implemented, but this is where they would appear.",
-        },
+        propertyId: currentProperty.id,
+        userId: user.id,
+        message: messageContent,
       })
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -155,6 +131,35 @@ function ChatPage() {
     }
   }
 
+  if (!isLoaded) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentProperty) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+            <Home className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No property selected</h3>
+          <p className="text-muted-foreground mb-6">
+            Select a property from the header to start chatting.
+          </p>
+          <Link to="/properties/new">
+            <Button>Add Your First Property</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <nav className="flex items-center gap-2 text-sm mb-8">
@@ -172,7 +177,7 @@ function ChatPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Property Assistant</h1>
           <p className="text-muted-foreground mt-1">
-            Ask questions about your home and get AI-powered answers
+            Ask questions about {currentProperty.name}
           </p>
         </div>
       </div>
@@ -180,37 +185,10 @@ function ChatPage() {
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4">
-          {/* Property Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="property">Property</Label>
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger id="property">
-                <SelectValue placeholder="Select a property" />
-              </SelectTrigger>
-              <SelectContent>
-                {propertiesLoading ? (
-                  <SelectItem value="loading" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : properties && properties.length > 0 ? (
-                  properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    No properties found
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* New Conversation Button */}
           <Button
             onClick={handleNewConversation}
-            disabled={!selectedPropertyId || createConversation.isPending}
+            disabled={createConversation.isPending}
             className="w-full gap-2"
           >
             <Plus className="h-4 w-4" />
@@ -218,56 +196,54 @@ function ChatPage() {
           </Button>
 
           {/* Conversations List */}
-          {selectedPropertyId && (
-            <div className="space-y-2">
-              <Label>Conversations</Label>
-              {conversationsLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : conversations && conversations.length > 0 ? (
-                <div className="space-y-1">
-                  {conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
-                        selectedConversationId === conv.id
-                          ? 'bg-secondary'
-                          : 'hover:bg-muted'
-                      }`}
-                      onClick={() => setSelectedConversationId(conv.id)}
-                    >
-                      <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {conv.title || 'New conversation'}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {conv.lastMessage?.content || 'No messages yet'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setConversationToDelete(conv)
-                          setShowDeleteDialog(true)
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+          <div className="space-y-2">
+            <Label>Conversations</Label>
+            {conversationsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : conversations && conversations.length > 0 ? (
+              <div className="space-y-1">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
+                      selectedConversationId === conv.id
+                        ? 'bg-secondary'
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => setSelectedConversationId(conv.id)}
+                  >
+                    <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {conv.title || 'New conversation'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {conv.lastMessage?.content || 'No messages yet'}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  No conversations yet
-                </p>
-              )}
-            </div>
-          )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConversationToDelete(conv)
+                        setShowDeleteDialog(true)
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No conversations yet
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Chat Area */}
@@ -281,8 +257,7 @@ function ChatPage() {
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Start a conversation</h3>
                   <p className="text-muted-foreground max-w-sm">
-                    Select a property and start a new conversation to ask questions about
-                    your home
+                    Start a new conversation to ask questions about your home
                   </p>
                 </div>
               </div>
@@ -308,7 +283,13 @@ function ChatPage() {
                             : 'bg-muted'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        {message.role === MessageRole.USER ? (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        ) : (
+                          <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                            <Markdown>{message.content}</Markdown>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -323,13 +304,13 @@ function ChatPage() {
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      disabled={createMessage.isPending}
+                      disabled={sendMessage.isPending}
                     />
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!inputMessage.trim() || createMessage.isPending}
+                      disabled={!inputMessage.trim() || sendMessage.isPending}
                     >
-                      {createMessage.isPending ? (
+                      {sendMessage.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />

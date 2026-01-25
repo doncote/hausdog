@@ -54,6 +54,7 @@ import {
   CreateEventSchema,
   type Event,
 } from '@/features/events'
+import { ItemChat } from '@/components/ItemChat'
 
 export const Route = createFileRoute('/_authenticated/items/$itemId')({
   component: ItemDetailPage,
@@ -602,6 +603,18 @@ function ItemDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Item Chat */}
+      {user && (
+        <div className="mt-8">
+          <ItemChat
+            itemId={itemId}
+            itemName={item.name}
+            propertyId={item.propertyId}
+            userId={user.id}
+          />
+        </div>
+      )}
 
       {/* Add Event Dialog */}
       <Dialog open={showEventDialog} onOpenChange={(open) => { setShowEventDialog(open); if (!open) resetEventForm(); }}>
