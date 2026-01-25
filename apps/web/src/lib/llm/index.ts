@@ -8,3 +8,9 @@ export {
   type PropertyContext,
   type ItemContext,
 } from './claude'
+export {
+  lookupPropertyWithGemini,
+  type PropertyLookupResult,
+  type PropertyLookupRaw,
+  type PropertyLookupResponse,
+} from './property-lookup'

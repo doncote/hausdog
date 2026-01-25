@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowLeft, Building2 } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CreatePropertySchema, useCreateProperty } from '@/features/properties'
+import { CreatePropertySchema, useCreateProperty, lookupPropertyData } from '@/features/properties'
 
 export const Route = createFileRoute('/_authenticated/properties/new')({
   component: NewPropertyPage,
@@ -20,6 +20,7 @@ function NewPropertyPage() {
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLookingUp, setIsLookingUp] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,9 +42,36 @@ function NewPropertyPage() {
     if (!user) return
 
     try {
+      let inputData = result.data
+
+      // Look up property data if address provided
+      if (address.trim()) {
+        setIsLookingUp(true)
+        try {
+          const lookupResult = await lookupPropertyData({ data: { address: address.trim() } })
+          if (lookupResult.result.found) {
+            inputData = {
+              ...inputData,
+              yearBuilt: lookupResult.result.yearBuilt ?? undefined,
+              squareFeet: lookupResult.result.squareFeet ?? undefined,
+              propertyType: lookupResult.result.propertyType ?? undefined,
+              lookupData: lookupResult.raw,
+            }
+            toast.success('Property details found and applied')
+          } else {
+            toast.info("Couldn't find property data for this address")
+          }
+        } catch {
+          // Lookup failed, continue without it
+          toast.info("Couldn't look up property data")
+        } finally {
+          setIsLookingUp(false)
+        }
+      }
+
       const property = await createProperty.mutateAsync({
         userId: user.id,
-        input: result.data,
+        input: inputData,
       })
       toast.success('Property created')
       navigate({ to: '/properties/$propertyId', params: { propertyId: property.id } })
@@ -109,8 +137,17 @@ function NewPropertyPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createProperty.isPending}>
-              {createProperty.isPending ? 'Creating...' : 'Create Property'}
+            <Button type="submit" disabled={createProperty.isPending || isLookingUp}>
+              {isLookingUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Looking up property...
+                </>
+              ) : createProperty.isPending ? (
+                'Creating...'
+              ) : (
+                'Create Property'
+              )}
             </Button>
           </div>
         </form>
