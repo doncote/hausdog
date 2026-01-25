@@ -9,22 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UploadsRouteImport } from './routes/uploads'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
 import { Route as PropertiesNewRouteImport } from './routes/properties/new'
-import { Route as PropertiesPropertyIdRouteImport } from './routes/properties/$propertyId'
+import { Route as PropertiesPropertyIdRouteImport } from './routes/properties.$propertyId'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
-import { Route as PropertiesPropertyIdSystemsSystemIdRouteImport } from './routes/properties/$propertyId/systems/$systemId'
+import { Route as PropertiesPropertyIdSystemsSystemIdRouteImport } from './routes/properties.$propertyId.systems.$systemId'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
-import { Route as PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRouteImport } from './routes/properties/$propertyId/systems/$systemId/components/$componentId'
+import { Route as PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRouteImport } from './routes/properties.$propertyId.systems.$systemId.components.$componentId'
 
+const UploadsRoute = UploadsRouteImport.update({
+  id: '/uploads',
+  path: '/uploads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -106,6 +112,7 @@ const PropertiesPropertyIdSystemsSystemIdComponentsComponentIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/uploads': typeof UploadsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/uploads': typeof UploadsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/uploads': typeof UploadsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/properties/$propertyId': typeof PropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof PropertiesNewRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/uploads'
     | '/auth/callback'
     | '/properties/$propertyId'
     | '/properties/new'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/uploads'
     | '/auth/callback'
     | '/properties/$propertyId'
     | '/properties/new'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/uploads'
     | '/auth/callback'
     | '/properties/$propertyId'
     | '/properties/new'
@@ -212,6 +224,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  UploadsRoute: typeof UploadsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   PropertiesPropertyIdRoute: typeof PropertiesPropertyIdRouteWithChildren
   PropertiesNewRoute: typeof PropertiesNewRoute
@@ -227,6 +240,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/uploads': {
+      id: '/uploads'
+      path: '/uploads'
+      fullPath: '/uploads'
+      preLoaderRoute: typeof UploadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -365,6 +385,7 @@ const PropertiesPropertyIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  UploadsRoute: UploadsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   PropertiesPropertyIdRoute: PropertiesPropertyIdRouteWithChildren,
   PropertiesNewRoute: PropertiesNewRoute,
