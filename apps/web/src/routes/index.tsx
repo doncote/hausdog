@@ -1,14 +1,14 @@
 import { createFileRoute, Link, useRouteContext } from '@tanstack/react-router'
 import {
+  ArrowRight,
   Building2,
   Camera,
-  MessageSquare,
-  FileText,
-  Shield,
-  Clock,
-  Sparkles,
-  ArrowRight,
   CheckCircle2,
+  Clock,
+  FileText,
+  MessageSquare,
+  Shield,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -327,9 +327,7 @@ function LandingPage() {
               <Building2 className="h-5 w-5" />
               <span className="font-semibold">Hausdog</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              The complete home documentation system.
-            </p>
+            <p className="text-sm text-muted-foreground">The complete home documentation system.</p>
           </div>
         </div>
       </footer>
