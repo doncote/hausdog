@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import { ArrowLeft, Building2, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CreatePropertySchema, useCreateProperty, lookupPropertyData } from '@/features/properties'
+import { CreatePropertySchema, lookupPropertyData, useCreateProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/_authenticated/properties/new')({
   component: NewPropertyPage,
@@ -142,11 +142,7 @@ function NewPropertyPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate({ to: '/properties' })}
-            >
+            <Button type="button" variant="outline" onClick={() => navigate({ to: '/properties' })}>
               Cancel
             </Button>
             <Button type="submit" disabled={createProperty.isPending || isLookingUp}>

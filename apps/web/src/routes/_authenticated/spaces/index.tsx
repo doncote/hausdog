@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
 import {
   ChevronRight,
   Home,
@@ -10,10 +9,9 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -28,12 +26,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-  useSpacesForProperty,
-  useCreateSpace,
-  useUpdateSpace,
-  useDeleteSpace,
   type Space,
+  useCreateSpace,
+  useDeleteSpace,
+  useSpacesForProperty,
+  useUpdateSpace,
 } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -173,9 +173,7 @@ function SpacesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Spaces</h1>
-          <p className="text-muted-foreground mt-1">
-            Rooms and areas in {currentProperty.name}
-          </p>
+          <p className="text-muted-foreground mt-1">Rooms and areas in {currentProperty.name}</p>
         </div>
         <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4" />
@@ -292,11 +290,7 @@ function SpacesPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
@@ -316,19 +310,15 @@ function SpacesPage() {
           <DialogHeader>
             <DialogTitle>Delete Space</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedSpace?.name}"? Items in this space
-              will not be deleted but will no longer be assigned to a space.
+              Are you sure you want to delete "{selectedSpace?.name}"? Items in this space will not
+              be deleted but will no longer be assigned to a space.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteSpace.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteSpace.isPending}>
               {deleteSpace.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

@@ -133,10 +133,7 @@ export interface ItemContext {
   }>
 }
 
-function buildChatSystemPrompt(
-  property: PropertyContext,
-  relevantItems: ItemContext[],
-): string {
+function buildChatSystemPrompt(property: PropertyContext, relevantItems: ItemContext[]): string {
   const itemsContext = relevantItems
     .map((item) => {
       let text = `- ${item.name} (${item.category})`

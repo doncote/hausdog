@@ -1,8 +1,8 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useRef, useState, useEffect } from 'react'
-import { ArrowLeft, Camera, Check, FileUp, Home, Image, Loader2, X } from 'lucide-react'
-import { toast } from 'sonner'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useRealtimeRun } from '@trigger.dev/react-hooks'
+import { ArrowLeft, Camera, Check, FileUp, Home, Image, Loader2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { uploadDocument, DocumentType } from '@/features/documents'
+import { DocumentType, uploadDocument } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 interface UploadedDoc {
@@ -51,7 +51,7 @@ function UploadProgress({ doc }: { doc: UploadedDoc }) {
 function RealtimeTracker({
   runId,
   accessToken,
-  onComplete
+  onComplete,
 }: {
   runId: string
   accessToken: string
@@ -77,7 +77,6 @@ export const Route = createFileRoute('/_authenticated/capture')({
 function CapturePage() {
   const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
-  const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -91,8 +90,12 @@ function CapturePage() {
     setUploadedDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, status } : d)))
   }
 
-  const allComplete = uploadedDocs.length > 0 && uploadedDocs.every((d) => d.status === 'complete' || d.status === 'failed')
-  const processingDocs = uploadedDocs.filter((d) => d.status === 'processing' && d.runId && d.accessToken)
+  const allComplete =
+    uploadedDocs.length > 0 &&
+    uploadedDocs.every((d) => d.status === 'complete' || d.status === 'failed')
+  const processingDocs = uploadedDocs.filter(
+    (d) => d.status === 'processing' && d.runId && d.accessToken,
+  )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -136,7 +139,10 @@ function CapturePage() {
       for (const file of selectedFiles) {
         // Add to tracking with uploading status
         const tempId = `temp-${Date.now()}-${file.name}`
-        setUploadedDocs((prev) => [...prev, { id: tempId, fileName: file.name, status: 'uploading' }])
+        setUploadedDocs((prev) => [
+          ...prev,
+          { id: tempId, fileName: file.name, status: 'uploading' },
+        ])
 
         // Read file as base64
         const base64 = await new Promise<string>((resolve, reject) => {
@@ -172,9 +178,7 @@ function CapturePage() {
         }
         newDocs.push(uploadedDoc)
 
-        setUploadedDocs((prev) =>
-          prev.map((d) => (d.id === tempId ? uploadedDoc : d))
-        )
+        setUploadedDocs((prev) => prev.map((d) => (d.id === tempId ? uploadedDoc : d)))
       }
 
       toast.success(
@@ -236,9 +240,7 @@ function CapturePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Capture Documents</h1>
-            <p className="text-muted-foreground">
-              Upload to {currentProperty.name}
-            </p>
+            <p className="text-muted-foreground">Upload to {currentProperty.name}</p>
           </div>
         </div>
 
@@ -309,7 +311,7 @@ function CapturePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {selectedFiles.map((file, index) => (
                   <div
-                    key={index}
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
                     className="relative rounded-lg border bg-muted/30 p-3"
                   >
                     <button
@@ -354,9 +356,7 @@ function CapturePage() {
                 Uploading...
               </>
             ) : (
-              <>
-                Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
-              </>
+              <>Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}</>
             )}
           </Button>
 

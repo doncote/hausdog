@@ -53,12 +53,10 @@ function LoginPage() {
 
         <div className="rounded-xl border bg-card p-8 text-center">
           <h1 className="text-xl font-semibold mb-2">Welcome</h1>
-          <p className="text-muted-foreground mb-8">
-            Sign in to manage your home documentation
-          </p>
+          <p className="text-muted-foreground mb-8">Sign in to manage your home documentation</p>
 
           <Button onClick={handleGoogleLogin} className="w-full gap-3" size="lg">
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" role="img" aria-label="Google logo">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

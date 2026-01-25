@@ -1,13 +1,13 @@
-import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
+import { createServerFn } from '@tanstack/react-start'
+import { auth, configure, tasks } from '@trigger.dev/sdk/v3'
 import { v4 as uuidv4 } from 'uuid'
-import { tasks, configure, auth } from '@trigger.dev/sdk/v3'
-import { getServerEnv } from '@/lib/env'
 import { prisma } from '@/lib/db/client'
+import { getServerEnv } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import type { processDocumentTask } from '../../../trigger/process-document'
 import { DocumentService } from './service'
 import { DocumentType } from './types'
-import type { processDocumentTask } from '../../../trigger/process-document'
 
 // Configure Trigger.dev with our API key
 function configureTrigger() {
@@ -143,7 +143,7 @@ export const getSignedUrl = createServerFn({ method: 'GET' })
     const supabase = createClient(env.SUPABASE_URL, supabaseServiceKey)
 
     // Verify the path belongs to the property
-    if (!data.storagePath.startsWith(data.propertyId + '/')) {
+    if (!data.storagePath.startsWith(`${data.propertyId}/`)) {
       throw new Error('Access denied')
     }
 
@@ -166,7 +166,7 @@ export const deleteDocumentFile = createServerFn({ method: 'POST' })
     const supabase = createClient(env.SUPABASE_URL, supabaseServiceKey)
 
     // Verify the path belongs to the property
-    if (!data.storagePath.startsWith(data.propertyId + '/')) {
+    if (!data.storagePath.startsWith(`${data.propertyId}/`)) {
       throw new Error('Access denied')
     }
 
@@ -207,7 +207,10 @@ export const reprocessDocument = createServerFn({ method: 'POST' })
         userId: data.userId,
         propertyId: data.propertyId,
       })
-      logger.info('Document reprocessing triggered', { documentId: data.documentId, runId: handle.id })
+      logger.info('Document reprocessing triggered', {
+        documentId: data.documentId,
+        runId: handle.id,
+      })
 
       // Create public token for realtime updates
       const publicAccessToken = await auth.createPublicToken({

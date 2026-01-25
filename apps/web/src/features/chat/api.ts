@@ -1,11 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/db/client'
-import { logger } from '@/lib/logger'
-import { chatWithClaude } from '@/lib/llm'
-import { ChatService } from './service'
-import { PropertyService } from '@/features/properties/service'
-import { ItemService } from '@/features/items/service'
 import { EventService } from '@/features/events/service'
+import { ItemService } from '@/features/items/service'
+import { PropertyService } from '@/features/properties/service'
+import { prisma } from '@/lib/db/client'
+import { chatWithClaude } from '@/lib/llm'
+import { logger } from '@/lib/logger'
+import { ChatService } from './service'
 import type { CreateConversationInput, CreateMessageInput } from './types'
 
 const getChatService = () => new ChatService({ db: prisma, logger })
@@ -112,13 +112,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
     const searchTerms = data.message.toLowerCase().split(/\s+/)
     const relevantItems = allItems
       .filter((item) => {
-        const itemText = [
-          item.name,
-          item.manufacturer,
-          item.model,
-          item.category,
-          item.notes,
-        ]
+        const itemText = [item.name, item.manufacturer, item.model, item.category, item.notes]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
@@ -213,7 +207,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     const messages = await chatService.getMessagesForConversation(data.conversationId)
 
     // Build item lineage (ancestors)
-    const ancestors: typeof focalItem[] = []
+    const ancestors: (typeof focalItem)[] = []
     let currentParentId = focalItem.parentId
     while (currentParentId) {
       const parent = await itemService.findById(currentParentId)
@@ -231,19 +225,21 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     // Build context items array with lineage info
     const contextItems = [
       // Ancestors (from root to parent)
-      ...await Promise.all(ancestors.map(async (item, idx) => {
-        const events = await eventService.findAllForItem(item.id)
-        return {
-          ...item,
-          lineageRole: 'ancestor' as const,
-          lineageDepth: idx,
-          recentEvents: events.slice(0, 3).map((e) => ({
-            type: e.type,
-            date: e.date,
-            description: e.description,
-          })),
-        }
-      })),
+      ...(await Promise.all(
+        ancestors.map(async (item, idx) => {
+          const events = await eventService.findAllForItem(item.id)
+          return {
+            ...item,
+            lineageRole: 'ancestor' as const,
+            lineageDepth: idx,
+            recentEvents: events.slice(0, 3).map((e) => ({
+              type: e.type,
+              date: e.date,
+              description: e.description,
+            })),
+          }
+        }),
+      )),
       // Focal item
       {
         ...focalItem,
@@ -256,19 +252,21 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
         })),
       },
       // Children
-      ...await Promise.all(children.map(async (item) => {
-        const events = await eventService.findAllForItem(item.id)
-        return {
-          ...item,
-          lineageRole: 'child' as const,
-          lineageDepth: ancestors.length + 1,
-          recentEvents: events.slice(0, 3).map((e) => ({
-            type: e.type,
-            date: e.date,
-            description: e.description,
-          })),
-        }
-      })),
+      ...(await Promise.all(
+        children.map(async (item) => {
+          const events = await eventService.findAllForItem(item.id)
+          return {
+            ...item,
+            lineageRole: 'child' as const,
+            lineageDepth: ancestors.length + 1,
+            recentEvents: events.slice(0, 3).map((e) => ({
+              type: e.type,
+              date: e.date,
+              description: e.description,
+            })),
+          }
+        }),
+      )),
     ]
 
     // Build chat messages for Claude

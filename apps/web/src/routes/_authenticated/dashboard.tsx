@@ -20,32 +20,26 @@ function DashboardPage() {
       <header className="mb-10">
         <p className="text-sm font-medium text-primary mb-1">{greeting}</p>
         <h1 className="text-3xl font-bold tracking-tight">{firstName}</h1>
-        <p className="mt-2 text-muted-foreground">
-          Here's an overview of your home documentation.
-        </p>
+        <p className="mt-2 text-muted-foreground">Here's an overview of your home documentation.</p>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
           label="Properties"
-          value={isPending ? '-' : stats?.propertyCount ?? 0}
+          value={isPending ? '-' : (stats?.propertyCount ?? 0)}
           icon={Home}
           href="/properties"
         />
-        <StatCard
-          label="Items"
-          value={isPending ? '-' : stats?.itemCount ?? 0}
-          icon={Box}
-        />
+        <StatCard label="Items" value={isPending ? '-' : (stats?.itemCount ?? 0)} icon={Box} />
         <StatCard
           label="Pending Review"
-          value={isPending ? '-' : stats?.pendingReviewCount ?? 0}
+          value={isPending ? '-' : (stats?.pendingReviewCount ?? 0)}
           icon={FileText}
           href="/review"
         />
         <StatCard
           label="Documents"
-          value={isPending ? '-' : stats?.documentCount ?? 0}
+          value={isPending ? '-' : (stats?.documentCount ?? 0)}
           icon={Camera}
           href="/documents"
         />
@@ -191,13 +185,7 @@ function StatCard({
   return content
 }
 
-function EmptyState({
-  message,
-  action,
-}: {
-  message: string
-  action: React.ReactNode
-}) {
+function EmptyState({ message, action }: { message: string; action: React.ReactNode }) {
   return (
     <div className="py-8 text-center">
       <p className="text-muted-foreground mb-4">{message}</p>

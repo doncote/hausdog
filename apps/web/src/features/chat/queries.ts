@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import {
-  fetchConversationsForProperty,
   fetchConversation,
+  fetchConversationsForProperty,
   fetchMessagesForConversation,
 } from './api'
 
@@ -11,8 +11,7 @@ export const chatKeys = {
   conversationsByProperty: (propertyId: string) =>
     [...chatKeys.conversations(), 'property', propertyId] as const,
   conversation: (id: string) => [...chatKeys.conversations(), 'detail', id] as const,
-  messages: (conversationId: string) =>
-    [...chatKeys.all, 'messages', conversationId] as const,
+  messages: (conversationId: string) => [...chatKeys.all, 'messages', conversationId] as const,
 }
 
 export const conversationsForPropertyQueryOptions = (propertyId: string) =>

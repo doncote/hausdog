@@ -1,10 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
 import { ChevronRight, DoorOpen, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -20,16 +18,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useProperty } from '@/features/properties'
 import {
   CreateSpaceSchema,
-  UpdateSpaceSchema,
-  useSpacesForProperty,
-  useCreateSpace,
-  useUpdateSpace,
-  useDeleteSpace,
   type Space,
+  UpdateSpaceSchema,
+  useCreateSpace,
+  useDeleteSpace,
+  useSpacesForProperty,
+  useUpdateSpace,
 } from '@/features/spaces'
-import { useProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/spaces/')({
   component: SpacesPage,
@@ -177,9 +177,7 @@ function SpacesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Spaces</h1>
-          <p className="text-muted-foreground mt-1">
-            Organize your property into rooms and areas
-          </p>
+          <p className="text-muted-foreground mt-1">Organize your property into rooms and areas</p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -283,7 +281,13 @@ function SpacesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreateDialog(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateDialog(false)
+                resetForm()
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={createSpace.isPending}>
@@ -298,9 +302,7 @@ function SpacesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Space</DialogTitle>
-            <DialogDescription>
-              Update the space name.
-            </DialogDescription>
+            <DialogDescription>Update the space name.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -315,7 +317,13 @@ function SpacesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowEditDialog(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditDialog(false)
+                resetForm()
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleUpdate} disabled={updateSpace.isPending}>
@@ -331,19 +339,21 @@ function SpacesPage() {
           <DialogHeader>
             <DialogTitle>Delete Space</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedSpace?.name}"? Items in this space
-              will not be deleted but will no longer be assigned to a space.
+              Are you sure you want to delete "{selectedSpace?.name}"? Items in this space will not
+              be deleted but will no longer be assigned to a space.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false)
+                resetForm()
+              }}
+            >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteSpace.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteSpace.isPending}>
               {deleteSpace.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   Box,
@@ -11,15 +10,10 @@ import {
   Trash2,
   Wrench,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ItemChat } from '@/components/ItemChat'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -28,9 +22,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -38,6 +38,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  CreateEventSchema,
+  type Event,
+  EventType,
+  useCreateEvent,
+  useDeleteEvent,
+  useEventsForItem,
+} from '@/features/events'
 import {
   ItemCategory,
   UpdateItemSchema,
@@ -46,15 +55,6 @@ import {
   useUpdateItem,
 } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
-import {
-  EventType,
-  useEventsForItem,
-  useCreateEvent,
-  useDeleteEvent,
-  CreateEventSchema,
-  type Event,
-} from '@/features/events'
-import { ItemChat } from '@/components/ItemChat'
 
 export const Route = createFileRoute('/_authenticated/items/$itemId')({
   component: ItemDetailPage,
@@ -336,9 +336,7 @@ function ItemDetailPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.category && (
-                    <p className="text-sm text-destructive">{errors.category}</p>
-                  )}
+                  {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -371,11 +369,7 @@ function ItemDetailPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="model">Model</Label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                  />
+                  <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} />
                 </div>
               </div>
 
@@ -422,9 +416,7 @@ function ItemDetailPage() {
                   {item.model && ` ${item.model}`}
                 </p>
                 {item.serialNumber && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Serial: {item.serialNumber}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Serial: {item.serialNumber}</p>
                 )}
                 {item.notes && (
                   <p className="text-sm text-muted-foreground mt-4 whitespace-pre-wrap">
@@ -464,11 +456,12 @@ function ItemDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-semibold">Sub-Items</h2>
-              <p className="text-sm text-muted-foreground">
-                Components or parts of this item
-              </p>
+              <p className="text-sm text-muted-foreground">Components or parts of this item</p>
             </div>
-            <Link to="/items/new" search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}>
+            <Link
+              to="/items/new"
+              search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
+            >
               <Button variant="outline" className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add Sub-Item
@@ -513,7 +506,10 @@ function ItemDetailPage() {
           <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
             Add sub-items to track components or parts
           </p>
-          <Link to="/items/new" search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}>
+          <Link
+            to="/items/new"
+            search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
+          >
             <Button variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
               Add Sub-Item
@@ -558,17 +554,11 @@ function ItemDetailPage() {
                         </span>
                       </div>
                       {event.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {event.description}
-                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
                       )}
                       <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                        {event.cost && (
-                          <span>{formatCurrency(Number(event.cost))}</span>
-                        )}
-                        {event.performedBy && (
-                          <span>By: {event.performedBy}</span>
-                        )}
+                        {event.cost && <span>{formatCurrency(Number(event.cost))}</span>}
+                        {event.performedBy && <span>By: {event.performedBy}</span>}
                       </div>
                     </div>
                   </div>
@@ -617,7 +607,13 @@ function ItemDetailPage() {
       )}
 
       {/* Add Event Dialog */}
-      <Dialog open={showEventDialog} onOpenChange={(open) => { setShowEventDialog(open); if (!open) resetEventForm(); }}>
+      <Dialog
+        open={showEventDialog}
+        onOpenChange={(open) => {
+          setShowEventDialog(open)
+          if (!open) resetEventForm()
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Event</DialogTitle>
@@ -690,7 +686,13 @@ function ItemDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowEventDialog(false); resetEventForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEventDialog(false)
+                resetEventForm()
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreateEvent} disabled={createEvent.isPending}>
@@ -730,19 +732,15 @@ function ItemDetailPage() {
           <DialogHeader>
             <DialogTitle>Delete Item</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{item.name}"? This will also delete all
-              sub-items and associated documents. This action cannot be undone.
+              Are you sure you want to delete "{item.name}"? This will also delete all sub-items and
+              associated documents. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteItem.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteItem.isPending}>
               {deleteItem.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

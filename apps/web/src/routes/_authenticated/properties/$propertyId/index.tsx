@@ -1,15 +1,22 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  ArrowLeft,
+  Box,
+  ChevronRight,
+  Copy,
+  DoorOpen,
+  Loader2,
+  Mail,
+  MapPin,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Box, ChevronRight, DoorOpen, Loader2, MapPin, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -18,18 +25,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import {
+  lookupPropertyData,
+  type PropertyLookupResponse,
   UpdatePropertySchema,
   useDeleteProperty,
   useProperty,
   useUpdateProperty,
-  lookupPropertyData,
-  type PropertyLookupResponse,
 } from '@/features/properties'
-import { useRootItemsForProperty, type ItemWithRelations } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/')({
@@ -270,48 +284,57 @@ function PropertyDetailPage() {
                 )}
               </div>
               <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLookup}
-                  disabled={isLookingUp || !property.address}
-                  className="gap-2"
-                >
-                  {isLookingUp ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  {isLookingUp ? 'Looking up...' : 'Lookup Property Info'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLookup}
+                    disabled={isLookingUp || !property.address}
+                    className="gap-2"
+                  >
+                    {isLookingUp ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                    {isLookingUp ? 'Looking up...' : 'Lookup Property Info'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Property Details Grid */}
-            {(property.yearBuilt || property.squareFeet || property.bedrooms || property.bathrooms ||
-              property.lotSquareFeet || property.stories || property.propertyType ||
-              property.purchaseDate || property.purchasePrice || property.estimatedValue) && (
+            {(property.yearBuilt ||
+              property.squareFeet ||
+              property.bedrooms ||
+              property.bathrooms ||
+              property.lotSquareFeet ||
+              property.stories ||
+              property.propertyType ||
+              property.purchaseDate ||
+              property.purchasePrice ||
+              property.estimatedValue) && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-4 border-t">
                 {property.yearBuilt && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Year Built</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Year Built
+                    </p>
                     <p className="font-medium">{property.yearBuilt}</p>
                   </div>
                 )}
@@ -323,19 +346,25 @@ function PropertyDetailPage() {
                 )}
                 {property.lotSquareFeet && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Lot Size</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Lot Size
+                    </p>
                     <p className="font-medium">{property.lotSquareFeet.toLocaleString()} sq ft</p>
                   </div>
                 )}
                 {property.bedrooms && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Bedrooms</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Bedrooms
+                    </p>
                     <p className="font-medium">{property.bedrooms}</p>
                   </div>
                 )}
                 {property.bathrooms && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Bathrooms</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Bathrooms
+                    </p>
                     <p className="font-medium">{property.bathrooms}</p>
                   </div>
                 )}
@@ -348,24 +377,34 @@ function PropertyDetailPage() {
                 {property.propertyType && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Type</p>
-                    <p className="font-medium capitalize">{property.propertyType.replace('_', ' ')}</p>
+                    <p className="font-medium capitalize">
+                      {property.propertyType.replace('_', ' ')}
+                    </p>
                   </div>
                 )}
                 {property.purchaseDate && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Acquired</p>
-                    <p className="font-medium">{new Date(property.purchaseDate).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Acquired
+                    </p>
+                    <p className="font-medium">
+                      {new Date(property.purchaseDate).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
                 {property.purchasePrice && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Purchase Price</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Purchase Price
+                    </p>
                     <p className="font-medium">${property.purchasePrice.toLocaleString()}</p>
                   </div>
                 )}
                 {property.estimatedValue && (
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Est. Value</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Est. Value
+                    </p>
                     <p className="font-medium">${property.estimatedValue.toLocaleString()}</p>
                   </div>
                 )}
@@ -375,14 +414,44 @@ function PropertyDetailPage() {
         )}
       </div>
 
+      {/* Email Ingestion Section */}
+      {property.ingestToken && (
+        <div className="rounded-xl border bg-card p-6 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Mail className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Email Ingestion</h2>
+              <p className="text-sm text-muted-foreground">
+                Forward receipts and documents to automatically add them
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 rounded-lg bg-muted px-4 py-2.5 text-sm font-mono truncate">
+              {property.ingestToken}@ingest.hausdog.app
+            </code>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                navigator.clipboard.writeText(`${property.ingestToken}@ingest.hausdog.app`)
+                toast.success('Email address copied')
+              }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Spaces Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold">Spaces</h2>
-            <p className="text-sm text-muted-foreground">
-              Rooms and areas in your property
-            </p>
+            <p className="text-sm text-muted-foreground">Rooms and areas in your property</p>
           </div>
           <Link to="/properties/$propertyId/spaces" params={{ propertyId }}>
             <Button variant="outline" className="gap-2">
@@ -414,11 +483,7 @@ function PropertyDetailPage() {
                 </div>
               </Link>
             ))}
-            <Link
-              to="/properties/$propertyId/spaces"
-              params={{ propertyId }}
-              className="shrink-0"
-            >
+            <Link to="/properties/$propertyId/spaces" params={{ propertyId }} className="shrink-0">
               <div className="rounded-xl border-2 border-dashed px-4 py-3 hover:border-primary/50 transition-all flex items-center gap-2 text-muted-foreground hover:text-foreground">
                 <Plus className="h-4 w-4" />
                 <span>Add Space</span>
@@ -429,7 +494,8 @@ function PropertyDetailPage() {
           <Link to="/properties/$propertyId/spaces" params={{ propertyId }}>
             <div className="rounded-xl border-2 border-dashed bg-muted/30 p-6 text-center hover:border-primary/50 transition-all cursor-pointer">
               <p className="text-muted-foreground">
-                No spaces yet. <span className="text-primary hover:underline">Add spaces</span> to organize your items by room.
+                No spaces yet. <span className="text-primary hover:underline">Add spaces</span> to
+                organize your items by room.
               </p>
             </div>
           </Link>
@@ -519,7 +585,8 @@ function PropertyDetailPage() {
           <DialogHeader>
             <DialogTitle>Property Data Found</DialogTitle>
             <DialogDescription>
-              We found the following information for this property. Apply to update your property details.
+              We found the following information for this property. Apply to update your property
+              details.
             </DialogDescription>
           </DialogHeader>
           {lookupResult && (
@@ -533,7 +600,9 @@ function PropertyDetailPage() {
               {lookupResult.result.squareFeet && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Square Feet</span>
-                  <span className="font-medium">{lookupResult.result.squareFeet.toLocaleString()}</span>
+                  <span className="font-medium">
+                    {lookupResult.result.squareFeet.toLocaleString()}
+                  </span>
                 </div>
               )}
               {lookupResult.result.bedrooms && (
@@ -559,7 +628,9 @@ function PropertyDetailPage() {
               {lookupResult.result.lotSquareFeet && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Lot Size</span>
-                  <span className="font-medium">{lookupResult.result.lotSquareFeet.toLocaleString()} sq ft</span>
+                  <span className="font-medium">
+                    {lookupResult.result.lotSquareFeet.toLocaleString()} sq ft
+                  </span>
                 </div>
               )}
               {lookupResult.result.lastSaleDate && (
@@ -571,20 +642,22 @@ function PropertyDetailPage() {
               {lookupResult.result.lastSalePrice && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Last Sale Price</span>
-                  <span className="font-medium">${lookupResult.result.lastSalePrice.toLocaleString()}</span>
+                  <span className="font-medium">
+                    ${lookupResult.result.lastSalePrice.toLocaleString()}
+                  </span>
                 </div>
               )}
               {lookupResult.result.estimatedValue && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Estimated Value</span>
-                  <span className="font-medium">${lookupResult.result.estimatedValue.toLocaleString()}</span>
+                  <span className="font-medium">
+                    ${lookupResult.result.estimatedValue.toLocaleString()}
+                  </span>
                 </div>
               )}
               {lookupResult.groundingSources.length > 0 && (
                 <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">
-                    Data from Google Search
-                  </p>
+                  <p className="text-xs text-muted-foreground">Data from Google Search</p>
                 </div>
               )}
             </div>
@@ -605,11 +678,7 @@ function PropertyDetailPage() {
 
 function ItemCard({ item }: { item: ItemWithRelations }) {
   return (
-    <Link
-      to="/items/$itemId"
-      params={{ itemId: item.id }}
-      className="group block"
-    >
+    <Link to="/items/$itemId" params={{ itemId: item.id }} className="group block">
       <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

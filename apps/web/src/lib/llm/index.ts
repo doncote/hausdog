@@ -1,16 +1,16 @@
-export { extractWithGemini, type GeminiExtractionResult } from './gemini'
 export {
-  resolveWithClaude,
+  type ChatMessage,
   chatWithClaude,
   type InventoryItem,
-  type ResolutionResult,
-  type ChatMessage,
-  type PropertyContext,
   type ItemContext,
+  type PropertyContext,
+  type ResolutionResult,
+  resolveWithClaude,
 } from './claude'
+export { extractWithGemini, type GeminiExtractionResult } from './gemini'
 export {
   lookupPropertyWithGemini,
-  type PropertyLookupResult,
   type PropertyLookupRaw,
   type PropertyLookupResponse,
+  type PropertyLookupResult,
 } from './property-lookup'

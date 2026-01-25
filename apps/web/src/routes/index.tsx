@@ -38,12 +38,10 @@ function LandingPage() {
               <Building2 className="h-10 w-10 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Hausdog
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">Hausdog</h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
-            The Carfax for your home. Catalog systems, track maintenance, and get AI-powered insights
-            from your documents.
+            The Carfax for your home. Catalog systems, track maintenance, and get AI-powered
+            insights from your documents.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link to="/login">
@@ -59,7 +57,8 @@ function LandingPage() {
             <CardHeader>
               <CardTitle>Capture Everything</CardTitle>
               <CardDescription>
-                Snap photos of receipts, manuals, and labels. AI extracts the important details automatically.
+                Snap photos of receipts, manuals, and labels. AI extracts the important details
+                automatically.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -75,7 +74,8 @@ function LandingPage() {
             <CardHeader>
               <CardTitle>Ask Questions</CardTitle>
               <CardDescription>
-                Chat with your home's documentation. Find warranty info, maintenance schedules, and more.
+                Chat with your home's documentation. Find warranty info, maintenance schedules, and
+                more.
               </CardDescription>
             </CardHeader>
           </Card>

@@ -1,22 +1,9 @@
+import { ChevronDown, ChevronUp, Loader2, MessageSquare, Plus, Send, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
-import {
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  MessageSquare,
-  Plus,
-  Send,
-  Trash2,
-} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -25,14 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
-  useConversationsForProperty,
-  useConversation,
-  useCreateConversation,
-  useSendItemChatMessage,
-  useDeleteConversation,
-  MessageRole,
   type ConversationWithLastMessage,
+  MessageRole,
+  useConversation,
+  useConversationsForProperty,
+  useCreateConversation,
+  useDeleteConversation,
+  useSendItemChatMessage,
 } from '@/features/chat'
 
 interface ItemChatProps {
@@ -56,12 +44,13 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
   const { data: allConversations, isPending: conversationsLoading } =
     useConversationsForProperty(propertyId)
 
-  const itemConversations = allConversations?.filter((c) =>
-    c.title?.startsWith(`${itemName}:`) || c.title?.includes(itemName),
+  const itemConversations = allConversations?.filter(
+    (c) => c.title?.startsWith(`${itemName}:`) || c.title?.includes(itemName),
   )
 
-  const { data: activeConversation, isPending: conversationLoading } =
-    useConversation(selectedConversationId || undefined)
+  const { data: activeConversation, isPending: conversationLoading } = useConversation(
+    selectedConversationId || undefined,
+  )
 
   const createConversation = useCreateConversation()
   const sendMessage = useSendItemChatMessage()
@@ -70,7 +59,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeConversation?.messages])
+  }, [])
 
   const handleNewConversation = async () => {
     try {
@@ -147,9 +136,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
                 </div>
                 <div className="text-left">
                   <h2 className="font-semibold">Ask about this item</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Chat with AI about {itemName}
-                  </p>
+                  <p className="text-sm text-muted-foreground">Chat with AI about {itemName}</p>
                 </div>
               </div>
               {isOpen ? (
@@ -184,12 +171,18 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
                       {itemConversations.map((conv) => (
                         <div
                           key={conv.id}
-                          className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
-                            selectedConversationId === conv.id
-                              ? 'bg-secondary'
-                              : 'hover:bg-muted'
+                          role="button"
+                          tabIndex={0}
+                          className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors w-full text-left ${
+                            selectedConversationId === conv.id ? 'bg-secondary' : 'hover:bg-muted'
                           }`}
                           onClick={() => setSelectedConversationId(conv.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setSelectedConversationId(conv.id)
+                            }
+                          }}
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">
@@ -212,9 +205,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground py-2 text-center">
-                      No chats yet
-                    </p>
+                    <p className="text-xs text-muted-foreground py-2 text-center">No chats yet</p>
                   )}
                 </div>
 
@@ -242,9 +233,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
                             <div
                               key={message.id}
                               className={`flex ${
-                                message.role === MessageRole.USER
-                                  ? 'justify-end'
-                                  : 'justify-start'
+                                message.role === MessageRole.USER ? 'justify-end' : 'justify-start'
                               }`}
                             >
                               <div
@@ -255,9 +244,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
                                 }`}
                               >
                                 {message.role === MessageRole.USER ? (
-                                  <p className="text-sm whitespace-pre-wrap">
-                                    {message.content}
-                                  </p>
+                                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                 ) : (
                                   <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
                                     <Markdown>{message.content}</Markdown>

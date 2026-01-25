@@ -84,6 +84,7 @@ export class DocumentService {
       userId,
       propertyId: input.propertyId,
       fileName: input.fileName,
+      source: input.source || 'upload',
     })
     const record = await this.db.document.create({
       data: {
@@ -96,6 +97,42 @@ export class DocumentService {
         contentType: input.contentType,
         sizeBytes: BigInt(input.sizeBytes),
         status: 'pending',
+        source: input.source ?? 'upload',
+        sourceEmail: input.sourceEmail ?? null,
+        createdById: userId,
+      },
+    })
+    return this.toDomain(record)
+  }
+
+  async createFromEmailBody(
+    userId: string,
+    propertyId: string,
+    emailBody: string,
+    sourceEmail: string,
+    subject: string,
+  ): Promise<Document> {
+    this.logger.info('Creating document from email body', {
+      userId,
+      propertyId,
+      sourceEmail,
+      subject,
+    })
+
+    const fileName = `email-${Date.now()}.txt`
+
+    const record = await this.db.document.create({
+      data: {
+        propertyId,
+        type: 'email',
+        fileName,
+        storagePath: '',
+        contentType: 'text/plain',
+        sizeBytes: BigInt(emailBody.length),
+        status: 'processing',
+        extractedText: emailBody,
+        source: 'email',
+        sourceEmail,
         createdById: userId,
       },
     })
@@ -150,6 +187,8 @@ export class DocumentService {
       extractedData: record.extractedData,
       resolveData: record.resolveData,
       documentDate: record.documentDate,
+      source: record.source,
+      sourceEmail: record.sourceEmail,
       createdAt: record.createdAt,
     }
   }

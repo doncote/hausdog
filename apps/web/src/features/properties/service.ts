@@ -1,7 +1,13 @@
-import { Prisma } from '@generated/prisma/client'
 import type { PrismaClient, Property as PrismaProperty } from '@generated/prisma/client'
+import { Prisma } from '@generated/prisma/client'
+import { generateIngestToken } from '@/lib/ingest-token'
 import type { Logger } from '@/lib/logger'
-import type { CreatePropertyInput, Property, PropertyWithCounts, UpdatePropertyInput } from './types'
+import type {
+  CreatePropertyInput,
+  Property,
+  PropertyWithCounts,
+  UpdatePropertyInput,
+} from './types'
 
 export interface PropertyServiceDeps {
   db: PrismaClient
@@ -53,6 +59,10 @@ export class PropertyService {
 
   async create(userId: string, input: CreatePropertyInput): Promise<Property> {
     this.logger.info('Creating property', { userId, name: input.name })
+
+    // Generate ingest token from address or name
+    const ingestToken = generateIngestToken(input.address ?? null, input.name)
+
     const record = await this.db.property.create({
       data: {
         userId,
@@ -68,7 +78,8 @@ export class PropertyService {
         purchaseDate: input.purchaseDate ?? null,
         purchasePrice: input.purchasePrice ?? null,
         estimatedValue: input.estimatedValue ?? null,
-        lookupData: input.lookupData as Prisma.InputJsonValue ?? Prisma.DbNull,
+        lookupData: (input.lookupData as Prisma.InputJsonValue) ?? Prisma.DbNull,
+        ingestToken,
         createdById: userId,
         updatedById: userId,
       },
@@ -94,7 +105,7 @@ export class PropertyService {
         ...(input.purchasePrice !== undefined && { purchasePrice: input.purchasePrice ?? null }),
         ...(input.estimatedValue !== undefined && { estimatedValue: input.estimatedValue ?? null }),
         ...(input.lookupData !== undefined && {
-          lookupData: input.lookupData as Prisma.InputJsonValue ?? Prisma.DbNull,
+          lookupData: (input.lookupData as Prisma.InputJsonValue) ?? Prisma.DbNull,
         }),
         updatedById: userId,
       },
@@ -107,6 +118,14 @@ export class PropertyService {
     await this.db.property.delete({
       where: { id },
     })
+  }
+
+  async findByIngestToken(token: string): Promise<Property | null> {
+    this.logger.debug('Finding property by ingest token', { token })
+    const record = await this.db.property.findUnique({
+      where: { ingestToken: token },
+    })
+    return record ? this.toDomain(record) : null
   }
 
   private toDomain(record: PrismaProperty): Property {
@@ -126,6 +145,7 @@ export class PropertyService {
       purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : null,
       estimatedValue: record.estimatedValue ? Number(record.estimatedValue) : null,
       lookupData: record.lookupData,
+      ingestToken: record.ingestToken,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     }

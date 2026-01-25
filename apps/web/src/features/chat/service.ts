@@ -6,8 +6,8 @@ import type {
 import type { Logger } from '@/lib/logger'
 import type {
   Conversation,
-  ConversationWithMessages,
   ConversationWithLastMessage,
+  ConversationWithMessages,
   CreateConversationInput,
   CreateMessageInput,
   Message,
@@ -56,10 +56,7 @@ export class ChatService {
     return record ? this.toConversationWithMessages(record) : null
   }
 
-  async createConversation(
-    userId: string,
-    input: CreateConversationInput,
-  ): Promise<Conversation> {
+  async createConversation(userId: string, input: CreateConversationInput): Promise<Conversation> {
     this.logger.info('Creating conversation', { userId, propertyId: input.propertyId })
     const record = await this.db.conversation.create({
       data: {

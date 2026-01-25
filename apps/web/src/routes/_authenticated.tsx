@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuthFromContext } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
+import { requireAuthFromContext } from '@/lib/auth'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {

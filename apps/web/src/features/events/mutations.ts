@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createEvent, updateEvent, deleteEvent } from './api'
-import { eventKeys } from './queries'
 import { itemKeys } from '@/features/items/queries'
+import { createEvent, deleteEvent, updateEvent } from './api'
+import { eventKeys } from './queries'
 import type { CreateEventInput, UpdateEventInput } from './types'
 
 export function useCreateEvent() {

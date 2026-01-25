@@ -19,6 +19,9 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "a11y": {
+        "useSemanticElements": "off"
+      },
       "correctness": {
         "noUnusedImports": "warn",
         "noUnusedVariables": "warn"
@@ -27,7 +30,8 @@
         "noNonNullAssertion": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noDocumentCookie": "off"
       }
     }
   },

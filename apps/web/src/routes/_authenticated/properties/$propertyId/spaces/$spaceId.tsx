@@ -1,10 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
 import { Box, ChevronRight, DoorOpen, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -20,14 +18,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  UpdateSpaceSchema,
-  useSpace,
-  useUpdateSpace,
-  useDeleteSpace,
-} from '@/features/spaces'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { type ItemWithRelations, useItemsForProperty } from '@/features/items'
 import { useProperty } from '@/features/properties'
-import { useItemsForProperty, type ItemWithRelations } from '@/features/items'
+import { UpdateSpaceSchema, useDeleteSpace, useSpace, useUpdateSpace } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/spaces/$spaceId')({
   component: SpaceDetailPage,
@@ -43,7 +38,7 @@ function SpaceDetailPage() {
   const { data: allItems } = useItemsForProperty(propertyId)
 
   // Filter items that belong to this space
-  const itemsInSpace = allItems?.filter(item => item.spaceId === spaceId) || []
+  const itemsInSpace = allItems?.filter((item) => item.spaceId === spaceId) || []
 
   const updateSpace = useUpdateSpace()
   const deleteSpace = useDeleteSpace()
@@ -235,9 +230,7 @@ function SpaceDetailPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold">Items in this Space</h2>
-            <p className="text-sm text-muted-foreground">
-              Items located in {space.name}
-            </p>
+            <p className="text-sm text-muted-foreground">Items located in {space.name}</p>
           </div>
           <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId }}>
             <Button className="gap-2">
@@ -277,19 +270,15 @@ function SpaceDetailPage() {
           <DialogHeader>
             <DialogTitle>Delete Space</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{space.name}"? Items in this space will not
-              be deleted but will no longer be assigned to a space.
+              Are you sure you want to delete "{space.name}"? Items in this space will not be
+              deleted but will no longer be assigned to a space.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteSpace.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteSpace.isPending}>
               {deleteSpace.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
@@ -301,11 +290,7 @@ function SpaceDetailPage() {
 
 function ItemCard({ item }: { item: ItemWithRelations }) {
   return (
-    <Link
-      to="/items/$itemId"
-      params={{ itemId: item.id }}
-      className="group block"
-    >
+    <Link to="/items/$itemId" params={{ itemId: item.id }} className="group block">
       <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

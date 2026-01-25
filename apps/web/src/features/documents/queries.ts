@@ -1,15 +1,16 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import {
+  fetchDocument,
+  fetchDocumentsByStatus,
   fetchDocumentsForProperty,
   fetchPendingReviewDocuments,
-  fetchDocumentsByStatus,
-  fetchDocument,
 } from './api'
 
 export const documentKeys = {
   all: ['documents'] as const,
   lists: () => [...documentKeys.all, 'list'] as const,
-  listByProperty: (propertyId: string) => [...documentKeys.lists(), 'property', propertyId] as const,
+  listByProperty: (propertyId: string) =>
+    [...documentKeys.lists(), 'property', propertyId] as const,
   listByStatus: (propertyId: string, status: string) =>
     [...documentKeys.lists(), 'property', propertyId, 'status', status] as const,
   pendingReview: (propertyId: string) =>

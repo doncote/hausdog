@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useRealtimeRun } from '@trigger.dev/react-hooks'
 import {
   Camera,
   ChevronRight,
@@ -12,9 +12,17 @@ import {
   Search,
   Trash2,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { useRealtimeRun } from '@trigger.dev/react-hooks'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -24,20 +32,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  useDocumentsForProperty,
-  useDeleteDocument,
-  getSignedUrl,
-  reprocessDocument,
   DocumentStatus,
   type DocumentWithRelations,
+  getSignedUrl,
+  reprocessDocument,
+  useDeleteDocument,
+  useDocumentsForProperty,
 } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -88,8 +88,11 @@ function DocumentsPage() {
   const [documentToDelete, setDocumentToDelete] = useState<DocumentWithRelations | null>(null)
   const [processingRuns, setProcessingRuns] = useState<ProcessingRun[]>([])
 
-  const { data: documents, isPending: documentsLoading, refetch } =
-    useDocumentsForProperty(currentProperty?.id)
+  const {
+    data: documents,
+    isPending: documentsLoading,
+    refetch,
+  } = useDocumentsForProperty(currentProperty?.id)
 
   const deleteDocument = useDeleteDocument()
 
@@ -127,15 +130,17 @@ function DocumentsPage() {
   }
 
   // Filter documents
-  const filteredDocuments = documents?.filter((doc) => {
-    const matchesSearch = searchQuery === '' ||
-      doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.type.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDocuments =
+    documents?.filter((doc) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.type.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesStatus = statusFilter === 'all' || doc.status === statusFilter
+      const matchesStatus = statusFilter === 'all' || doc.status === statusFilter
 
-    return matchesSearch && matchesStatus
-  }) || []
+      return matchesSearch && matchesStatus
+    }) || []
 
   const handleViewDocument = async (doc: DocumentWithRelations) => {
     setSelectedDocument(doc)
@@ -174,17 +179,41 @@ function DocumentsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case DocumentStatus.PENDING:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Pending</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">
+            Pending
+          </span>
+        )
       case DocumentStatus.PROCESSING:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">Processing</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+            Processing
+          </span>
+        )
       case DocumentStatus.READY_FOR_REVIEW:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Ready for Review</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
+            Ready for Review
+          </span>
+        )
       case DocumentStatus.CONFIRMED:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Confirmed</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+            Confirmed
+          </span>
+        )
       case DocumentStatus.DISCARDED:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">Discarded</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
+            Discarded
+          </span>
+        )
       default:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">{status}</span>
+        return (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
+            {status}
+          </span>
+        )
     }
   }
 
@@ -233,9 +262,7 @@ function DocumentsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground mt-1">
-            Documents for {currentProperty.name}
-          </p>
+          <p className="text-muted-foreground mt-1">Documents for {currentProperty.name}</p>
         </div>
         <div className="flex gap-2">
           <Link to="/review">
@@ -349,22 +376,20 @@ function DocumentsPage() {
                   getStatusBadge(doc.status)
                 )}
                 <div className="flex gap-2">
-                  {(doc.status === DocumentStatus.PENDING || doc.status === DocumentStatus.PROCESSING) && !isProcessing(doc.id) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleReprocess(doc)}
-                      className="gap-1"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      Process
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleViewDocument(doc)}
-                  >
+                  {(doc.status === DocumentStatus.PENDING ||
+                    doc.status === DocumentStatus.PROCESSING) &&
+                    !isProcessing(doc.id) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleReprocess(doc)}
+                        className="gap-1"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Process
+                      </Button>
+                    )}
+                  <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
                     View
                   </Button>
                   <Button
@@ -437,8 +462,8 @@ function DocumentsPage() {
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{documentToDelete?.fileName}"? This action
-              cannot be undone.
+              Are you sure you want to delete "{documentToDelete?.fileName}"? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -458,11 +483,7 @@ function DocumentsPage() {
 
       {/* Realtime processing trackers */}
       {processingRuns.map((run) => (
-        <ProcessingTracker
-          key={run.runId}
-          run={run}
-          onComplete={handleProcessingComplete}
-        />
+        <ProcessingTracker key={run.runId} run={run} onComplete={handleProcessingComplete} />
       ))}
     </div>
   )
