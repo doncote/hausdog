@@ -30,6 +30,7 @@ model Property {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   createdById     String    @map("created_by_id") @db.Uuid
   updatedById     String    @map("updated_by_id") @db.Uuid
+  ingestToken     String?   @unique @map("ingest_token")
 
   spaces        Space[]
   items         Item[]
@@ -126,6 +127,8 @@ model Document {
   extractedData Json?     @map("extracted_data")
   resolveData   Json?     @map("resolve_data")
   documentDate  DateTime? @map("document_date")
+  source        String    @default("upload")
+  sourceEmail   String?   @map("source_email")
   createdAt     DateTime  @default(now()) @map("created_at")
   createdById   String    @map("created_by_id") @db.Uuid
 
