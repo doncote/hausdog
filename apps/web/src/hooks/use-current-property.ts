@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  getCurrentPropertyFromCookie,
-  setCurrentPropertyCookie,
-  setCurrentProperty,
   type CurrentProperty,
+  getCurrentPropertyFromCookie,
+  setCurrentProperty,
+  setCurrentPropertyCookie,
 } from '@/lib/current-property'
 
 /**

@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import { ArrowLeft, Box } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { CreateItemSchema, ItemCategory, useCreateItem } from '@/features/items'
 import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
@@ -124,9 +124,7 @@ function NewItemPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">New Item</h1>
-            <p className="text-muted-foreground">
-              Add an appliance, system, or equipment to track
-            </p>
+            <p className="text-muted-foreground">Add an appliance, system, or equipment to track</p>
           </div>
         </div>
 

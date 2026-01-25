@@ -1,7 +1,7 @@
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { getCookies, setCookie } from '@tanstack/react-start/server'
-import { getServerEnv } from './env'
 import { getClientEnv } from './client-env'
+import { getServerEnv } from './env'
 
 /**
  * Creates a Supabase server client using TanStack Start server utilities for cookie handling.

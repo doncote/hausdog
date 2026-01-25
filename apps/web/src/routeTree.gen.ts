@@ -22,6 +22,7 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedCaptureRouteImport } from './routes/_authenticated/capture'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
 import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties/index'
+import { Route as ApiIngestEmailRouteImport } from './routes/api/ingest/email'
 import { Route as AuthenticatedSpacesSpaceIdRouteImport } from './routes/_authenticated/spaces/$spaceId'
 import { Route as AuthenticatedPropertiesNewRouteImport } from './routes/_authenticated/properties/new'
 import { Route as AuthenticatedPropertiesPropertyIdRouteImport } from './routes/_authenticated/properties/$propertyId'
@@ -98,6 +99,11 @@ const AuthenticatedPropertiesIndexRoute =
     path: '/properties/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiIngestEmailRoute = ApiIngestEmailRouteImport.update({
+  id: '/api/ingest/email',
+  path: '/api/ingest/email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSpacesSpaceIdRoute =
   AuthenticatedSpacesSpaceIdRouteImport.update({
     id: '/spaces/$spaceId',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
+  '/api/ingest/email': typeof ApiIngestEmailRoute
   '/properties/': typeof AuthenticatedPropertiesIndexRoute
   '/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/items/new': typeof AuthenticatedItemsNewRoute
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
+  '/api/ingest/email': typeof ApiIngestEmailRoute
   '/properties': typeof AuthenticatedPropertiesIndexRoute
   '/spaces': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
   '/_authenticated/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/_authenticated/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
+  '/api/ingest/email': typeof ApiIngestEmailRoute
   '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
   '/_authenticated/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/_authenticated/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/properties/$propertyId'
     | '/properties/new'
     | '/spaces/$spaceId'
+    | '/api/ingest/email'
     | '/properties/'
     | '/spaces/'
     | '/properties/$propertyId/'
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/items/new'
     | '/properties/new'
     | '/spaces/$spaceId'
+    | '/api/ingest/email'
     | '/properties'
     | '/spaces'
     | '/properties/$propertyId'
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/_authenticated/properties/$propertyId'
     | '/_authenticated/properties/new'
     | '/_authenticated/spaces/$spaceId'
+    | '/api/ingest/email'
     | '/_authenticated/properties/'
     | '/_authenticated/spaces/'
     | '/_authenticated/properties/$propertyId/'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  ApiIngestEmailRoute: typeof ApiIngestEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -393,6 +406,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/properties/'
       preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/ingest/email': {
+      id: '/api/ingest/email'
+      path: '/api/ingest/email'
+      fullPath: '/api/ingest/email'
+      preLoaderRoute: typeof ApiIngestEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/spaces/$spaceId': {
       id: '/_authenticated/spaces/$spaceId'
@@ -528,6 +548,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  ApiIngestEmailRoute: ApiIngestEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

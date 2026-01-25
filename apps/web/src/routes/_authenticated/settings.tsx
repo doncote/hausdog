@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ChevronRight, User, Bell, Shield, Palette } from 'lucide-react'
+import { Bell, ChevronRight, Palette, Shield, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,
@@ -30,9 +30,7 @@ function SettingsPage() {
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account and preferences
-        </p>
+        <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
       </div>
 
       <div className="space-y-6">
@@ -52,25 +50,14 @@ function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={displayName}
-                disabled
-                className="bg-muted"
-              />
+              <Input id="name" value={displayName} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">
                 Name is managed by your Google account
               </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                className="bg-muted"
-              />
+              <Input id="email" type="email" value={email} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">
                 Email is managed by your Google account
               </p>
@@ -92,9 +79,7 @@ function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Notification preferences coming soon.
-            </p>
+            <p className="text-sm text-muted-foreground">Notification preferences coming soon.</p>
           </CardContent>
         </Card>
 
@@ -112,9 +97,7 @@ function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Theme preferences coming soon.
-            </p>
+            <p className="text-sm text-muted-foreground">Theme preferences coming soon.</p>
           </CardContent>
         </Card>
 

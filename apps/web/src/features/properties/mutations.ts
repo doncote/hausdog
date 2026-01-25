@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createProperty, updateProperty, deleteProperty } from './api'
+import { createProperty, deleteProperty, updateProperty } from './api'
 import { propertyKeys } from './queries'
 import type { CreatePropertyInput, UpdatePropertyInput } from './types'
 

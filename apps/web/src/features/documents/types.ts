@@ -6,6 +6,7 @@ export const DocumentType = {
   MANUAL: 'manual',
   WARRANTY: 'warranty',
   INVOICE: 'invoice',
+  EMAIL: 'email',
   OTHER: 'other',
 } as const
 
@@ -30,6 +31,8 @@ export const CreateDocumentSchema = z.object({
   storagePath: z.string().min(1, 'Storage path is required'),
   contentType: z.string().min(1, 'Content type is required'),
   sizeBytes: z.number().int().positive(),
+  source: z.enum(['upload', 'email']).optional(),
+  sourceEmail: z.string().email().optional(),
 })
 
 export const UpdateDocumentSchema = z.object({
@@ -64,6 +67,8 @@ export interface Document {
   extractedData: JsonValue | null
   resolveData: JsonValue | null
   documentDate: Date | null
+  source: string
+  sourceEmail: string | null
   createdAt: Date
 }
 

@@ -121,7 +121,9 @@ export class ItemService {
         ...(input.model !== undefined && { model: input.model ?? null }),
         ...(input.serialNumber !== undefined && { serialNumber: input.serialNumber ?? null }),
         ...(input.acquiredDate !== undefined && { acquiredDate: input.acquiredDate ?? null }),
-        ...(input.warrantyExpires !== undefined && { warrantyExpires: input.warrantyExpires ?? null }),
+        ...(input.warrantyExpires !== undefined && {
+          warrantyExpires: input.warrantyExpires ?? null,
+        }),
         ...(input.purchasePrice !== undefined && { purchasePrice: input.purchasePrice ?? null }),
         ...(input.notes !== undefined && { notes: input.notes ?? null }),
         updatedById: userId,

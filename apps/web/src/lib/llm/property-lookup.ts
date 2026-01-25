@@ -75,9 +75,7 @@ interface GeminiResponse {
   }
 }
 
-export async function lookupPropertyWithGemini(
-  address: string,
-): Promise<PropertyLookupResponse> {
+export async function lookupPropertyWithGemini(address: string): Promise<PropertyLookupResponse> {
   const env = getServerEnv()
 
   if (!env.GEMINI_API_KEY) {

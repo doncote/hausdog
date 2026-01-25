@@ -1,5 +1,10 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { fetchItemsForProperty, fetchRootItemsForProperty, fetchItemsForSpace, fetchItem } from './api'
+import {
+  fetchItem,
+  fetchItemsForProperty,
+  fetchItemsForSpace,
+  fetchRootItemsForProperty,
+} from './api'
 
 export const itemKeys = {
   all: ['items'] as const,

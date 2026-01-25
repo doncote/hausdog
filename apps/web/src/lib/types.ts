@@ -52,12 +52,7 @@ export const DOCUMENT_STATUSES = [
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number]
 
 // Property types
-export const PROPERTY_TYPES = [
-  'single_family',
-  'condo',
-  'townhouse',
-  'multi_family',
-] as const
+export const PROPERTY_TYPES = ['single_family', 'condo', 'townhouse', 'multi_family'] as const
 
 export type PropertyType = (typeof PROPERTY_TYPES)[number]
 

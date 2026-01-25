@@ -1,19 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { ChevronRight, Home, Loader2, MessageSquare, Plus, Send, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
-import {
-  ChevronRight,
-  Home,
-  Loader2,
-  MessageSquare,
-  Plus,
-  Send,
-  Trash2,
-} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -22,16 +12,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useCurrentProperty } from '@/hooks/use-current-property'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-  useConversationsForProperty,
-  useConversation,
-  useCreateConversation,
-  useSendChatMessage,
-  useDeleteConversation,
-  MessageRole,
   type ConversationWithLastMessage,
+  MessageRole,
+  useConversation,
+  useConversationsForProperty,
+  useCreateConversation,
+  useDeleteConversation,
+  useSendChatMessage,
 } from '@/features/chat'
+import { useCurrentProperty } from '@/hooks/use-current-property'
 
 export const Route = createFileRoute('/_authenticated/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -55,11 +47,13 @@ function ChatPage() {
   const [conversationToDelete, setConversationToDelete] =
     useState<ConversationWithLastMessage | null>(null)
 
-  const { data: conversations, isPending: conversationsLoading } =
-    useConversationsForProperty(currentProperty?.id)
+  const { data: conversations, isPending: conversationsLoading } = useConversationsForProperty(
+    currentProperty?.id,
+  )
 
-  const { data: activeConversation, isPending: conversationLoading } =
-    useConversation(selectedConversationId || undefined)
+  const { data: activeConversation, isPending: conversationLoading } = useConversation(
+    selectedConversationId || undefined,
+  )
 
   const createConversation = useCreateConversation()
   const sendMessage = useSendChatMessage()
@@ -68,7 +62,7 @@ function ChatPage() {
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeConversation?.messages])
+  }, [])
 
   const handleNewConversation = async () => {
     if (!user || !currentProperty) return
@@ -176,9 +170,7 @@ function ChatPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Property Assistant</h1>
-          <p className="text-muted-foreground mt-1">
-            Ask questions about {currentProperty.name}
-          </p>
+          <p className="text-muted-foreground mt-1">Ask questions about {currentProperty.name}</p>
         </div>
       </div>
 
@@ -207,12 +199,18 @@ function ChatPage() {
                 {conversations.map((conv) => (
                   <div
                     key={conv.id}
-                    className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
-                      selectedConversationId === conv.id
-                        ? 'bg-secondary'
-                        : 'hover:bg-muted'
+                    role="button"
+                    tabIndex={0}
+                    className={`group flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors w-full text-left ${
+                      selectedConversationId === conv.id ? 'bg-secondary' : 'hover:bg-muted'
                     }`}
                     onClick={() => setSelectedConversationId(conv.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setSelectedConversationId(conv.id)
+                      }
+                    }}
                   >
                     <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -239,9 +237,7 @@ function ChatPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No conversations yet
-              </p>
+              <p className="text-sm text-muted-foreground py-4 text-center">No conversations yet</p>
             )}
           </div>
         </div>
@@ -330,8 +326,7 @@ function ChatPage() {
           <DialogHeader>
             <DialogTitle>Delete Conversation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this conversation? This action cannot be
-              undone.
+              Are you sure you want to delete this conversation? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

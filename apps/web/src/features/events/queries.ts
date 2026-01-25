@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { fetchEventsForItem, fetchEvent } from './api'
+import { fetchEvent, fetchEventsForItem } from './api'
 
 export const eventKeys = {
   all: ['events'] as const,

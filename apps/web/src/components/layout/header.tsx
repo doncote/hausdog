@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router'
 import type { User } from '@supabase/supabase-js'
+import { Link } from '@tanstack/react-router'
 import {
   Box,
   Building2,
@@ -20,9 +20,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { signOut } from '@/lib/auth'
-import { useCurrentProperty } from '@/hooks/use-current-property'
 import { useProperties } from '@/features/properties'
+import { useCurrentProperty } from '@/hooks/use-current-property'
+import { signOut } from '@/lib/auth'
 
 interface HeaderProps {
   user: User
@@ -103,9 +103,7 @@ export function Header({ user }: HeaderProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 max-w-[180px]">
                   <Home className="h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    {currentProperty?.name || 'Select property'}
-                  </span>
+                  <span className="truncate">{currentProperty?.name || 'Select property'}</span>
                   <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -115,9 +113,7 @@ export function Header({ user }: HeaderProps) {
                     {properties.map((property) => (
                       <DropdownMenuItem
                         key={property.id}
-                        onClick={() =>
-                          selectProperty({ id: property.id, name: property.name })
-                        }
+                        onClick={() => selectProperty({ id: property.id, name: property.name })}
                         className="gap-2"
                       >
                         {currentProperty?.id === property.id ? (

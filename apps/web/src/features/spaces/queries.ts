@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { fetchSpacesForProperty, fetchSpace } from './api'
+import { fetchSpace, fetchSpacesForProperty } from './api'
 
 export const spaceKeys = {
   all: ['spaces'] as const,

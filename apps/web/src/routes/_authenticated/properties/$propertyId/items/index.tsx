@@ -10,12 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ItemCategory, type ItemWithRelations, useItemsForProperty } from '@/features/items'
 import { useProperty } from '@/features/properties'
-import {
-  ItemCategory,
-  useItemsForProperty,
-  type ItemWithRelations,
-} from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/items/')({
@@ -35,18 +31,21 @@ function PropertyItemsPage() {
   const [spaceFilter, setSpaceFilter] = useState<string>('all')
 
   // Filter items based on search and filters
-  const filteredItems = items?.filter((item) => {
-    const matchesSearch = searchQuery === '' ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.model?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems =
+    items?.filter((item) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.model?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
-    const matchesSpace = spaceFilter === 'all' ||
-      (spaceFilter === 'none' ? !item.spaceId : item.spaceId === spaceFilter)
+      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
+      const matchesSpace =
+        spaceFilter === 'all' ||
+        (spaceFilter === 'none' ? !item.spaceId : item.spaceId === spaceFilter)
 
-    return matchesSearch && matchesCategory && matchesSpace
-  }) || []
+      return matchesSearch && matchesCategory && matchesSpace
+    }) || []
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
@@ -178,11 +177,7 @@ function PropertyItemsPage() {
 
 function ItemCard({ item }: { item: ItemWithRelations }) {
   return (
-    <Link
-      to="/items/$itemId"
-      params={{ itemId: item.id }}
-      className="group block"
-    >
+    <Link to="/items/$itemId" params={{ itemId: item.id }} className="group block">
       <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -199,9 +194,7 @@ function ItemCard({ item }: { item: ItemWithRelations }) {
                 {item.model && ` ${item.model}`}
               </p>
               {item.space && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  📍 {item.space.name}
-                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">📍 {item.space.name}</p>
               )}
             </div>
           </div>

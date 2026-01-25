@@ -1,14 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Box, ChevronRight, Filter, Home, Loader2, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
-import {
-  Box,
-  ChevronRight,
-  Filter,
-  Home,
-  Loader2,
-  Plus,
-  Search,
-} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -18,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useItemsForProperty, ItemCategory } from '@/features/items'
+import { ItemCategory, useItemsForProperty } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -37,21 +29,22 @@ function InventoryPage() {
   const { data: spaces } = useSpacesForProperty(currentProperty?.id)
 
   // Filter items
-  const filteredItems = items?.filter((item) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.model?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems =
+    items?.filter((item) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.model?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
-    const matchesSpace =
-      spaceFilter === 'all' ||
-      (spaceFilter === 'none' && !item.spaceId) ||
-      item.spaceId === spaceFilter
+      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
+      const matchesSpace =
+        spaceFilter === 'all' ||
+        (spaceFilter === 'none' && !item.spaceId) ||
+        item.spaceId === spaceFilter
 
-    return matchesSearch && matchesCategory && matchesSpace
-  }) || []
+      return matchesSearch && matchesCategory && matchesSpace
+    }) || []
 
   if (!isLoaded) {
     return (
@@ -98,11 +91,12 @@ function InventoryPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
-          <p className="text-muted-foreground mt-1">
-            Items in {currentProperty.name}
-          </p>
+          <p className="text-muted-foreground mt-1">Items in {currentProperty.name}</p>
         </div>
-        <Link to="/items/new" search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}>
+        <Link
+          to="/items/new"
+          search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
+        >
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             Add Item
@@ -184,7 +178,10 @@ function InventoryPage() {
               Clear filters
             </Button>
           ) : (
-            <Link to="/items/new" search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}>
+            <Link
+              to="/items/new"
+              search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
+            >
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add Item

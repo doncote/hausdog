@@ -1,19 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Box, Layers, Loader2, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import {
-  ArrowLeft,
-  Box,
-  Layers,
-  Loader2,
-  MoreVertical,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -28,8 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useSpace, useUpdateSpace, useDeleteSpace } from '@/features/spaces'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useItemsForSpace } from '@/features/items'
+import { useDeleteSpace, useSpace, useUpdateSpace } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 export const Route = createFileRoute('/_authenticated/spaces/$spaceId')({
@@ -107,9 +98,7 @@ function SpaceDetailPage() {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
           <h3 className="text-lg font-semibold mb-2">Space not found</h3>
-          <p className="text-muted-foreground mb-6">
-            This space may have been deleted.
-          </p>
+          <p className="text-muted-foreground mb-6">This space may have been deleted.</p>
           <Link to="/spaces">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
@@ -138,9 +127,7 @@ function SpaceDetailPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{space.name}</h1>
-            <p className="text-muted-foreground mt-1">
-              {items?.length || 0} items
-            </p>
+            <p className="text-muted-foreground mt-1">{items?.length || 0} items</p>
           </div>
         </div>
 
@@ -241,11 +228,7 @@ function SpaceDetailPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
@@ -265,19 +248,15 @@ function SpaceDetailPage() {
           <DialogHeader>
             <DialogTitle>Delete Space</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{space.name}"? Items in this space will not
-              be deleted but will no longer be assigned to a space.
+              Are you sure you want to delete "{space.name}"? Items in this space will not be
+              deleted but will no longer be assigned to a space.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteSpace.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteSpace.isPending}>
               {deleteSpace.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

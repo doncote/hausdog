@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Box, Building2, Home, MapPin, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Building2, Home, Box, MapPin, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,9 +46,7 @@ function PropertiesPage() {
       <div className="flex items-start justify-between mb-10">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your homes and rental properties
-          </p>
+          <p className="text-muted-foreground mt-2">Manage your homes and rental properties</p>
         </div>
         <Link to="/properties/new">
           <Button className="gap-2">

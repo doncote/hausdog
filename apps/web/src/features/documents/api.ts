@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from '@/lib/db/client'
 import { logger } from '@/lib/logger'
-import { DocumentService } from './service'
-import { ItemService } from '../items/service'
 import { EventService } from '../events/service'
+import { ItemService } from '../items/service'
+import { DocumentService } from './service'
 import type { CreateDocumentInput, UpdateDocumentInput } from './types'
 
 interface ExtractedData {
@@ -136,22 +136,24 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
         extractedData?.extracted?.productName ||
         `Item from ${document.fileName}`
 
-      const category =
-        data.overrides?.category ||
-        extractedData?.suggestedCategory ||
-        'other'
+      const category = data.overrides?.category || extractedData?.suggestedCategory || 'other'
 
       const newItem = await itemService.create(data.userId, {
         propertyId: data.propertyId,
         spaceId: data.overrides?.spaceId ?? undefined,
-        parentId: action === 'CHILD_OF_ITEM' ? (resolveData?.matchedItemId ?? undefined) : undefined,
+        parentId:
+          action === 'CHILD_OF_ITEM' ? (resolveData?.matchedItemId ?? undefined) : undefined,
         name: itemName,
         category,
-        manufacturer: data.overrides?.manufacturer || extractedData?.extracted?.manufacturer || undefined,
+        manufacturer:
+          data.overrides?.manufacturer || extractedData?.extracted?.manufacturer || undefined,
         model: data.overrides?.model || extractedData?.extracted?.model || undefined,
-        serialNumber: data.overrides?.serialNumber || extractedData?.extracted?.serialNumber || undefined,
+        serialNumber:
+          data.overrides?.serialNumber || extractedData?.extracted?.serialNumber || undefined,
         purchasePrice: extractedData?.extracted?.price || undefined,
-        acquiredDate: extractedData?.extracted?.date ? new Date(extractedData.extracted.date) : undefined,
+        acquiredDate: extractedData?.extracted?.date
+          ? new Date(extractedData.extracted.date)
+          : undefined,
         warrantyExpires: extractedData?.extracted?.warrantyExpires
           ? new Date(extractedData.extracted.warrantyExpires)
           : undefined,

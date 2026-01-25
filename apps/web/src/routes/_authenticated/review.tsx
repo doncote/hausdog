@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import {
   Box,
   Check,
@@ -14,6 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,13 +25,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  usePendingReviewDocuments,
-  useUpdateDocumentStatus,
-  useConfirmDocument,
-  useDeleteDocument,
   DocumentStatus,
   type DocumentWithRelations,
   getSignedUrl,
+  useConfirmDocument,
+  useDeleteDocument,
+  usePendingReviewDocuments,
+  useUpdateDocumentStatus,
 } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -83,8 +83,11 @@ function ReviewPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<DocumentWithRelations | null>(null)
 
-  const { data: pendingDocuments, isPending: documentsLoading, refetch } =
-    usePendingReviewDocuments(currentProperty?.id)
+  const {
+    data: pendingDocuments,
+    isPending: documentsLoading,
+    refetch,
+  } = usePendingReviewDocuments(currentProperty?.id)
 
   const updateStatus = useUpdateDocumentStatus()
   const confirmDocument = useConfirmDocument()
@@ -223,9 +226,7 @@ function ReviewPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Review Documents</h1>
-          <p className="text-muted-foreground mt-1">
-            Pending review for {currentProperty.name}
-          </p>
+          <p className="text-muted-foreground mt-1">Pending review for {currentProperty.name}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => refetch()}>
@@ -295,19 +296,25 @@ function ReviewPage() {
                       {resolved.action === 'NEW_ITEM' && (
                         <>
                           <Plus className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-600">Create New Item</span>
+                          <span className="text-sm font-medium text-green-600">
+                            Create New Item
+                          </span>
                         </>
                       )}
                       {resolved.action === 'ATTACH_TO_ITEM' && (
                         <>
                           <Link2 className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-blue-600">Attach to Existing</span>
+                          <span className="text-sm font-medium text-blue-600">
+                            Attach to Existing
+                          </span>
                         </>
                       )}
                       {resolved.action === 'CHILD_OF_ITEM' && (
                         <>
                           <Box className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium text-purple-600">Add as Component</span>
+                          <span className="text-sm font-medium text-purple-600">
+                            Add as Component
+                          </span>
                         </>
                       )}
                       {resolved.confidence && (
@@ -326,36 +333,53 @@ function ReviewPage() {
                 {extracted?.extracted && (
                   <div className="mb-4 space-y-1 text-sm">
                     {extracted.suggestedItemName && (
-                      <p><span className="text-muted-foreground">Item:</span> {extracted.suggestedItemName}</p>
+                      <p>
+                        <span className="text-muted-foreground">Item:</span>{' '}
+                        {extracted.suggestedItemName}
+                      </p>
                     )}
                     {extracted.extracted.manufacturer && (
-                      <p><span className="text-muted-foreground">Manufacturer:</span> {extracted.extracted.manufacturer}</p>
+                      <p>
+                        <span className="text-muted-foreground">Manufacturer:</span>{' '}
+                        {extracted.extracted.manufacturer}
+                      </p>
                     )}
                     {extracted.extracted.model && (
-                      <p><span className="text-muted-foreground">Model:</span> {extracted.extracted.model}</p>
+                      <p>
+                        <span className="text-muted-foreground">Model:</span>{' '}
+                        {extracted.extracted.model}
+                      </p>
                     )}
                     {extracted.extracted.serialNumber && (
-                      <p><span className="text-muted-foreground">Serial:</span> {extracted.extracted.serialNumber}</p>
+                      <p>
+                        <span className="text-muted-foreground">Serial:</span>{' '}
+                        {extracted.extracted.serialNumber}
+                      </p>
                     )}
                     {extracted.suggestedCategory && (
-                      <p><span className="text-muted-foreground">Category:</span> {extracted.suggestedCategory}</p>
+                      <p>
+                        <span className="text-muted-foreground">Category:</span>{' '}
+                        {extracted.suggestedCategory}
+                      </p>
                     )}
                     {extracted.extracted.price && (
-                      <p><span className="text-muted-foreground">Price:</span> ${extracted.extracted.price}</p>
+                      <p>
+                        <span className="text-muted-foreground">Price:</span> $
+                        {extracted.extracted.price}
+                      </p>
                     )}
                     {extracted.extracted.vendor && (
-                      <p><span className="text-muted-foreground">Vendor:</span> {extracted.extracted.vendor}</p>
+                      <p>
+                        <span className="text-muted-foreground">Vendor:</span>{' '}
+                        {extracted.extracted.vendor}
+                      </p>
                     )}
                   </div>
                 )}
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDocument(doc)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleViewDocument(doc)}>
                     View
                   </Button>
                   <Button
@@ -430,129 +454,137 @@ function ReviewPage() {
 
             {/* Extracted Data */}
             <div className="space-y-4">
-              {selectedDocument && (() => {
-                const extracted = getExtractedData(selectedDocument)
-                const resolved = getResolveData(selectedDocument)
+              {selectedDocument &&
+                (() => {
+                  const extracted = getExtractedData(selectedDocument)
+                  const resolved = getResolveData(selectedDocument)
 
-                return (
-                  <>
-                    {/* AI Action */}
-                    {resolved && (
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <h3 className="font-medium mb-2">AI Suggestion</h3>
-                        <div className="flex items-center gap-2 mb-2">
-                          {resolved.action === 'NEW_ITEM' && (
-                            <>
-                              <Plus className="h-4 w-4 text-green-600" />
-                              <span className="font-medium text-green-600">Create New Item</span>
-                            </>
+                  return (
+                    <>
+                      {/* AI Action */}
+                      {resolved && (
+                        <div className="p-4 rounded-lg bg-muted/50">
+                          <h3 className="font-medium mb-2">AI Suggestion</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            {resolved.action === 'NEW_ITEM' && (
+                              <>
+                                <Plus className="h-4 w-4 text-green-600" />
+                                <span className="font-medium text-green-600">Create New Item</span>
+                              </>
+                            )}
+                            {resolved.action === 'ATTACH_TO_ITEM' && (
+                              <>
+                                <Link2 className="h-4 w-4 text-blue-600" />
+                                <span className="font-medium text-blue-600">
+                                  Attach to Existing Item
+                                </span>
+                              </>
+                            )}
+                            {resolved.action === 'CHILD_OF_ITEM' && (
+                              <>
+                                <Box className="h-4 w-4 text-purple-600" />
+                                <span className="font-medium text-purple-600">
+                                  Add as Component
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          {resolved.confidence && (
+                            <p className="text-sm text-muted-foreground mb-1">
+                              Confidence: {Math.round(resolved.confidence * 100)}%
+                            </p>
                           )}
-                          {resolved.action === 'ATTACH_TO_ITEM' && (
-                            <>
-                              <Link2 className="h-4 w-4 text-blue-600" />
-                              <span className="font-medium text-blue-600">Attach to Existing Item</span>
-                            </>
+                          {resolved.reasoning && (
+                            <p className="text-sm text-muted-foreground">{resolved.reasoning}</p>
                           )}
-                          {resolved.action === 'CHILD_OF_ITEM' && (
-                            <>
-                              <Box className="h-4 w-4 text-purple-600" />
-                              <span className="font-medium text-purple-600">Add as Component</span>
-                            </>
+                          {resolved.suggestedEventType && (
+                            <p className="text-sm mt-2">
+                              <span className="text-muted-foreground">Event type:</span>{' '}
+                              {resolved.suggestedEventType}
+                            </p>
                           )}
                         </div>
-                        {resolved.confidence && (
-                          <p className="text-sm text-muted-foreground mb-1">
-                            Confidence: {Math.round(resolved.confidence * 100)}%
-                          </p>
-                        )}
-                        {resolved.reasoning && (
-                          <p className="text-sm text-muted-foreground">{resolved.reasoning}</p>
-                        )}
-                        {resolved.suggestedEventType && (
-                          <p className="text-sm mt-2">
-                            <span className="text-muted-foreground">Event type:</span> {resolved.suggestedEventType}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      )}
 
-                    {/* Extracted Details */}
-                    {extracted && (
-                      <div className="p-4 rounded-lg border">
-                        <h3 className="font-medium mb-3">Extracted Information</h3>
-                        <dl className="space-y-2 text-sm">
-                          {extracted.suggestedItemName && (
-                            <div>
-                              <dt className="text-muted-foreground">Item Name</dt>
-                              <dd className="font-medium">{extracted.suggestedItemName}</dd>
-                            </div>
-                          )}
-                          {extracted.suggestedCategory && (
-                            <div>
-                              <dt className="text-muted-foreground">Category</dt>
-                              <dd>{extracted.suggestedCategory}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.manufacturer && (
-                            <div>
-                              <dt className="text-muted-foreground">Manufacturer</dt>
-                              <dd>{extracted.extracted.manufacturer}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.model && (
-                            <div>
-                              <dt className="text-muted-foreground">Model</dt>
-                              <dd>{extracted.extracted.model}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.serialNumber && (
-                            <div>
-                              <dt className="text-muted-foreground">Serial Number</dt>
-                              <dd className="font-mono text-xs">{extracted.extracted.serialNumber}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.price && (
-                            <div>
-                              <dt className="text-muted-foreground">Price</dt>
-                              <dd>${extracted.extracted.price}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.vendor && (
-                            <div>
-                              <dt className="text-muted-foreground">Vendor</dt>
-                              <dd>{extracted.extracted.vendor}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.date && (
-                            <div>
-                              <dt className="text-muted-foreground">Date</dt>
-                              <dd>{extracted.extracted.date}</dd>
-                            </div>
-                          )}
-                          {extracted.extracted?.warrantyExpires && (
-                            <div>
-                              <dt className="text-muted-foreground">Warranty Expires</dt>
-                              <dd>{extracted.extracted.warrantyExpires}</dd>
-                            </div>
-                          )}
-                          {extracted.documentType && (
-                            <div>
-                              <dt className="text-muted-foreground">Document Type</dt>
-                              <dd>{extracted.documentType}</dd>
-                            </div>
-                          )}
-                        </dl>
-                      </div>
-                    )}
+                      {/* Extracted Details */}
+                      {extracted && (
+                        <div className="p-4 rounded-lg border">
+                          <h3 className="font-medium mb-3">Extracted Information</h3>
+                          <dl className="space-y-2 text-sm">
+                            {extracted.suggestedItemName && (
+                              <div>
+                                <dt className="text-muted-foreground">Item Name</dt>
+                                <dd className="font-medium">{extracted.suggestedItemName}</dd>
+                              </div>
+                            )}
+                            {extracted.suggestedCategory && (
+                              <div>
+                                <dt className="text-muted-foreground">Category</dt>
+                                <dd>{extracted.suggestedCategory}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.manufacturer && (
+                              <div>
+                                <dt className="text-muted-foreground">Manufacturer</dt>
+                                <dd>{extracted.extracted.manufacturer}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.model && (
+                              <div>
+                                <dt className="text-muted-foreground">Model</dt>
+                                <dd>{extracted.extracted.model}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.serialNumber && (
+                              <div>
+                                <dt className="text-muted-foreground">Serial Number</dt>
+                                <dd className="font-mono text-xs">
+                                  {extracted.extracted.serialNumber}
+                                </dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.price && (
+                              <div>
+                                <dt className="text-muted-foreground">Price</dt>
+                                <dd>${extracted.extracted.price}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.vendor && (
+                              <div>
+                                <dt className="text-muted-foreground">Vendor</dt>
+                                <dd>{extracted.extracted.vendor}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.date && (
+                              <div>
+                                <dt className="text-muted-foreground">Date</dt>
+                                <dd>{extracted.extracted.date}</dd>
+                              </div>
+                            )}
+                            {extracted.extracted?.warrantyExpires && (
+                              <div>
+                                <dt className="text-muted-foreground">Warranty Expires</dt>
+                                <dd>{extracted.extracted.warrantyExpires}</dd>
+                              </div>
+                            )}
+                            {extracted.documentType && (
+                              <div>
+                                <dt className="text-muted-foreground">Document Type</dt>
+                                <dd>{extracted.documentType}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </div>
+                      )}
 
-                    {!extracted && !resolved && (
-                      <div className="p-4 rounded-lg border border-dashed text-center text-muted-foreground">
-                        No extraction data available
-                      </div>
-                    )}
-                  </>
-                )
-              })()}
+                      {!extracted && !resolved && (
+                        <div className="p-4 rounded-lg border border-dashed text-center text-muted-foreground">
+                          No extraction data available
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
             </div>
           </div>
 
@@ -584,8 +616,8 @@ function ReviewPage() {
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{documentToDelete?.fileName}"? This action
-              cannot be undone.
+              Are you sure you want to delete "{documentToDelete?.fileName}"? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
