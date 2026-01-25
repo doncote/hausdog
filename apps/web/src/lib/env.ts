@@ -24,6 +24,12 @@ const serverEnvSchema = z.object({
   TRIGGER_API_KEY: z.string().min(1).optional(),
   TRIGGER_API_URL: z.string().url().optional(),
 
+  // Resend - Required for email ingestion
+  // Get from: https://resend.com/api-keys
+  RESEND_API_KEY: z.string().min(1),
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
+  INGEST_EMAIL_DOMAIN: z.string().min(1).optional(),
+
   // Server
   PORT: z.coerce.number().default(3333),
   PUBLIC_URL: z.string().url().optional(),
