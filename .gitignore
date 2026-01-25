@@ -1,38 +1,14 @@
-# Binaries
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-/hausdog
-/server
-/bin/
+# Dependencies
+node_modules/
 
-# Test binary
-*.test
-
-# Output of go coverage
-*.out
-
-# Go workspace
-go.work
-go.work.sum
-
-# Dependency directories
-/vendor/
+# Build output
+.output/
+dist/
 
 # Environment files
 .env
 .env.local
 .env.*.local
-
-# Node
-node_modules/
-npm-debug.log*
-
-# Build output
-/dist/
-/web/static/css/output.css
 
 # IDE
 .idea/
@@ -44,7 +20,15 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Local development
+# Logs
 *.log
+npm-debug.log*
+
+# Local development
 tmp/
-/tmp/
+
+# Vite
+*.local
+
+# Prisma
+generated/
