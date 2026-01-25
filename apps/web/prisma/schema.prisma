@@ -11,19 +11,25 @@ datasource db {
 // User IDs are stored as strings and validated at the application layer
 
 model Property {
-  id           String    @id @default(uuid())
-  userId       String    @map("user_id") @db.Uuid
-  name         String
-  address      String?
-  yearBuilt    Int?      @map("year_built")
-  squareFeet   Int?      @map("square_feet")
-  propertyType String?   @map("property_type")
-  purchaseDate DateTime? @map("purchase_date")
-  lookupData   Json?     @map("lookup_data")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  createdById  String    @map("created_by_id") @db.Uuid
-  updatedById  String    @map("updated_by_id") @db.Uuid
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id") @db.Uuid
+  name            String
+  address         String?
+  yearBuilt       Int?      @map("year_built")
+  squareFeet      Int?      @map("square_feet")
+  lotSquareFeet   Int?      @map("lot_square_feet")
+  bedrooms        Int?
+  bathrooms       Decimal?  @db.Decimal(3, 1)
+  stories         Int?
+  propertyType    String?   @map("property_type")
+  purchaseDate    DateTime? @map("purchase_date")
+  purchasePrice   Decimal?  @map("purchase_price") @db.Decimal(12, 2)
+  estimatedValue  Decimal?  @map("estimated_value") @db.Decimal(12, 2)
+  lookupData      Json?     @map("lookup_data")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdById     String    @map("created_by_id") @db.Uuid
+  updatedById     String    @map("updated_by_id") @db.Uuid
 
   spaces        Space[]
   items         Item[]
