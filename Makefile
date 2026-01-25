@@ -1,24 +1,40 @@
-.PHONY: dev build test lint supabase-start supabase-stop clean tc
+.PHONY: dev build preview test lint tc db-pull db-generate db-push supabase-start supabase-stop clean
 
 # Start development server with Doppler secrets
 dev:
-	cd hausdog-web && doppler run -- bun run dev
+	cd apps/web && doppler run -- bun run dev
 
 # Build for production
 build:
-	cd hausdog-web && bun run build
+	cd apps/web && doppler run -- bun run build
+
+# Preview production build
+preview:
+	cd apps/web && doppler run -- bun run preview
 
 # Run tests
 test:
-	cd hausdog-web && bun run test
+	cd apps/web && doppler run -- bun run test
 
 # Run linter
 lint:
-	cd hausdog-web && bun run lint
+	cd apps/web && bun run lint
 
 # Run TypeScript type checking
 tc:
-	cd hausdog-web && bunx tsc --noEmit
+	cd apps/web && doppler run -- bunx tsc --noEmit
+
+# Introspect database schema
+db-pull:
+	cd apps/web && doppler run -- bunx prisma db pull
+
+# Generate Prisma client
+db-generate:
+	cd apps/web && bunx prisma generate
+
+# Push schema to database
+db-push:
+	cd apps/web && doppler run -- bunx prisma db push
 
 # Start local Supabase
 supabase-start:
@@ -30,4 +46,4 @@ supabase-stop:
 
 # Clean build artifacts
 clean:
-	rm -rf hausdog-web/.output hausdog-web/node_modules/.vite
+	rm -rf apps/web/.output apps/web/node_modules/.vite

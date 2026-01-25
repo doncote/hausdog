@@ -1,7 +1,0 @@
-{
-  "last_failure": "2026-01-20T08:26:25.441756-05:00",
-  "failure_count": 16,
-  "backoff_until": "2026-01-20T08:56:25.441757-05:00",
-  "needs_manual_sync": true,
-  "failure_reason": "git pull failed: exit status 1\nfatal: couldn't find remote ref don/android-app\n"
-}

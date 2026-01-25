@@ -1,0 +1,129 @@
+import { createFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useState } from 'react'
+import { ArrowLeft, Building2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { requireAuthFromContext } from '@/lib/auth'
+import { createPropertySchema } from '@hausdog/domain/properties'
+import { useCreateProperty } from '@/features/properties'
+
+export const Route = createFileRoute('/properties/new')({
+  beforeLoad: ({ context }) => {
+    requireAuthFromContext(context)
+  },
+  component: NewPropertyPage,
+})
+
+function NewPropertyPage() {
+  const { user } = useRouteContext({ from: '/properties/new' })
+  const navigate = useNavigate()
+  const createProperty = useCreateProperty()
+
+  const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrors({})
+
+    const result = createPropertySchema.safeParse({ name, address: address || undefined })
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
+    if (!user) return
+
+    try {
+      const property = await createProperty.mutateAsync({
+        userId: user.id,
+        input: result.data,
+      })
+      toast.success('Property created')
+      navigate({ to: '/properties/$propertyId', params: { propertyId: property.id } })
+    } catch {
+      toast.error('Failed to create property')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-2xl px-6 py-10">
+        {/* Back link */}
+        <Link
+          to="/properties"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Properties
+        </Link>
+
+        {/* Form Card */}
+        <div className="rounded-xl border bg-card p-8">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="rounded-lg bg-primary/10 p-3">
+              <Building2 className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">New Property</h1>
+              <p className="text-muted-foreground">
+                Add a home or property to track its systems and documentation
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Main House, Beach Cottage"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                aria-invalid={!!errors.name}
+                className="h-11"
+              />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                placeholder="123 Main St, City, State 12345"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+              />
+              {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate({ to: '/properties' })}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createProperty.isPending}>
+                {createProperty.isPending ? 'Creating...' : 'Create Property'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
