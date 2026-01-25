@@ -125,8 +125,10 @@ function PropertyDetailPage() {
     }
 
     setIsLookingUp(true)
+    const toastId = toast.loading('Looking up property data...')
     try {
       const result = await lookupPropertyData({ data: { address: property.address } })
+      toast.dismiss(toastId)
       if (result.result.found) {
         setLookupResult(result)
         setShowLookupDialog(true)
@@ -134,6 +136,7 @@ function PropertyDetailPage() {
         toast.info("Couldn't find property data for this address")
       }
     } catch {
+      toast.dismiss(toastId)
       toast.error('Failed to look up property data')
     } finally {
       setIsLookingUp(false)
@@ -146,10 +149,16 @@ function PropertyDetailPage() {
     const input = {
       yearBuilt: lookupResult.result.yearBuilt ?? undefined,
       squareFeet: lookupResult.result.squareFeet ?? undefined,
+      lotSquareFeet: lookupResult.result.lotSquareFeet ?? undefined,
+      bedrooms: lookupResult.result.bedrooms ?? undefined,
+      bathrooms: lookupResult.result.bathrooms ?? undefined,
+      stories: lookupResult.result.stories ?? undefined,
       propertyType: lookupResult.result.propertyType ?? undefined,
       purchaseDate: lookupResult.result.lastSaleDate
         ? new Date(lookupResult.result.lastSaleDate)
         : undefined,
+      purchasePrice: lookupResult.result.lastSalePrice ?? undefined,
+      estimatedValue: lookupResult.result.estimatedValue ?? undefined,
       lookupData: lookupResult.raw,
     }
     console.log('Applying lookup data:', input)
@@ -249,17 +258,18 @@ function PropertyDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{property.name}</h1>
-              {property.address && (
-                <p className="text-muted-foreground mt-1 flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
-                  {property.address}
-                </p>
-              )}
-            </div>
-            <DropdownMenu>
+          <>
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">{property.name}</h1>
+                {property.address && (
+                  <p className="text-muted-foreground mt-1 flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4" />
+                    {property.address}
+                  </p>
+                )}
+              </div>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">
                   <MoreVertical className="h-4 w-4" />
@@ -292,7 +302,76 @@ function PropertyDetailPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+            </div>
+
+            {/* Property Details Grid */}
+            {(property.yearBuilt || property.squareFeet || property.bedrooms || property.bathrooms ||
+              property.lotSquareFeet || property.stories || property.propertyType ||
+              property.purchaseDate || property.purchasePrice || property.estimatedValue) && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-4 border-t">
+                {property.yearBuilt && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Year Built</p>
+                    <p className="font-medium">{property.yearBuilt}</p>
+                  </div>
+                )}
+                {property.squareFeet && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Sq Ft</p>
+                    <p className="font-medium">{property.squareFeet.toLocaleString()}</p>
+                  </div>
+                )}
+                {property.lotSquareFeet && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Lot Size</p>
+                    <p className="font-medium">{property.lotSquareFeet.toLocaleString()} sq ft</p>
+                  </div>
+                )}
+                {property.bedrooms && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Bedrooms</p>
+                    <p className="font-medium">{property.bedrooms}</p>
+                  </div>
+                )}
+                {property.bathrooms && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Bathrooms</p>
+                    <p className="font-medium">{property.bathrooms}</p>
+                  </div>
+                )}
+                {property.stories && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Stories</p>
+                    <p className="font-medium">{property.stories}</p>
+                  </div>
+                )}
+                {property.propertyType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Type</p>
+                    <p className="font-medium capitalize">{property.propertyType.replace('_', ' ')}</p>
+                  </div>
+                )}
+                {property.purchaseDate && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Acquired</p>
+                    <p className="font-medium">{new Date(property.purchaseDate).toLocaleDateString()}</p>
+                  </div>
+                )}
+                {property.purchasePrice && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Purchase Price</p>
+                    <p className="font-medium">${property.purchasePrice.toLocaleString()}</p>
+                  </div>
+                )}
+                {property.estimatedValue && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Est. Value</p>
+                    <p className="font-medium">${property.estimatedValue.toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

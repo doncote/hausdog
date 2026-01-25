@@ -47,17 +47,25 @@ function NewPropertyPage() {
       // Look up property data if address provided
       if (address.trim()) {
         setIsLookingUp(true)
+        const toastId = toast.loading('Looking up property data...')
         try {
           const lookupResult = await lookupPropertyData({ data: { address: address.trim() } })
+          toast.dismiss(toastId)
           if (lookupResult.result.found) {
             inputData = {
               ...inputData,
               yearBuilt: lookupResult.result.yearBuilt ?? undefined,
               squareFeet: lookupResult.result.squareFeet ?? undefined,
+              lotSquareFeet: lookupResult.result.lotSquareFeet ?? undefined,
+              bedrooms: lookupResult.result.bedrooms ?? undefined,
+              bathrooms: lookupResult.result.bathrooms ?? undefined,
+              stories: lookupResult.result.stories ?? undefined,
               propertyType: lookupResult.result.propertyType ?? undefined,
               purchaseDate: lookupResult.result.lastSaleDate
                 ? new Date(lookupResult.result.lastSaleDate)
                 : undefined,
+              purchasePrice: lookupResult.result.lastSalePrice ?? undefined,
+              estimatedValue: lookupResult.result.estimatedValue ?? undefined,
               lookupData: lookupResult.raw,
             }
             toast.success('Property details found and applied')
@@ -65,6 +73,7 @@ function NewPropertyPage() {
             toast.info("Couldn't find property data for this address")
           }
         } catch {
+          toast.dismiss(toastId)
           // Lookup failed, continue without it
           toast.info("Couldn't look up property data")
         } finally {
