@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-action/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - run: flyctl deploy --remote-only -a hausdog-web-prd
         env:
