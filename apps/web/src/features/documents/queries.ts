@@ -28,6 +28,7 @@ export const pendingReviewDocumentsQueryOptions = (propertyId: string) =>
   queryOptions({
     queryKey: documentKeys.pendingReview(propertyId),
     queryFn: () => fetchPendingReviewDocuments({ data: { propertyId } }),
+    staleTime: 0, // Always refetch to get latest processing results
   })
 
 export const documentsByStatusQueryOptions = (propertyId: string, status: string) =>

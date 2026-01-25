@@ -143,21 +143,29 @@ function PropertyDetailPage() {
   const handleApplyLookup = async () => {
     if (!lookupResult || !user) return
 
+    const input = {
+      yearBuilt: lookupResult.result.yearBuilt ?? undefined,
+      squareFeet: lookupResult.result.squareFeet ?? undefined,
+      propertyType: lookupResult.result.propertyType ?? undefined,
+      purchaseDate: lookupResult.result.lastSaleDate
+        ? new Date(lookupResult.result.lastSaleDate)
+        : undefined,
+      lookupData: lookupResult.raw,
+    }
+    console.log('Applying lookup data:', input)
+
     try {
-      await updateProperty.mutateAsync({
+      const result = await updateProperty.mutateAsync({
         id: propertyId,
         userId: user.id,
-        input: {
-          yearBuilt: lookupResult.result.yearBuilt ?? undefined,
-          squareFeet: lookupResult.result.squareFeet ?? undefined,
-          propertyType: lookupResult.result.propertyType ?? undefined,
-          lookupData: lookupResult.raw,
-        },
+        input,
       })
+      console.log('Update result:', result)
       toast.success('Property details updated')
       setShowLookupDialog(false)
       setLookupResult(null)
-    } catch {
+    } catch (error) {
+      console.error('Update failed:', error)
       toast.error('Failed to update property')
     }
   }
@@ -473,6 +481,24 @@ function PropertyDetailPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Lot Size</span>
                   <span className="font-medium">{lookupResult.result.lotSquareFeet.toLocaleString()} sq ft</span>
+                </div>
+              )}
+              {lookupResult.result.lastSaleDate && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Last Sale Date</span>
+                  <span className="font-medium">{lookupResult.result.lastSaleDate}</span>
+                </div>
+              )}
+              {lookupResult.result.lastSalePrice && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Last Sale Price</span>
+                  <span className="font-medium">${lookupResult.result.lastSalePrice.toLocaleString()}</span>
+                </div>
+              )}
+              {lookupResult.result.estimatedValue && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Estimated Value</span>
+                  <span className="font-medium">${lookupResult.result.estimatedValue.toLocaleString()}</span>
                 </div>
               )}
               {lookupResult.groundingSources.length > 0 && (

@@ -133,7 +133,7 @@ function DashboardPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   document{stats.pendingReviewCount !== 1 ? 's' : ''} pending review
                 </p>
-                <Link to="/review" search={{ propertyId: undefined }}>
+                <Link to="/review">
                   <Button size="sm" variant="outline">
                     Review Documents
                   </Button>

@@ -1,4 +1,4 @@
-.PHONY: dev build preview test db-pull db-generate
+.PHONY: dev build preview test db-pull db-generate typecheck lint
 
 # Run dev server with Doppler secrets
 dev:

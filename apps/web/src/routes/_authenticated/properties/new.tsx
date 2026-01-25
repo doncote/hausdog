@@ -55,6 +55,9 @@ function NewPropertyPage() {
               yearBuilt: lookupResult.result.yearBuilt ?? undefined,
               squareFeet: lookupResult.result.squareFeet ?? undefined,
               propertyType: lookupResult.result.propertyType ?? undefined,
+              purchaseDate: lookupResult.result.lastSaleDate
+                ? new Date(lookupResult.result.lastSaleDate)
+                : undefined,
               lookupData: lookupResult.raw,
             }
             toast.success('Property details found and applied')

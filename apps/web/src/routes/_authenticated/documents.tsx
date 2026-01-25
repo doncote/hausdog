@@ -1,19 +1,21 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Camera,
   ChevronRight,
   FileText,
   Filter,
+  Home,
   Image,
   Loader2,
+  RefreshCw,
   Search,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useRealtimeRun } from '@trigger.dev/react-hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -29,14 +31,46 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useProperties } from '@/features/properties'
 import {
   useDocumentsForProperty,
   useDeleteDocument,
   getSignedUrl,
+  reprocessDocument,
   DocumentStatus,
   type DocumentWithRelations,
 } from '@/features/documents'
+import { useCurrentProperty } from '@/hooks/use-current-property'
+
+interface ProcessingRun {
+  documentId: string
+  runId: string
+  accessToken: string
+}
+
+// Component to track a single processing run
+function ProcessingTracker({
+  run,
+  onComplete,
+}: {
+  run: ProcessingRun
+  onComplete: (documentId: string) => void
+}) {
+  const { run: realtimeRun } = useRealtimeRun(run.runId, {
+    accessToken: run.accessToken,
+  })
+
+  useEffect(() => {
+    if (realtimeRun?.status === 'COMPLETED') {
+      toast.success('Document processed successfully')
+      onComplete(run.documentId)
+    } else if (realtimeRun?.status === 'FAILED') {
+      toast.error('Document processing failed')
+      onComplete(run.documentId)
+    }
+  }, [realtimeRun?.status, run.documentId, onComplete])
+
+  return null
+}
 
 export const Route = createFileRoute('/_authenticated/documents')({
   component: DocumentsPage,
@@ -44,21 +78,53 @@ export const Route = createFileRoute('/_authenticated/documents')({
 
 function DocumentsPage() {
   const { user } = Route.useRouteContext()
+  const { currentProperty, isLoaded } = useCurrentProperty()
 
-  const { data: properties, isPending: propertiesLoading } = useProperties(user?.id)
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithRelations | null>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<DocumentWithRelations | null>(null)
+  const [processingRuns, setProcessingRuns] = useState<ProcessingRun[]>([])
 
-  const { data: documents, isPending: documentsLoading } =
-    useDocumentsForProperty(selectedPropertyId || undefined)
+  const { data: documents, isPending: documentsLoading, refetch } =
+    useDocumentsForProperty(currentProperty?.id)
 
   const deleteDocument = useDeleteDocument()
+
+  const handleProcessingComplete = (documentId: string) => {
+    setProcessingRuns((prev) => prev.filter((r) => r.documentId !== documentId))
+    refetch()
+  }
+
+  const isProcessing = (docId: string) => processingRuns.some((r) => r.documentId === docId)
+
+  const handleReprocess = async (doc: DocumentWithRelations) => {
+    if (!user) return
+    try {
+      const result = await reprocessDocument({
+        data: {
+          documentId: doc.id,
+          userId: user.id,
+          propertyId: doc.propertyId,
+        },
+      })
+
+      if (result.runId && result.publicAccessToken) {
+        setProcessingRuns((prev) => [
+          ...prev,
+          { documentId: doc.id, runId: result.runId, accessToken: result.publicAccessToken },
+        ])
+      }
+
+      toast.success('Processing started')
+      refetch()
+    } catch (error) {
+      console.error('Failed to reprocess document:', error)
+      toast.error('Failed to start processing. Check Trigger.dev configuration.')
+    }
+  }
 
   // Filter documents
   const filteredDocuments = documents?.filter((doc) => {
@@ -107,15 +173,48 @@ function DocumentsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case DocumentStatus.PENDING:
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Pending</span>
+      case DocumentStatus.PROCESSING:
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">Processing</span>
       case DocumentStatus.READY_FOR_REVIEW:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending Review</span>
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Ready for Review</span>
       case DocumentStatus.CONFIRMED:
         return <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Confirmed</span>
       case DocumentStatus.DISCARDED:
         return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">Discarded</span>
       default:
-        return <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">{status}</span>
+        return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">{status}</span>
     }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentProperty) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+            <Home className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No property selected</h3>
+          <p className="text-muted-foreground mb-6">
+            Select a property from the header to view documents.
+          </p>
+          <Link to="/properties/new">
+            <Button>Add Your First Property</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -135,80 +234,53 @@ function DocumentsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
           <p className="text-muted-foreground mt-1">
-            View and manage all your uploaded documents
+            Documents for {currentProperty.name}
           </p>
         </div>
-        <Link to="/capture">
-          <Button className="gap-2">
-            <Camera className="h-4 w-4" />
-            Capture Document
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/review">
+            <Button variant="outline" className="gap-2">
+              Review Pending
+            </Button>
+          </Link>
+          <Link to="/capture">
+            <Button className="gap-2">
+              <Camera className="h-4 w-4" />
+              Capture
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
-        <div className="w-[200px]">
-          <Label htmlFor="property" className="sr-only">Property</Label>
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger id="property">
-              <SelectValue placeholder="Select property" />
-            </SelectTrigger>
-            <SelectContent>
-              {propertiesLoading ? (
-                <SelectItem value="loading" disabled>
-                  Loading...
-                </SelectItem>
-              ) : properties && properties.length > 0 ? (
-                properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  No properties found
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
-        {selectedPropertyId && (
-          <>
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value={DocumentStatus.READY_FOR_REVIEW}>Pending Review</SelectItem>
-                <SelectItem value={DocumentStatus.CONFIRMED}>Confirmed</SelectItem>
-                <SelectItem value={DocumentStatus.DISCARDED}>Discarded</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
-        )}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value={DocumentStatus.PENDING}>Pending</SelectItem>
+            <SelectItem value={DocumentStatus.PROCESSING}>Processing</SelectItem>
+            <SelectItem value={DocumentStatus.READY_FOR_REVIEW}>Ready for Review</SelectItem>
+            <SelectItem value={DocumentStatus.CONFIRMED}>Confirmed</SelectItem>
+            <SelectItem value={DocumentStatus.DISCARDED}>Discarded</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {!selectedPropertyId ? (
-        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
-          <p className="text-muted-foreground">
-            Select a property to view documents
-          </p>
-        </div>
-      ) : documentsLoading ? (
+      {documentsLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -268,8 +340,26 @@ function DocumentsPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                {getStatusBadge(doc.status)}
+                {isProcessing(doc.id) ? (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  getStatusBadge(doc.status)
+                )}
                 <div className="flex gap-2">
+                  {(doc.status === DocumentStatus.PENDING || doc.status === DocumentStatus.PROCESSING) && !isProcessing(doc.id) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleReprocess(doc)}
+                      className="gap-1"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Process
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -365,6 +455,15 @@ function DocumentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Realtime processing trackers */}
+      {processingRuns.map((run) => (
+        <ProcessingTracker
+          key={run.runId}
+          run={run}
+          onComplete={handleProcessingComplete}
+        />
+      ))}
     </div>
   )
 }

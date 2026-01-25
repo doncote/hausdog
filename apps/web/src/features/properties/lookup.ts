@@ -40,6 +40,9 @@ export const lookupPropertyData = createServerFn({ method: 'POST' })
         bathrooms: null,
         propertyType: null,
         stories: null,
+        lastSaleDate: null,
+        lastSalePrice: null,
+        estimatedValue: null,
         source: null,
       }
       return {

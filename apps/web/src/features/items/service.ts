@@ -43,6 +43,20 @@ export class ItemService {
     return records.map((r) => this.toDomainWithRelations(r))
   }
 
+  async findAllForSpace(spaceId: string): Promise<ItemWithRelations[]> {
+    this.logger.debug('Finding all items for space', { spaceId })
+    const records = await this.db.item.findMany({
+      where: { spaceId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        space: { select: { id: true, name: true } },
+        parent: { select: { id: true, name: true } },
+        _count: { select: { events: true, documents: true, children: true } },
+      },
+    })
+    return records.map((r) => this.toDomainWithRelations(r))
+  }
+
   async findById(id: string): Promise<ItemWithRelations | null> {
     this.logger.debug('Finding item by id', { id })
     const record = await this.db.item.findUnique({
@@ -55,6 +69,20 @@ export class ItemService {
       },
     })
     return record ? this.toDomainWithRelations(record) : null
+  }
+
+  async findChildrenForItem(itemId: string): Promise<ItemWithRelations[]> {
+    this.logger.debug('Finding children for item', { itemId })
+    const records = await this.db.item.findMany({
+      where: { parentId: itemId },
+      orderBy: { name: 'asc' },
+      include: {
+        space: { select: { id: true, name: true } },
+        parent: { select: { id: true, name: true } },
+        _count: { select: { events: true, documents: true, children: true } },
+      },
+    })
+    return records.map((r) => this.toDomainWithRelations(r))
   }
 
   async create(userId: string, input: CreateItemInput): Promise<Item> {

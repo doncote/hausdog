@@ -1,24 +1,21 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
+  Box,
   Check,
   ChevronRight,
   FileText,
+  Home,
   Image,
+  Link2,
   Loader2,
+  Plus,
+  RefreshCw,
   Trash2,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -27,39 +24,70 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useProperties } from '@/features/properties'
 import {
   usePendingReviewDocuments,
   useUpdateDocumentStatus,
+  useConfirmDocument,
   useDeleteDocument,
   DocumentStatus,
   type DocumentWithRelations,
   getSignedUrl,
 } from '@/features/documents'
+import { useCurrentProperty } from '@/hooks/use-current-property'
 
 export const Route = createFileRoute('/_authenticated/review')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    propertyId: (search.propertyId as string) || undefined,
-  }),
   component: ReviewPage,
 })
 
+// Helper to safely access extracted data
+function getExtractedData(doc: DocumentWithRelations) {
+  const data = doc.extractedData as {
+    documentType?: string
+    confidence?: number
+    rawText?: string
+    extracted?: {
+      manufacturer?: string
+      model?: string
+      serialNumber?: string
+      productName?: string
+      date?: string
+      price?: number
+      vendor?: string
+      warrantyExpires?: string
+    }
+    suggestedItemName?: string
+    suggestedCategory?: string
+  } | null
+  return data
+}
+
+// Helper to safely access resolve data
+function getResolveData(doc: DocumentWithRelations) {
+  const data = doc.resolveData as {
+    action?: 'NEW_ITEM' | 'ATTACH_TO_ITEM' | 'CHILD_OF_ITEM'
+    matchedItemId?: string | null
+    confidence?: number
+    reasoning?: string
+    suggestedEventType?: string | null
+  } | null
+  return data
+}
+
 function ReviewPage() {
   const { user } = Route.useRouteContext()
-  const { propertyId: initialPropertyId } = Route.useSearch()
+  const { currentProperty, isLoaded } = useCurrentProperty()
+  const navigate = useNavigate()
 
-  const { data: properties, isPending: propertiesLoading } = useProperties(user?.id)
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialPropertyId || '')
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithRelations | null>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<DocumentWithRelations | null>(null)
 
-  const { data: pendingDocuments, isPending: documentsLoading } =
-    usePendingReviewDocuments(selectedPropertyId || undefined)
+  const { data: pendingDocuments, isPending: documentsLoading, refetch } =
+    usePendingReviewDocuments(currentProperty?.id)
 
   const updateStatus = useUpdateDocumentStatus()
+  const confirmDocument = useConfirmDocument()
   const deleteDocument = useDeleteDocument()
 
   const handleViewDocument = async (doc: DocumentWithRelations) => {
@@ -76,13 +104,33 @@ function ReviewPage() {
   }
 
   const handleConfirm = async (doc: DocumentWithRelations) => {
+    if (!user) return
+
     try {
-      await updateStatus.mutateAsync({
-        id: doc.id,
+      const result = await confirmDocument.mutateAsync({
+        documentId: doc.id,
+        userId: user.id,
         propertyId: doc.propertyId,
-        status: DocumentStatus.CONFIRMED,
       })
-      toast.success('Document confirmed')
+
+      if (result.itemId) {
+        const message =
+          result.action === 'NEW_ITEM'
+            ? 'Item created from document'
+            : result.action === 'CHILD_OF_ITEM'
+              ? 'Component added to item'
+              : 'Document attached to item'
+
+        toast.success(message, {
+          action: {
+            label: 'View Item',
+            onClick: () => navigate({ to: '/items/$itemId', params: { itemId: result.itemId! } }),
+          },
+        })
+      } else {
+        toast.success('Document confirmed')
+      }
+
       setSelectedDocument(null)
       setDocumentUrl(null)
     } catch (error) {
@@ -130,6 +178,35 @@ function ReviewPage() {
 
   const pendingCount = pendingDocuments?.length || 0
 
+  if (!isLoaded) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentProperty) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="mx-auto w-fit rounded-full bg-primary/10 p-4 mb-4">
+            <Home className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No property selected</h3>
+          <p className="text-muted-foreground mb-6">
+            Select a property from the header to review documents.
+          </p>
+          <Link to="/properties/new">
+            <Button>Add Your First Property</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <nav className="flex items-center gap-2 text-sm mb-8">
@@ -147,53 +224,23 @@ function ReviewPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Review Documents</h1>
           <p className="text-muted-foreground mt-1">
-            Review and confirm uploaded documents
+            Pending review for {currentProperty.name}
           </p>
         </div>
-        <Link to="/capture">
-          <Button variant="outline" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Capture More
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        </Link>
-      </div>
-
-      {/* Property Selection */}
-      <div className="mb-6 max-w-xs">
-        <Label htmlFor="property" className="mb-2 block">
-          Property
-        </Label>
-        <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-          <SelectTrigger id="property">
-            <SelectValue placeholder="Select a property" />
-          </SelectTrigger>
-          <SelectContent>
-            {propertiesLoading ? (
-              <SelectItem value="loading" disabled>
-                Loading...
-              </SelectItem>
-            ) : properties && properties.length > 0 ? (
-              properties.map((property) => (
-                <SelectItem key={property.id} value={property.id}>
-                  {property.name}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="none" disabled>
-                No properties found
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {!selectedPropertyId ? (
-        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
-          <p className="text-muted-foreground">
-            Select a property to view documents pending review
-          </p>
+          <Link to="/capture">
+            <Button variant="outline" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Capture More
+            </Button>
+          </Link>
         </div>
-      ) : documentsLoading ? (
+      </div>
+
+      {documentsLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -214,61 +261,128 @@ function ReviewPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pendingDocuments?.map((doc) => (
-            <div
-              key={doc.id}
-              className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start gap-3 mb-4">
-                <div className="rounded-lg bg-secondary p-2.5">
-                  {doc.contentType.startsWith('image/') ? (
-                    <Image className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.fileName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {doc.type} · {(doc.sizeBytes / 1024).toFixed(0)} KB
-                  </p>
-                </div>
-              </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {pendingDocuments?.map((doc) => {
+            const extracted = getExtractedData(doc)
+            const resolved = getResolveData(doc)
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewDocument(doc)}
-                  className="flex-1"
-                >
-                  View
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleConfirm(doc)}
-                  disabled={updateStatus.isPending}
-                  className="flex-1 gap-1"
-                >
-                  <Check className="h-3 w-3" />
-                  Confirm
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDocumentToDelete(doc)
-                    setShowDeleteDialog(true)
-                  }}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+            return (
+              <div
+                key={doc.id}
+                className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow"
+              >
+                {/* Header */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="rounded-lg bg-secondary p-2.5">
+                    {doc.contentType.startsWith('image/') ? (
+                      <Image className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{doc.fileName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {extracted?.documentType || doc.type} · {(doc.sizeBytes / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Suggestion */}
+                {resolved && (
+                  <div className="mb-4 p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      {resolved.action === 'NEW_ITEM' && (
+                        <>
+                          <Plus className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-600">Create New Item</span>
+                        </>
+                      )}
+                      {resolved.action === 'ATTACH_TO_ITEM' && (
+                        <>
+                          <Link2 className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-600">Attach to Existing</span>
+                        </>
+                      )}
+                      {resolved.action === 'CHILD_OF_ITEM' && (
+                        <>
+                          <Box className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm font-medium text-purple-600">Add as Component</span>
+                        </>
+                      )}
+                      {resolved.confidence && (
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {Math.round(resolved.confidence * 100)}% confident
+                        </span>
+                      )}
+                    </div>
+                    {resolved.reasoning && (
+                      <p className="text-xs text-muted-foreground">{resolved.reasoning}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Extracted Details */}
+                {extracted?.extracted && (
+                  <div className="mb-4 space-y-1 text-sm">
+                    {extracted.suggestedItemName && (
+                      <p><span className="text-muted-foreground">Item:</span> {extracted.suggestedItemName}</p>
+                    )}
+                    {extracted.extracted.manufacturer && (
+                      <p><span className="text-muted-foreground">Manufacturer:</span> {extracted.extracted.manufacturer}</p>
+                    )}
+                    {extracted.extracted.model && (
+                      <p><span className="text-muted-foreground">Model:</span> {extracted.extracted.model}</p>
+                    )}
+                    {extracted.extracted.serialNumber && (
+                      <p><span className="text-muted-foreground">Serial:</span> {extracted.extracted.serialNumber}</p>
+                    )}
+                    {extracted.suggestedCategory && (
+                      <p><span className="text-muted-foreground">Category:</span> {extracted.suggestedCategory}</p>
+                    )}
+                    {extracted.extracted.price && (
+                      <p><span className="text-muted-foreground">Price:</span> ${extracted.extracted.price}</p>
+                    )}
+                    {extracted.extracted.vendor && (
+                      <p><span className="text-muted-foreground">Vendor:</span> {extracted.extracted.vendor}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDocument(doc)}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleConfirm(doc)}
+                    disabled={confirmDocument.isPending}
+                    className="flex-1 gap-1"
+                  >
+                    <Check className="h-3 w-3" />
+                    Confirm & Create
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDocumentToDelete(doc)
+                      setShowDeleteDialog(true)
+                    }}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -282,35 +396,164 @@ function ReviewPage() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{selectedDocument?.fileName}</DialogTitle>
             <DialogDescription>
-              {selectedDocument?.type} ·{' '}
-              {selectedDocument && (selectedDocument.sizeBytes / 1024).toFixed(0)} KB
+              Review the extracted information before confirming
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
-            {documentUrl ? (
-              selectedDocument?.contentType.startsWith('image/') ? (
-                <img
-                  src={documentUrl}
-                  alt={selectedDocument.fileName}
-                  className="w-full rounded-lg"
-                />
+          <div className="grid md:grid-cols-2 gap-6 py-4">
+            {/* Document Preview */}
+            <div>
+              {documentUrl ? (
+                selectedDocument?.contentType.startsWith('image/') ? (
+                  <img
+                    src={documentUrl}
+                    alt={selectedDocument.fileName}
+                    className="w-full rounded-lg"
+                  />
+                ) : (
+                  <iframe
+                    src={documentUrl}
+                    title={selectedDocument?.fileName}
+                    className="w-full h-[50vh] rounded-lg border"
+                  />
+                )
               ) : (
-                <iframe
-                  src={documentUrl}
-                  title={selectedDocument?.fileName}
-                  className="w-full h-[60vh] rounded-lg border"
-                />
-              )
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )}
+                <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            {/* Extracted Data */}
+            <div className="space-y-4">
+              {selectedDocument && (() => {
+                const extracted = getExtractedData(selectedDocument)
+                const resolved = getResolveData(selectedDocument)
+
+                return (
+                  <>
+                    {/* AI Action */}
+                    {resolved && (
+                      <div className="p-4 rounded-lg bg-muted/50">
+                        <h3 className="font-medium mb-2">AI Suggestion</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          {resolved.action === 'NEW_ITEM' && (
+                            <>
+                              <Plus className="h-4 w-4 text-green-600" />
+                              <span className="font-medium text-green-600">Create New Item</span>
+                            </>
+                          )}
+                          {resolved.action === 'ATTACH_TO_ITEM' && (
+                            <>
+                              <Link2 className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium text-blue-600">Attach to Existing Item</span>
+                            </>
+                          )}
+                          {resolved.action === 'CHILD_OF_ITEM' && (
+                            <>
+                              <Box className="h-4 w-4 text-purple-600" />
+                              <span className="font-medium text-purple-600">Add as Component</span>
+                            </>
+                          )}
+                        </div>
+                        {resolved.confidence && (
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Confidence: {Math.round(resolved.confidence * 100)}%
+                          </p>
+                        )}
+                        {resolved.reasoning && (
+                          <p className="text-sm text-muted-foreground">{resolved.reasoning}</p>
+                        )}
+                        {resolved.suggestedEventType && (
+                          <p className="text-sm mt-2">
+                            <span className="text-muted-foreground">Event type:</span> {resolved.suggestedEventType}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Extracted Details */}
+                    {extracted && (
+                      <div className="p-4 rounded-lg border">
+                        <h3 className="font-medium mb-3">Extracted Information</h3>
+                        <dl className="space-y-2 text-sm">
+                          {extracted.suggestedItemName && (
+                            <div>
+                              <dt className="text-muted-foreground">Item Name</dt>
+                              <dd className="font-medium">{extracted.suggestedItemName}</dd>
+                            </div>
+                          )}
+                          {extracted.suggestedCategory && (
+                            <div>
+                              <dt className="text-muted-foreground">Category</dt>
+                              <dd>{extracted.suggestedCategory}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.manufacturer && (
+                            <div>
+                              <dt className="text-muted-foreground">Manufacturer</dt>
+                              <dd>{extracted.extracted.manufacturer}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.model && (
+                            <div>
+                              <dt className="text-muted-foreground">Model</dt>
+                              <dd>{extracted.extracted.model}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.serialNumber && (
+                            <div>
+                              <dt className="text-muted-foreground">Serial Number</dt>
+                              <dd className="font-mono text-xs">{extracted.extracted.serialNumber}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.price && (
+                            <div>
+                              <dt className="text-muted-foreground">Price</dt>
+                              <dd>${extracted.extracted.price}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.vendor && (
+                            <div>
+                              <dt className="text-muted-foreground">Vendor</dt>
+                              <dd>{extracted.extracted.vendor}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.date && (
+                            <div>
+                              <dt className="text-muted-foreground">Date</dt>
+                              <dd>{extracted.extracted.date}</dd>
+                            </div>
+                          )}
+                          {extracted.extracted?.warrantyExpires && (
+                            <div>
+                              <dt className="text-muted-foreground">Warranty Expires</dt>
+                              <dd>{extracted.extracted.warrantyExpires}</dd>
+                            </div>
+                          )}
+                          {extracted.documentType && (
+                            <div>
+                              <dt className="text-muted-foreground">Document Type</dt>
+                              <dd>{extracted.documentType}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                    )}
+
+                    {!extracted && !resolved && (
+                      <div className="p-4 rounded-lg border border-dashed text-center text-muted-foreground">
+                        No extraction data available
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
@@ -329,7 +572,7 @@ function ReviewPage() {
               className="gap-2"
             >
               <Check className="h-4 w-4" />
-              Confirm
+              Confirm & Create Item
             </Button>
           </DialogFooter>
         </DialogContent>

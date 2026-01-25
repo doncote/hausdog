@@ -1,11 +1,21 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
 import { v4 as uuidv4 } from 'uuid'
+import { tasks, configure, auth } from '@trigger.dev/sdk/v3'
 import { getServerEnv } from '@/lib/env'
 import { prisma } from '@/lib/db/client'
 import { logger } from '@/lib/logger'
 import { DocumentService } from './service'
 import { DocumentType } from './types'
+import type { processDocumentTask } from '../../../trigger/process-document'
+
+// Configure Trigger.dev with our API key
+function configureTrigger() {
+  const apiKey = process.env.TRIGGER_SECRET_KEY || process.env.TRIGGER_API_KEY
+  if (apiKey) {
+    configure({ secretKey: apiKey })
+  }
+}
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -93,7 +103,36 @@ export const uploadDocument = createServerFn({ method: 'POST' })
 
     logger.info('Document created', { documentId: document.id })
 
-    return document
+    // Trigger background processing
+    let runId: string | undefined
+    let publicAccessToken: string | undefined
+    try {
+      configureTrigger()
+      const handle = await tasks.trigger<typeof processDocumentTask>('process-document', {
+        documentId: document.id,
+        userId: data.userId,
+        propertyId: data.propertyId,
+      })
+      runId = handle.id
+      logger.info('Document processing triggered', { documentId: document.id, runId })
+
+      // Create public token for realtime updates
+      publicAccessToken = await auth.createPublicToken({
+        scopes: {
+          read: { runs: [handle.id] },
+        },
+        expirationTime: '1h',
+      })
+    } catch (triggerError) {
+      // Log but don't fail the upload if triggering fails
+      // Document is still created and can be processed manually
+      logger.error('Failed to trigger document processing', {
+        documentId: document.id,
+        error: triggerError instanceof Error ? triggerError.message : 'Unknown error',
+      })
+    }
+
+    return { ...document, runId, publicAccessToken }
   })
 
 export const getSignedUrl = createServerFn({ method: 'GET' })
@@ -138,6 +177,54 @@ export const deleteDocumentFile = createServerFn({ method: 'POST' })
     }
 
     return { success: true }
+  })
+
+export const reprocessDocument = createServerFn({ method: 'POST' })
+  .inputValidator((d: { documentId: string; userId: string; propertyId: string }) => d)
+  .handler(async ({ data }) => {
+    logger.info('Reprocessing document', { documentId: data.documentId })
+
+    // Get document to verify it exists and belongs to property
+    const service = new DocumentService({ db: prisma, logger })
+    const document = await service.findById(data.documentId)
+
+    if (!document) {
+      throw new Error('Document not found')
+    }
+
+    if (document.propertyId !== data.propertyId) {
+      throw new Error('Document does not belong to this property')
+    }
+
+    // Reset status to pending
+    await service.updateStatus(data.documentId, 'pending')
+
+    // Trigger background processing
+    try {
+      configureTrigger()
+      const handle = await tasks.trigger<typeof processDocumentTask>('process-document', {
+        documentId: data.documentId,
+        userId: data.userId,
+        propertyId: data.propertyId,
+      })
+      logger.info('Document reprocessing triggered', { documentId: data.documentId, runId: handle.id })
+
+      // Create public token for realtime updates
+      const publicAccessToken = await auth.createPublicToken({
+        scopes: {
+          read: { runs: [handle.id] },
+        },
+        expirationTime: '1h',
+      })
+
+      return { success: true, runId: handle.id, publicAccessToken }
+    } catch (triggerError) {
+      logger.error('Failed to trigger document reprocessing', {
+        documentId: data.documentId,
+        error: triggerError instanceof Error ? triggerError.message : 'Unknown error',
+      })
+      throw new Error('Failed to start processing. Please check Trigger.dev configuration.')
+    }
   })
 
 function inferDocumentType(contentType: string, fileName: string): string {

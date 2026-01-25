@@ -19,6 +19,9 @@ Return JSON only (no markdown):
   "bathrooms": number or null,
   "propertyType": "single_family|condo|townhouse|multi_family|manufactured|land|other" or null,
   "stories": number or null,
+  "lastSaleDate": "YYYY-MM-DD or null (most recent sale date)",
+  "lastSalePrice": number or null (most recent sale price in dollars),
+  "estimatedValue": number or null (current estimated market value in dollars),
   "source": "primary source of the data"
 }
 
@@ -34,6 +37,9 @@ export interface PropertyLookupResult {
   bathrooms: number | null
   propertyType: string | null
   stories: number | null
+  lastSaleDate: string | null
+  lastSalePrice: number | null
+  estimatedValue: number | null
   source: string | null
 }
 
@@ -150,6 +156,9 @@ export async function lookupPropertyWithGemini(
       bathrooms: null,
       propertyType: null,
       stories: null,
+      lastSaleDate: null,
+      lastSalePrice: null,
+      estimatedValue: null,
       source: null,
     }
   }
