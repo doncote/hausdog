@@ -1,3 +1,4 @@
+import { Prisma } from '@generated/prisma/client'
 import type { PrismaClient, Property as PrismaProperty } from '@generated/prisma/client'
 import type { Logger } from '@/lib/logger'
 import type { CreatePropertyInput, Property, PropertyWithCounts, UpdatePropertyInput } from './types'
@@ -61,6 +62,7 @@ export class PropertyService {
         squareFeet: input.squareFeet ?? null,
         propertyType: input.propertyType ?? null,
         purchaseDate: input.purchaseDate ?? null,
+        lookupData: input.lookupData as Prisma.InputJsonValue ?? Prisma.DbNull,
         createdById: userId,
         updatedById: userId,
       },
@@ -79,6 +81,9 @@ export class PropertyService {
         ...(input.squareFeet !== undefined && { squareFeet: input.squareFeet ?? null }),
         ...(input.propertyType !== undefined && { propertyType: input.propertyType ?? null }),
         ...(input.purchaseDate !== undefined && { purchaseDate: input.purchaseDate ?? null }),
+        ...(input.lookupData !== undefined && {
+          lookupData: input.lookupData as Prisma.InputJsonValue ?? Prisma.DbNull,
+        }),
         updatedById: userId,
       },
     })
@@ -102,6 +107,7 @@ export class PropertyService {
       squareFeet: record.squareFeet,
       propertyType: record.propertyType,
       purchaseDate: record.purchaseDate,
+      lookupData: record.lookupData,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     }

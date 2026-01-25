@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Prisma } from '@generated/prisma/client'
 
 export const CreatePropertySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -7,6 +8,7 @@ export const CreatePropertySchema = z.object({
   squareFeet: z.number().int().positive().optional(),
   propertyType: z.string().optional(),
   purchaseDate: z.date().optional(),
+  lookupData: z.unknown().optional(),
 })
 
 export const UpdatePropertySchema = CreatePropertySchema.partial()
@@ -23,6 +25,7 @@ export interface Property {
   squareFeet: number | null
   propertyType: string | null
   purchaseDate: Date | null
+  lookupData: Prisma.JsonValue | null
   createdAt: Date
   updatedAt: Date
 }

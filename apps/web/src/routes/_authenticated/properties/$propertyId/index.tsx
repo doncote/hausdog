@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Box, ChevronRight, DoorOpen, MapPin, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Box, ChevronRight, DoorOpen, Loader2, MapPin, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +21,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { UpdatePropertySchema, useDeleteProperty, useProperty, useUpdateProperty } from '@/features/properties'
+import {
+  UpdatePropertySchema,
+  useDeleteProperty,
+  useProperty,
+  useUpdateProperty,
+  lookupPropertyData,
+  type PropertyLookupResponse,
+} from '@/features/properties'
 import { useRootItemsForProperty, type ItemWithRelations } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 
@@ -42,6 +49,9 @@ function PropertyDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showLookupDialog, setShowLookupDialog] = useState(false)
+  const [isLookingUp, setIsLookingUp] = useState(false)
+  const [lookupResult, setLookupResult] = useState<PropertyLookupResponse | null>(null)
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -106,6 +116,50 @@ function PropertyDetailPage() {
     }
     setErrors({})
     setIsEditing(false)
+  }
+
+  const handleLookup = async () => {
+    if (!property?.address) {
+      toast.error('Please add an address first')
+      return
+    }
+
+    setIsLookingUp(true)
+    try {
+      const result = await lookupPropertyData({ data: { address: property.address } })
+      if (result.result.found) {
+        setLookupResult(result)
+        setShowLookupDialog(true)
+      } else {
+        toast.info("Couldn't find property data for this address")
+      }
+    } catch {
+      toast.error('Failed to look up property data')
+    } finally {
+      setIsLookingUp(false)
+    }
+  }
+
+  const handleApplyLookup = async () => {
+    if (!lookupResult || !user) return
+
+    try {
+      await updateProperty.mutateAsync({
+        id: propertyId,
+        userId: user.id,
+        input: {
+          yearBuilt: lookupResult.result.yearBuilt ?? undefined,
+          squareFeet: lookupResult.result.squareFeet ?? undefined,
+          propertyType: lookupResult.result.propertyType ?? undefined,
+          lookupData: lookupResult.raw,
+        },
+      })
+      toast.success('Property details updated')
+      setShowLookupDialog(false)
+      setLookupResult(null)
+    } catch {
+      toast.error('Failed to update property')
+    }
   }
 
   if (isPending) {
@@ -207,6 +261,18 @@ function PropertyDetailPage() {
                 <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
                   <Pencil className="h-4 w-4" />
                   Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLookup}
+                  disabled={isLookingUp || !property.address}
+                  className="gap-2"
+                >
+                  {isLookingUp ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  {isLookingUp ? 'Looking up...' : 'Lookup Property Info'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -356,6 +422,74 @@ function PropertyDetailPage() {
               disabled={deleteProperty.isPending}
             >
               {deleteProperty.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLookupDialog} onOpenChange={setShowLookupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Property Data Found</DialogTitle>
+            <DialogDescription>
+              We found the following information for this property. Apply to update your property details.
+            </DialogDescription>
+          </DialogHeader>
+          {lookupResult && (
+            <div className="space-y-3 py-4">
+              {lookupResult.result.yearBuilt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Year Built</span>
+                  <span className="font-medium">{lookupResult.result.yearBuilt}</span>
+                </div>
+              )}
+              {lookupResult.result.squareFeet && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Square Feet</span>
+                  <span className="font-medium">{lookupResult.result.squareFeet.toLocaleString()}</span>
+                </div>
+              )}
+              {lookupResult.result.bedrooms && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bedrooms</span>
+                  <span className="font-medium">{lookupResult.result.bedrooms}</span>
+                </div>
+              )}
+              {lookupResult.result.bathrooms && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bathrooms</span>
+                  <span className="font-medium">{lookupResult.result.bathrooms}</span>
+                </div>
+              )}
+              {lookupResult.result.propertyType && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Property Type</span>
+                  <span className="font-medium capitalize">
+                    {lookupResult.result.propertyType.replace('_', ' ')}
+                  </span>
+                </div>
+              )}
+              {lookupResult.result.lotSquareFeet && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Lot Size</span>
+                  <span className="font-medium">{lookupResult.result.lotSquareFeet.toLocaleString()} sq ft</span>
+                </div>
+              )}
+              {lookupResult.groundingSources.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Data from Google Search
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLookupDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApplyLookup} disabled={updateProperty.isPending}>
+              {updateProperty.isPending ? 'Applying...' : 'Apply'}
             </Button>
           </DialogFooter>
         </DialogContent>

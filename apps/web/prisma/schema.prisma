@@ -19,6 +19,7 @@ model Property {
   squareFeet   Int?      @map("square_feet")
   propertyType String?   @map("property_type")
   purchaseDate DateTime? @map("purchase_date")
+  lookupData   Json?     @map("lookup_data")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   createdById  String    @map("created_by_id") @db.Uuid
