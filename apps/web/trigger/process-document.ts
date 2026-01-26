@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { PrismaClient } from '@generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { extractWithGemini, resolveWithClaude } from '@/lib/llm'
+import { sendPushNotification } from '@/features/notifications'
 
 interface ProcessDocumentPayload {
   documentId: string
@@ -110,6 +111,19 @@ export const processDocumentTask = task({
         action: resolveData.action,
         confidence: resolveData.confidence,
       })
+
+      // 10. Send push notification
+      try {
+        await sendPushNotification(
+          payload.userId,
+          'Document processed',
+          `Your ${extractedData.documentType || 'document'} is ready to review`,
+          { documentId }
+        )
+      } catch (notifyError) {
+        // Don't fail the task if notification fails
+        console.error('Failed to send push notification:', notifyError)
+      }
 
       return {
         documentId,
