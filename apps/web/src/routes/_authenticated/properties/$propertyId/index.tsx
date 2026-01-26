@@ -462,13 +462,13 @@ function PropertyDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded-lg bg-muted px-4 py-2.5 text-sm font-mono truncate">
-              {property.ingestToken}@ingest.hausdog.app
+              {property.ingestToken}@hausdog.app
             </code>
             <Button
               variant="outline"
               size="icon"
               onClick={() => {
-                navigator.clipboard.writeText(`${property.ingestToken}@ingest.hausdog.app`)
+                navigator.clipboard.writeText(`${property.ingestToken}@hausdog.app`)
                 toast.success('Email address copied')
               }}
             >
