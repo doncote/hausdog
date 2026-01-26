@@ -14,8 +14,15 @@ interface AddressInputProps {
 
 const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
 
+interface Suggestion {
+  placeId: string
+  text: string
+  mainText: string
+  secondaryText: string
+}
+
 function parseAddressComponents(
-  components: google.maps.GeocoderAddressComponent[],
+  components: google.maps.places.AddressComponent[],
 ): Partial<AddressData> {
   const result: Partial<AddressData> = {}
 
@@ -23,27 +30,27 @@ function parseAddressComponents(
     const types = component.types
 
     if (types.includes('street_number')) {
-      result.streetAddress = component.long_name
+      result.streetAddress = component.longText
     } else if (types.includes('route')) {
       result.streetAddress = result.streetAddress
-        ? `${result.streetAddress} ${component.long_name}`
-        : component.long_name
+        ? `${result.streetAddress} ${component.longText}`
+        : component.longText
     } else if (types.includes('subpremise')) {
       result.streetAddress = result.streetAddress
-        ? `${result.streetAddress}, ${component.long_name}`
-        : component.long_name
+        ? `${result.streetAddress}, ${component.longText}`
+        : component.longText
     } else if (types.includes('locality')) {
-      result.city = component.long_name
+      result.city = component.longText
     } else if (types.includes('administrative_area_level_1')) {
-      result.state = component.short_name
+      result.state = component.shortText
     } else if (types.includes('administrative_area_level_2')) {
-      result.county = component.long_name
+      result.county = component.longText
     } else if (types.includes('country')) {
-      result.country = component.short_name
+      result.country = component.shortText
     } else if (types.includes('postal_code')) {
-      result.postalCode = component.long_name
+      result.postalCode = component.longText
     } else if (types.includes('neighborhood') || types.includes('sublocality')) {
-      result.neighborhood = component.long_name
+      result.neighborhood = component.longText
     }
   }
 
@@ -64,10 +71,8 @@ export function AddressInput({
   const [isLoaded, setIsLoaded] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [inputValue, setInputValue] = useState(value || '')
-  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([])
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
-  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null)
-  const placesService = useRef<google.maps.places.PlacesService | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Mark as mounted (client-side only)
@@ -94,10 +99,6 @@ export function AddressInput({
     })
 
     importLibrary('places').then(() => {
-      autocompleteService.current = new google.maps.places.AutocompleteService()
-      // Create a dummy div for PlacesService (it requires an element)
-      const dummyDiv = document.createElement('div')
-      placesService.current = new google.maps.places.PlacesService(dummyDiv)
       setIsLoaded(true)
     })
   }, [isMounted])
@@ -116,8 +117,8 @@ export function AddressInput({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMounted])
 
-  const fetchSuggestions = (input: string) => {
-    if (!autocompleteService.current || !input.trim()) {
+  const fetchSuggestions = async (input: string) => {
+    if (!isLoaded || !input.trim()) {
       setSuggestions([])
       return
     }
@@ -126,17 +127,29 @@ export function AddressInput({
       clearTimeout(debounceTimer.current)
     }
 
-    debounceTimer.current = setTimeout(() => {
-      autocompleteService.current?.getPlacePredictions(
-        { input, types: ['address'] },
-        (predictions, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-            setSuggestions(predictions)
-          } else {
-            setSuggestions([])
-          }
-        },
-      )
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        // Use the new Places API (AutocompleteSuggestion)
+        const { suggestions: results } =
+          await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input,
+            includedPrimaryTypes: ['street_address', 'subpremise', 'premise'],
+          })
+
+        const mapped: Suggestion[] = results
+          .filter((s) => s.placePrediction)
+          .map((s) => ({
+            placeId: s.placePrediction!.placeId,
+            text: s.placePrediction!.text.text,
+            mainText: s.placePrediction!.mainText?.text || s.placePrediction!.text.text,
+            secondaryText: s.placePrediction!.secondaryText?.text || '',
+          }))
+
+        setSuggestions(mapped)
+      } catch (error) {
+        console.error('Error fetching suggestions:', error)
+        setSuggestions([])
+      }
     }, 300)
   }
 
@@ -145,56 +158,54 @@ export function AddressInput({
     setSuggestions([])
     setShowSuggestions(false)
 
-    if (!onChange || !placesService.current) return
+    if (!onChange) return
 
-    placesService.current.getDetails(
-      {
-        placeId,
+    try {
+      // Use the new Places API (Place class)
+      const place = new google.maps.places.Place({ id: placeId })
+      await place.fetchFields({
         fields: [
-          'address_components',
-          'formatted_address',
-          'geometry',
-          'place_id',
-          'plus_code',
-          'utc_offset_minutes',
+          'addressComponents',
+          'formattedAddress',
+          'location',
+          'id',
+          'plusCode',
+          'utcOffsetMinutes',
         ],
-      },
-      (place, status) => {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
-          onChange({ ...emptyAddressData, formattedAddress: description })
-          return
-        }
+      })
 
-        const addressComponents = parseAddressComponents(place.address_components || [])
+      const addressComponents = parseAddressComponents(place.addressComponents || [])
 
-        let timezone: string | null = null
-        if (place.utc_offset_minutes !== undefined) {
-          const hours = Math.floor(Math.abs(place.utc_offset_minutes) / 60)
-          const mins = Math.abs(place.utc_offset_minutes) % 60
-          const sign = place.utc_offset_minutes >= 0 ? '+' : '-'
-          timezone = `UTC${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
-        }
+      let timezone: string | null = null
+      if (place.utcOffsetMinutes !== undefined && place.utcOffsetMinutes !== null) {
+        const hours = Math.floor(Math.abs(place.utcOffsetMinutes) / 60)
+        const mins = Math.abs(place.utcOffsetMinutes) % 60
+        const sign = place.utcOffsetMinutes >= 0 ? '+' : '-'
+        timezone = `UTC${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+      }
 
-        const addressData: AddressData = {
-          streetAddress: addressComponents.streetAddress ?? null,
-          city: addressComponents.city ?? null,
-          state: addressComponents.state ?? null,
-          postalCode: addressComponents.postalCode ?? null,
-          country: addressComponents.country ?? null,
-          county: addressComponents.county ?? null,
-          neighborhood: addressComponents.neighborhood ?? null,
-          latitude: place.geometry?.location?.lat() ?? null,
-          longitude: place.geometry?.location?.lng() ?? null,
-          timezone,
-          plusCode: place.plus_code?.global_code ?? null,
-          googlePlaceId: place.place_id ?? null,
-          formattedAddress: place.formatted_address ?? description,
-          googlePlaceData: place as unknown as Record<string, unknown>,
-        }
+      const addressData: AddressData = {
+        streetAddress: addressComponents.streetAddress ?? null,
+        city: addressComponents.city ?? null,
+        state: addressComponents.state ?? null,
+        postalCode: addressComponents.postalCode ?? null,
+        country: addressComponents.country ?? null,
+        county: addressComponents.county ?? null,
+        neighborhood: addressComponents.neighborhood ?? null,
+        latitude: place.location?.lat() ?? null,
+        longitude: place.location?.lng() ?? null,
+        timezone,
+        plusCode: place.plusCode?.globalCode ?? null,
+        googlePlaceId: place.id ?? null,
+        formattedAddress: place.formattedAddress ?? description,
+        googlePlaceData: place.toJSON() as unknown as Record<string, unknown>,
+      }
 
-        onChange(addressData)
-      },
-    )
+      onChange(addressData)
+    } catch (error) {
+      console.error('Error fetching place details:', error)
+      onChange({ ...emptyAddressData, formattedAddress: description })
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,25 +244,31 @@ export function AddressInput({
       />
 
       {showSuggestions && suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md">
+        <div
+          role="listbox"
+          className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md"
+        >
           {suggestions.map((suggestion) => (
             <div
-              key={suggestion.place_id}
+              key={suggestion.placeId}
               role="option"
               tabIndex={0}
-              onClick={() => handleSelect(suggestion.place_id, suggestion.description)}
+              onClick={() => handleSelect(suggestion.placeId, suggestion.text)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  handleSelect(suggestion.place_id, suggestion.description)
+                  handleSelect(suggestion.placeId, suggestion.text)
                 }
               }}
               className="cursor-pointer rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
             >
-              {suggestion.description}
+              <span className="font-medium">{suggestion.mainText}</span>
+              {suggestion.secondaryText && (
+                <span className="text-muted-foreground"> {suggestion.secondaryText}</span>
+              )}
             </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )
