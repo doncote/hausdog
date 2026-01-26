@@ -60,14 +60,29 @@ export class PropertyService {
   async create(userId: string, input: CreatePropertyInput): Promise<Property> {
     this.logger.info('Creating property', { userId, name: input.name })
 
-    // Generate ingest token from address or name
-    const ingestToken = generateIngestToken(input.address ?? null, input.name)
+    // Generate ingest token from formatted address or name
+    const ingestToken = generateIngestToken(input.formattedAddress ?? null, input.name)
 
     const record = await this.db.property.create({
       data: {
         userId,
         name: input.name,
-        address: input.address ?? null,
+        // Address fields
+        streetAddress: input.streetAddress ?? null,
+        city: input.city ?? null,
+        state: input.state ?? null,
+        postalCode: input.postalCode ?? null,
+        country: input.country ?? null,
+        county: input.county ?? null,
+        neighborhood: input.neighborhood ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        timezone: input.timezone ?? null,
+        plusCode: input.plusCode ?? null,
+        googlePlaceId: input.googlePlaceId ?? null,
+        formattedAddress: input.formattedAddress ?? null,
+        googlePlaceData: (input.googlePlaceData as Prisma.InputJsonValue) ?? Prisma.DbNull,
+        // Other fields
         yearBuilt: input.yearBuilt ?? null,
         squareFeet: input.squareFeet ?? null,
         lotSquareFeet: input.lotSquareFeet ?? null,
@@ -93,7 +108,24 @@ export class PropertyService {
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
-        ...(input.address !== undefined && { address: input.address ?? null }),
+        // Address fields
+        ...(input.streetAddress !== undefined && { streetAddress: input.streetAddress ?? null }),
+        ...(input.city !== undefined && { city: input.city ?? null }),
+        ...(input.state !== undefined && { state: input.state ?? null }),
+        ...(input.postalCode !== undefined && { postalCode: input.postalCode ?? null }),
+        ...(input.country !== undefined && { country: input.country ?? null }),
+        ...(input.county !== undefined && { county: input.county ?? null }),
+        ...(input.neighborhood !== undefined && { neighborhood: input.neighborhood ?? null }),
+        ...(input.latitude !== undefined && { latitude: input.latitude ?? null }),
+        ...(input.longitude !== undefined && { longitude: input.longitude ?? null }),
+        ...(input.timezone !== undefined && { timezone: input.timezone ?? null }),
+        ...(input.plusCode !== undefined && { plusCode: input.plusCode ?? null }),
+        ...(input.googlePlaceId !== undefined && { googlePlaceId: input.googlePlaceId ?? null }),
+        ...(input.formattedAddress !== undefined && { formattedAddress: input.formattedAddress ?? null }),
+        ...(input.googlePlaceData !== undefined && {
+          googlePlaceData: (input.googlePlaceData as Prisma.InputJsonValue) ?? Prisma.DbNull,
+        }),
+        // Other fields
         ...(input.yearBuilt !== undefined && { yearBuilt: input.yearBuilt ?? null }),
         ...(input.squareFeet !== undefined && { squareFeet: input.squareFeet ?? null }),
         ...(input.lotSquareFeet !== undefined && { lotSquareFeet: input.lotSquareFeet ?? null }),
@@ -133,7 +165,22 @@ export class PropertyService {
       id: record.id,
       userId: record.userId,
       name: record.name,
-      address: record.address,
+      // Address fields
+      streetAddress: record.streetAddress,
+      city: record.city,
+      state: record.state,
+      postalCode: record.postalCode,
+      country: record.country,
+      county: record.county,
+      neighborhood: record.neighborhood,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      timezone: record.timezone,
+      plusCode: record.plusCode,
+      googlePlaceId: record.googlePlaceId,
+      formattedAddress: record.formattedAddress,
+      googlePlaceData: record.googlePlaceData,
+      // Other fields
       yearBuilt: record.yearBuilt,
       squareFeet: record.squareFeet,
       lotSquareFeet: record.lotSquareFeet,
