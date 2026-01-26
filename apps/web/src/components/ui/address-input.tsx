@@ -204,13 +204,15 @@ export function AddressInput({
     fetchSuggestions(newValue)
   }
 
-  // SSR placeholder
+  // SSR placeholder - must be controlled (have value) to avoid React warning on hydration
   if (!isMounted) {
     return (
       <div className="relative">
         <input
           type="text"
+          value=""
           disabled
+          readOnly
           placeholder="Loading..."
           className={cn(inputClassName, className)}
         />
