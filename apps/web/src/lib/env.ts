@@ -1,39 +1,31 @@
 import { z } from 'zod'
 
 const serverEnvSchema = z.object({
-  // Supabase - Required
-  // Get from: https://supabase.com/dashboard/project/_/settings/api
+  // Supabase
   SUPABASE_URL: z.string().url(),
-  SUPABASE_KEY: z.string().min(1), // anon/public key
-  SUPABASE_SERVICE_KEY: z.string().min(1).optional(), // service_role key for admin operations
+  SUPABASE_KEY: z.string().min(1),
+  SUPABASE_SERVICE_KEY: z.string().min(1),
 
-  // Database - Required
-  // Get from: Supabase dashboard → Settings → Database → Connection string
+  // Database
   DATABASE_URL: z.string().min(1),
 
-  // Gemini - Required for document extraction
-  // Get from: https://aistudio.google.com/app/apikey
+  // AI
   GEMINI_API_KEY: z.string().min(1),
-
-  // Anthropic - Required for resolution and chat
-  // Get from: https://console.anthropic.com/settings/keys
   ANTHROPIC_API_KEY: z.string().min(1),
 
-  // Trigger.dev - Optional, for background job processing
-  // Get from: https://cloud.trigger.dev
-  TRIGGER_API_KEY: z.string().min(1).optional(),
-  TRIGGER_API_URL: z.string().url().optional(),
+  // Trigger.dev
+  TRIGGER_API_KEY: z.string().min(1),
+  TRIGGER_API_URL: z.string().url(),
 
-  // Resend - Required for email ingestion
-  // Get from: https://resend.com/api-keys
+  // Resend
   RESEND_API_KEY: z.string().min(1),
-  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
-  INGEST_EMAIL_DOMAIN: z.string().min(1).optional(),
+  RESEND_WEBHOOK_SECRET: z.string().min(1),
+  INGEST_EMAIL_DOMAIN: z.string().min(1),
 
   // Server
-  PORT: z.coerce.number().default(3333),
-  PUBLIC_URL: z.string().url().optional(),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.coerce.number(),
+  PUBLIC_URL: z.string().url(),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
 })
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>
@@ -56,7 +48,5 @@ export function getServerEnv(): ServerEnv {
 }
 
 export function getBaseUrl(): string {
-  const env = getServerEnv()
-  if (env.PUBLIC_URL) return env.PUBLIC_URL
-  return `http://localhost:${env.PORT}`
+  return getServerEnv().PUBLIC_URL
 }
