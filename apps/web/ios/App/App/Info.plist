@@ -47,5 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Hausdog needs camera access to capture documents and photos of your home items.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Hausdog needs photo library access to select existing photos for documentation.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
