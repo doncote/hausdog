@@ -1,4 +1,4 @@
-.PHONY: dev build preview test lint tc db-pull db-generate db-push supabase-start supabase-stop clean trigger doppler
+.PHONY: dev build preview test lint tc db-pull db-generate db-push migrate supabase-start supabase-stop clean trigger doppler
 
 # Start development server with Doppler secrets
 dev:
@@ -35,6 +35,10 @@ db-generate:
 # Push schema to database
 db-push:
 	cd apps/web && doppler run -- bunx prisma db push
+
+# Run migrations and regenerate client
+migrate:
+	cd apps/web && doppler run -- bunx prisma migrate dev && bunx prisma generate
 
 # Start local Supabase
 supabase-start:
