@@ -184,3 +184,16 @@ model Message {
   @@index([conversationId], map: "idx_messages_conversation_id")
   @@map("messages")
 }
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id") @db.Uuid
+  token     String
+  platform  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, token])
+  @@index([userId], map: "idx_device_tokens_user_id")
+  @@map("device_tokens")
+}
