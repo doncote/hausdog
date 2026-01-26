@@ -1,5 +1,5 @@
 import { getMessaging } from '@/lib/firebase-admin'
-import { db } from '@/lib/db'
+import { prisma as db } from '@/lib/db'
 
 export interface DeviceToken {
   id: string
