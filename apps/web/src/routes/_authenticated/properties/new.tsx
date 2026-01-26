@@ -2,10 +2,11 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Building2, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AddressInput } from '@/components/ui/address-input'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import type { AddressData } from '@/lib/address'
 import { CreatePropertySchema, lookupPropertyData, useCreateProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/_authenticated/properties/new')({
@@ -18,7 +19,7 @@ function NewPropertyPage() {
   const createProperty = useCreateProperty()
 
   const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLookingUp, setIsLookingUp] = useState(false)
 
@@ -26,7 +27,10 @@ function NewPropertyPage() {
     e.preventDefault()
     setErrors({})
 
-    const result = CreatePropertySchema.safeParse({ name, address: address || undefined })
+    const result = CreatePropertySchema.safeParse({
+      name,
+      ...addressData,
+    })
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {}
@@ -45,11 +49,13 @@ function NewPropertyPage() {
       let inputData = result.data
 
       // Look up property data if address provided
-      if (address.trim()) {
+      if (addressData?.formattedAddress?.trim()) {
         setIsLookingUp(true)
         const toastId = toast.loading('Looking up property data...')
         try {
-          const lookupResult = await lookupPropertyData({ data: { address: address.trim() } })
+          const lookupResult = await lookupPropertyData({
+            data: { address: addressData.formattedAddress.trim() },
+          })
           toast.dismiss(toastId)
           if (lookupResult.result.found) {
             inputData = {
@@ -74,7 +80,6 @@ function NewPropertyPage() {
           }
         } catch {
           toast.dismiss(toastId)
-          // Lookup failed, continue without it
           toast.info("Couldn't look up property data")
         } finally {
           setIsLookingUp(false)
@@ -131,14 +136,14 @@ function NewPropertyPage() {
 
           <div className="space-y-2">
             <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              placeholder="123 Main St, City, State 12345"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              rows={3}
+            <AddressInput
+              value={addressData?.formattedAddress ?? ''}
+              onChange={setAddressData}
+              placeholder="Start typing an address..."
             />
-            {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+            {errors.formattedAddress && (
+              <p className="text-sm text-destructive">{errors.formattedAddress}</p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">
