@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import usePlacesAutocomplete, { getDetails } from 'use-places-autocomplete'
 import { cn } from '@/lib/utils'
 import type { AddressData } from '@/lib/address'
@@ -71,13 +71,14 @@ export function AddressInput({
       return
     }
 
-    const loader = new Loader({
-      apiKey: GOOGLE_PLACES_API_KEY,
-      version: 'weekly',
-      libraries: ['places'],
+    // Set API options once
+    setOptions({
+      key: GOOGLE_PLACES_API_KEY,
+      v: 'weekly',
     })
 
-    loader.load().then(() => {
+    // Import the places library
+    importLibrary('places').then(() => {
       setIsLoaded(true)
     })
   }, [])

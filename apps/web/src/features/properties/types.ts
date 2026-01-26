@@ -17,7 +17,7 @@ export const CreatePropertySchema = z.object({
   plusCode: z.string().nullish(),
   googlePlaceId: z.string().nullish(),
   formattedAddress: z.string().nullish(),
-  googlePlaceData: z.record(z.unknown()).nullish(),
+  googlePlaceData: z.record(z.string(), z.unknown()).nullish(),
   // Other fields
   yearBuilt: z.number().int().min(1800).max(2100).optional(),
   squareFeet: z.number().int().positive().optional(),
