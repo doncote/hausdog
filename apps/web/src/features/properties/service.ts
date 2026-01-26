@@ -121,7 +121,9 @@ export class PropertyService {
         ...(input.timezone !== undefined && { timezone: input.timezone ?? null }),
         ...(input.plusCode !== undefined && { plusCode: input.plusCode ?? null }),
         ...(input.googlePlaceId !== undefined && { googlePlaceId: input.googlePlaceId ?? null }),
-        ...(input.formattedAddress !== undefined && { formattedAddress: input.formattedAddress ?? null }),
+        ...(input.formattedAddress !== undefined && {
+          formattedAddress: input.formattedAddress ?? null,
+        }),
         ...(input.googlePlaceData !== undefined && {
           googlePlaceData: (input.googlePlaceData as Prisma.InputJsonValue) ?? Prisma.DbNull,
         }),

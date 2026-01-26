@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { AddressInput } from '@/components/ui/address-input'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,10 +33,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { AddressInput } from '@/components/ui/address-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { AddressData } from '@/lib/address'
 import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import {
   lookupPropertyData,
@@ -46,6 +45,7 @@ import {
   useUpdateProperty,
 } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
+import type { AddressData } from '@/lib/address'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/')({
   component: PropertyDetailPage,

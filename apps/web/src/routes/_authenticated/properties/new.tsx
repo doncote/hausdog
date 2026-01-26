@@ -6,8 +6,8 @@ import { AddressInput } from '@/components/ui/address-input'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { AddressData } from '@/lib/address'
 import { CreatePropertySchema, lookupPropertyData, useCreateProperty } from '@/features/properties'
+import type { AddressData } from '@/lib/address'
 
 export const Route = createFileRoute('/_authenticated/properties/new')({
   component: NewPropertyPage,
