@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CreatePropertySchema, lookupPropertyData, useCreateProperty } from '@/features/properties'
+import { useCurrentProperty } from '@/hooks/use-current-property'
 import type { AddressData } from '@/lib/address'
 
 export const Route = createFileRoute('/_authenticated/properties/new')({
@@ -17,6 +18,7 @@ function NewPropertyPage() {
   const { user } = Route.useRouteContext()
   const navigate = useNavigate()
   const createProperty = useCreateProperty()
+  const { selectProperty } = useCurrentProperty()
 
   const [name, setName] = useState('')
   const [addressData, setAddressData] = useState<AddressData | null>(null)
@@ -90,6 +92,7 @@ function NewPropertyPage() {
         userId: user.id,
         input: inputData,
       })
+      await selectProperty({ id: property.id, name: property.name })
       toast.success('Property created')
       navigate({ to: '/properties/$propertyId', params: { propertyId: property.id } })
     } catch {
