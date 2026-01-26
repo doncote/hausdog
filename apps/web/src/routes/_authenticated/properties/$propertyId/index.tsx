@@ -32,9 +32,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { AddressInput } from '@/components/ui/address-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import type { AddressData } from '@/lib/address'
 import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import {
   lookupPropertyData,
@@ -67,13 +68,28 @@ function PropertyDetailPage() {
   const [isLookingUp, setIsLookingUp] = useState(false)
   const [lookupResult, setLookupResult] = useState<PropertyLookupResponse | null>(null)
   const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (property) {
       setName(property.name)
-      setAddress(property.address ?? '')
+      setAddressData({
+        streetAddress: property.streetAddress,
+        city: property.city,
+        state: property.state,
+        postalCode: property.postalCode,
+        country: property.country,
+        county: property.county,
+        neighborhood: property.neighborhood,
+        latitude: property.latitude,
+        longitude: property.longitude,
+        timezone: property.timezone,
+        plusCode: property.plusCode,
+        googlePlaceId: property.googlePlaceId,
+        formattedAddress: property.formattedAddress,
+        googlePlaceData: property.googlePlaceData as Record<string, unknown> | null,
+      })
     }
   }, [property])
 
@@ -82,7 +98,7 @@ function PropertyDetailPage() {
 
     const result = UpdatePropertySchema.safeParse({
       name,
-      address: address || undefined,
+      ...addressData,
     })
 
     if (!result.success) {
@@ -126,14 +142,29 @@ function PropertyDetailPage() {
   const handleCancel = () => {
     if (property) {
       setName(property.name)
-      setAddress(property.address ?? '')
+      setAddressData({
+        streetAddress: property.streetAddress,
+        city: property.city,
+        state: property.state,
+        postalCode: property.postalCode,
+        country: property.country,
+        county: property.county,
+        neighborhood: property.neighborhood,
+        latitude: property.latitude,
+        longitude: property.longitude,
+        timezone: property.timezone,
+        plusCode: property.plusCode,
+        googlePlaceId: property.googlePlaceId,
+        formattedAddress: property.formattedAddress,
+        googlePlaceData: property.googlePlaceData as Record<string, unknown> | null,
+      })
     }
     setErrors({})
     setIsEditing(false)
   }
 
   const handleLookup = async () => {
-    if (!property?.address) {
+    if (!property?.formattedAddress) {
       toast.error('Please add an address first')
       return
     }
@@ -141,7 +172,7 @@ function PropertyDetailPage() {
     setIsLookingUp(true)
     const toastId = toast.loading('Looking up property data...')
     try {
-      const result = await lookupPropertyData({ data: { address: property.address } })
+      const result = await lookupPropertyData({ data: { address: property.formattedAddress } })
       toast.dismiss(toastId)
       if (result.result.found) {
         setLookupResult(result)
@@ -252,13 +283,14 @@ function PropertyDetailPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  rows={3}
+                <AddressInput
+                  value={addressData?.formattedAddress ?? ''}
+                  onChange={setAddressData}
+                  placeholder="Start typing an address..."
                 />
-                {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+                {errors.formattedAddress && (
+                  <p className="text-sm text-destructive">{errors.formattedAddress}</p>
+                )}
               </div>
             </div>
 
@@ -276,10 +308,10 @@ function PropertyDetailPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">{property.name}</h1>
-                {property.address && (
+                {property.formattedAddress && (
                   <p className="text-muted-foreground mt-1 flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
-                    {property.address}
+                    {property.formattedAddress}
                   </p>
                 )}
               </div>
@@ -296,7 +328,7 @@ function PropertyDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLookup}
-                    disabled={isLookingUp || !property.address}
+                    disabled={isLookingUp || !property.formattedAddress}
                     className="gap-2"
                   >
                     {isLookingUp ? (
