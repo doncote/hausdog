@@ -88,7 +88,7 @@ export function verifyWebhookSignature(
 
 /**
  * Extract ingest token from email address.
- * e.g., "123-main-st-a7b3c9@ingest.hausdog.app" → "123-main-st-a7b3c9"
+ * e.g., "123-main-st-a7b3c9@hausdog.app" → "123-main-st-a7b3c9"
  */
 export function extractIngestToken(emailAddress: string): string | null {
   const [localPart] = emailAddress.split('@')

@@ -146,7 +146,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
       chatMessages,
       {
         name: property.name,
-        address: property.address,
+        address: property.formattedAddress,
         yearBuilt: property.yearBuilt,
         propertyType: property.propertyType,
       },
@@ -280,7 +280,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
       chatMessages,
       {
         name: property.name,
-        address: property.address,
+        address: property.formattedAddress,
         yearBuilt: property.yearBuilt,
         propertyType: property.propertyType,
       },

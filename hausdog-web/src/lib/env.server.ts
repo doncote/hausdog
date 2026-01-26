@@ -4,24 +4,24 @@ const serverEnvSchema = z.object({
   // Supabase
   SUPABASE_URL: z.string().url(),
   SUPABASE_KEY: z.string().min(1),
-  SUPABASE_SERVICE_KEY: z.string().min(1).optional(),
+  SUPABASE_SERVICE_KEY: z.string().min(1),
 
   // Database
   DATABASE_URL: z.string().min(1),
 
   // Server
-  PORT: z.coerce.number().default(3333),
-  PUBLIC_URL: z.string().url().optional(),
+  PORT: z.coerce.number(),
+  PUBLIC_URL: z.string().url(),
 
   // Session
-  SESSION_SECRET: z.string().min(1).optional(),
+  SESSION_SECRET: z.string().min(1),
 
   // AI
-  CLAUDE_API_KEY: z.string().optional(),
-  GEMINI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().min(1),
+  GEMINI_API_KEY: z.string().min(1),
 
   // Node
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
 })
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>
@@ -44,7 +44,5 @@ export function getServerEnv(): ServerEnv {
 }
 
 export function getBaseUrl(): string {
-  const env = getServerEnv()
-  if (env.PUBLIC_URL) return env.PUBLIC_URL
-  return `http://localhost:${env.PORT}`
+  return getServerEnv().PUBLIC_URL
 }

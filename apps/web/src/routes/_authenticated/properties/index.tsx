@@ -136,10 +136,10 @@ function PropertiesPage() {
                   {property.name}
                 </h3>
 
-                {property.address && (
+                {property.formattedAddress && (
                   <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />
-                    <span className="truncate">{property.address}</span>
+                    <span className="truncate">{property.formattedAddress}</span>
                   </p>
                 )}
 
