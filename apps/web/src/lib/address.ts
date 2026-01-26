@@ -14,7 +14,7 @@ export const addressDataSchema = z.object({
   plusCode: z.string().nullable(),
   googlePlaceId: z.string().nullable(),
   formattedAddress: z.string().nullable(),
-  googlePlaceData: z.record(z.unknown()).nullable(),
+  googlePlaceData: z.record(z.string(), z.unknown()).nullable(),
 })
 
 export type AddressData = z.infer<typeof addressDataSchema>
