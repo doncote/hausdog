@@ -3,7 +3,22 @@ import { z } from 'zod'
 
 export const CreatePropertySchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  address: z.string().optional(),
+  // Address fields
+  streetAddress: z.string().nullish(),
+  city: z.string().nullish(),
+  state: z.string().nullish(),
+  postalCode: z.string().nullish(),
+  country: z.string().nullish(),
+  county: z.string().nullish(),
+  neighborhood: z.string().nullish(),
+  latitude: z.number().nullish(),
+  longitude: z.number().nullish(),
+  timezone: z.string().nullish(),
+  plusCode: z.string().nullish(),
+  googlePlaceId: z.string().nullish(),
+  formattedAddress: z.string().nullish(),
+  googlePlaceData: z.record(z.string(), z.unknown()).nullish(),
+  // Other fields
   yearBuilt: z.number().int().min(1800).max(2100).optional(),
   squareFeet: z.number().int().positive().optional(),
   lotSquareFeet: z.number().int().positive().optional(),
@@ -26,7 +41,22 @@ export interface Property {
   id: string
   userId: string
   name: string
-  address: string | null
+  // Address fields
+  streetAddress: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  country: string | null
+  county: string | null
+  neighborhood: string | null
+  latitude: number | null
+  longitude: number | null
+  timezone: string | null
+  plusCode: string | null
+  googlePlaceId: string | null
+  formattedAddress: string | null
+  googlePlaceData: Prisma.JsonValue | null
+  // Other fields
   yearBuilt: number | null
   squareFeet: number | null
   lotSquareFeet: number | null

@@ -14,7 +14,22 @@ model Property {
   id              String    @id @default(uuid())
   userId          String    @map("user_id") @db.Uuid
   name            String
-  address         String?
+  // Structured address fields (replaces old `address` field)
+  streetAddress     String?   @map("street_address")
+  city              String?
+  state             String?
+  postalCode        String?   @map("postal_code")
+  country           String?
+  county            String?
+  neighborhood      String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  plusCode          String?   @map("plus_code")
+  googlePlaceId     String?   @map("google_place_id")
+  formattedAddress  String?   @map("formatted_address")
+  googlePlaceData   Json?     @map("google_place_data")
+  // Other property fields
   yearBuilt       Int?      @map("year_built")
   squareFeet      Int?      @map("square_feet")
   lotSquareFeet   Int?      @map("lot_square_feet")
