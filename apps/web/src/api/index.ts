@@ -1,5 +1,11 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { apiKeyAuth, type AuthContext } from './middleware/auth'
+import { propertiesRouter } from './routes/properties'
+import { spacesRouter } from './routes/spaces'
+import { itemsRouter } from './routes/items'
+import { eventsRouter } from './routes/events'
+import { documentsRouter } from './routes/documents'
+import { authRouter } from './routes/auth'
 
 // Create the API app with typed context
 export const api = new OpenAPIHono<{ Variables: AuthContext }>()
@@ -9,10 +15,7 @@ api.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// Apply auth middleware to all routes under /
-api.use('/*', apiKeyAuth)
-
-// OpenAPI spec endpoint
+// OpenAPI spec endpoint (no auth required)
 api.doc('/openapi.json', {
   openapi: '3.1.0',
   info: {
@@ -35,5 +38,21 @@ api.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
   scheme: 'bearer',
   description: 'API key with hd_ prefix',
 })
+
+// Apply auth middleware to all authenticated routes
+api.use('/properties/*', apiKeyAuth)
+api.use('/spaces/*', apiKeyAuth)
+api.use('/items/*', apiKeyAuth)
+api.use('/events/*', apiKeyAuth)
+api.use('/documents/*', apiKeyAuth)
+api.use('/auth/*', apiKeyAuth)
+
+// Mount routers
+api.route('/', propertiesRouter)
+api.route('/', spacesRouter)
+api.route('/', itemsRouter)
+api.route('/', eventsRouter)
+api.route('/', documentsRouter)
+api.route('/', authRouter)
 
 export type ApiApp = typeof api
