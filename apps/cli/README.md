@@ -4,18 +4,30 @@ Command-line interface for interacting with Hausdog home documentation data. Des
 
 ## Installation
 
-### Option 1: Go Install (Recommended)
+### Option 1: Download Binary (Recommended)
 
-If you have Go installed:
-
-```bash
-go install github.com/hausdog/cli@latest
-```
-
-Then rename the binary (Go uses the module path's last element):
+Download the latest release for your platform from the [releases page](https://github.com/doncote/hausdog/releases).
 
 ```bash
-mv $(go env GOPATH)/bin/cli $(go env GOPATH)/bin/hausdog
+# macOS (Apple Silicon)
+curl -LO https://github.com/doncote/hausdog/releases/latest/download/hausdog_Darwin_arm64.tar.gz
+tar xzf hausdog_Darwin_arm64.tar.gz
+sudo mv hausdog /usr/local/bin/
+
+# macOS (Intel)
+curl -LO https://github.com/doncote/hausdog/releases/latest/download/hausdog_Darwin_amd64.tar.gz
+tar xzf hausdog_Darwin_amd64.tar.gz
+sudo mv hausdog /usr/local/bin/
+
+# Linux (amd64)
+curl -LO https://github.com/doncote/hausdog/releases/latest/download/hausdog_Linux_amd64.tar.gz
+tar xzf hausdog_Linux_amd64.tar.gz
+sudo mv hausdog /usr/local/bin/
+
+# Linux (arm64)
+curl -LO https://github.com/doncote/hausdog/releases/latest/download/hausdog_Linux_arm64.tar.gz
+tar xzf hausdog_Linux_arm64.tar.gz
+sudo mv hausdog /usr/local/bin/
 ```
 
 ### Option 2: Build from Source
@@ -28,9 +40,15 @@ make install        # Installs to $GOPATH/bin
 make install-global # Installs to /usr/local/bin (requires sudo)
 ```
 
-### Option 3: Download Binary
+### Option 3: Go Install (from source)
 
-Download the latest release from the [releases page](https://github.com/hausdog/hausdog/releases) and add to your PATH.
+If you have Go installed and have cloned the repo:
+
+```bash
+cd apps/cli
+go install .
+mv $(go env GOPATH)/bin/cli $(go env GOPATH)/bin/hausdog
+```
 
 ## Configuration
 
@@ -165,3 +183,15 @@ make lint
 # Generate client from OpenAPI spec (requires API server running)
 make generate
 ```
+
+## Releasing
+
+To create a new release:
+
+```bash
+# Tag the release (use cli/ prefix)
+git tag cli/v1.0.0
+git push origin cli/v1.0.0
+```
+
+GitHub Actions will automatically build binaries for all platforms and create a release.
