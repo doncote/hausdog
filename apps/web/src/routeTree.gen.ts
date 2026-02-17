@@ -22,6 +22,8 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedCaptureRouteImport } from './routes/_authenticated/capture'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
 import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties/index'
+import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
+import { Route as ApiNotificationsRegisterRouteImport } from './routes/api/notifications/register'
 import { Route as ApiIngestEmailRouteImport } from './routes/api/ingest/email'
 import { Route as AuthenticatedSpacesSpaceIdRouteImport } from './routes/_authenticated/spaces/$spaceId'
 import { Route as AuthenticatedPropertiesNewRouteImport } from './routes/_authenticated/properties/new'
@@ -99,6 +101,17 @@ const AuthenticatedPropertiesIndexRoute =
     path: '/properties/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
+  id: '/api/v1/$',
+  path: '/api/v1/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsRegisterRoute =
+  ApiNotificationsRegisterRouteImport.update({
+    id: '/api/notifications/register',
+    path: '/api/notifications/register',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiIngestEmailRoute = ApiIngestEmailRouteImport.update({
   id: '/api/ingest/email',
   path: '/api/ingest/email',
@@ -175,6 +188,8 @@ export interface FileRoutesByFullPath {
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/api/ingest/email': typeof ApiIngestEmailRoute
+  '/api/notifications/register': typeof ApiNotificationsRegisterRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/properties/': typeof AuthenticatedPropertiesIndexRoute
   '/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -198,6 +213,8 @@ export interface FileRoutesByTo {
   '/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/api/ingest/email': typeof ApiIngestEmailRoute
+  '/api/notifications/register': typeof ApiNotificationsRegisterRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/properties': typeof AuthenticatedPropertiesIndexRoute
   '/spaces': typeof AuthenticatedSpacesIndexRoute
   '/properties/$propertyId': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -224,6 +241,8 @@ export interface FileRoutesById {
   '/_authenticated/properties/new': typeof AuthenticatedPropertiesNewRoute
   '/_authenticated/spaces/$spaceId': typeof AuthenticatedSpacesSpaceIdRoute
   '/api/ingest/email': typeof ApiIngestEmailRoute
+  '/api/notifications/register': typeof ApiNotificationsRegisterRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/_authenticated/properties/': typeof AuthenticatedPropertiesIndexRoute
   '/_authenticated/spaces/': typeof AuthenticatedSpacesIndexRoute
   '/_authenticated/properties/$propertyId/': typeof AuthenticatedPropertiesPropertyIdIndexRoute
@@ -250,6 +269,8 @@ export interface FileRouteTypes {
     | '/properties/new'
     | '/spaces/$spaceId'
     | '/api/ingest/email'
+    | '/api/notifications/register'
+    | '/api/v1/$'
     | '/properties/'
     | '/spaces/'
     | '/properties/$propertyId/'
@@ -273,6 +294,8 @@ export interface FileRouteTypes {
     | '/properties/new'
     | '/spaces/$spaceId'
     | '/api/ingest/email'
+    | '/api/notifications/register'
+    | '/api/v1/$'
     | '/properties'
     | '/spaces'
     | '/properties/$propertyId'
@@ -298,6 +321,8 @@ export interface FileRouteTypes {
     | '/_authenticated/properties/new'
     | '/_authenticated/spaces/$spaceId'
     | '/api/ingest/email'
+    | '/api/notifications/register'
+    | '/api/v1/$'
     | '/_authenticated/properties/'
     | '/_authenticated/spaces/'
     | '/_authenticated/properties/$propertyId/'
@@ -312,6 +337,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   ApiIngestEmailRoute: typeof ApiIngestEmailRoute
+  ApiNotificationsRegisterRoute: typeof ApiNotificationsRegisterRoute
+  ApiV1SplatRoute: typeof ApiV1SplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -406,6 +433,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/properties/'
       preLoaderRoute: typeof AuthenticatedPropertiesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/v1/$': {
+      id: '/api/v1/$'
+      path: '/api/v1/$'
+      fullPath: '/api/v1/$'
+      preLoaderRoute: typeof ApiV1SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/register': {
+      id: '/api/notifications/register'
+      path: '/api/notifications/register'
+      fullPath: '/api/notifications/register'
+      preLoaderRoute: typeof ApiNotificationsRegisterRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/ingest/email': {
       id: '/api/ingest/email'
@@ -549,6 +590,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   ApiIngestEmailRoute: ApiIngestEmailRoute,
+  ApiNotificationsRegisterRoute: ApiNotificationsRegisterRoute,
+  ApiV1SplatRoute: ApiV1SplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
