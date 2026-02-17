@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hausdog/cli/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	apiURL    string
-	apiKey    string
-	outputFmt string
+	apiURL      string
+	apiKey      string
+	profileName string
+	outputFmt   string
+	cfg         *config.Config
 )
 
 // rootCmd represents the base command
@@ -24,12 +27,14 @@ var rootCmd = &cobra.Command{
 Manage properties, spaces, items, events, and documents through a simple
 command-line interface. Designed for automation and LLM agent integration.
 
-Configuration:
-  Set HAUSDOG_API_URL and HAUSDOG_API_KEY environment variables, or use
-  --api-url and --api-key flags.
+Configuration (in order of precedence):
+  1. Command-line flags (--api-url, --api-key)
+  2. Environment variables (HAUSDOG_API_URL, HAUSDOG_API_KEY)
+  3. Config file profile (~/.config/hausdog/config.yaml)
 
 Examples:
   hausdog properties list
+  hausdog --profile prod properties list
   hausdog items create --property <id> --name "HVAC System" --category hvac
   hausdog documents upload --property <id> --file ./receipt.pdf`,
 }
@@ -47,7 +52,8 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "API base URL (env: HAUSDOG_API_URL)")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API key (env: HAUSDOG_API_KEY)")
-	rootCmd.PersistentFlags().StringVarP(&outputFmt, "format", "f", "json", "Output format: json, table, yaml")
+	rootCmd.PersistentFlags().StringVarP(&profileName, "profile", "p", "", "Config profile to use")
+	rootCmd.PersistentFlags().StringVarP(&outputFmt, "format", "f", "json", "Output format: json, table")
 
 	// Bind to viper
 	viper.BindPFlag("api_url", rootCmd.PersistentFlags().Lookup("api-url"))
@@ -59,24 +65,60 @@ func initConfig() {
 	viper.SetEnvPrefix("HAUSDOG")
 	viper.AutomaticEnv()
 
-	// Set defaults
-	viper.SetDefault("api_url", "http://localhost:3000/api/v1")
+	// Load config file
+	var err error
+	cfg, err = config.Load()
+	if err != nil {
+		// Don't fail if config can't be loaded, just use env/flags
+		cfg = &config.Config{Profiles: make(map[string]config.Profile)}
+	}
 }
 
-// getAPIURL returns the configured API URL
+// getAPIURL returns the configured API URL with proper precedence
 func getAPIURL() string {
+	// 1. Command-line flag
 	if apiURL != "" {
 		return apiURL
 	}
-	return viper.GetString("api_url")
+
+	// 2. Environment variable
+	if envURL := viper.GetString("api_url"); envURL != "" {
+		return envURL
+	}
+
+	// 3. Config file profile
+	if cfg != nil {
+		profile, err := cfg.GetProfile(profileName)
+		if err == nil && profile != nil && profile.APIURL != "" {
+			return profile.APIURL
+		}
+	}
+
+	// 4. Default
+	return "http://localhost:3000/api/v1"
 }
 
-// getAPIKey returns the configured API key
+// getAPIKey returns the configured API key with proper precedence
 func getAPIKey() string {
+	// 1. Command-line flag
 	if apiKey != "" {
 		return apiKey
 	}
-	return viper.GetString("api_key")
+
+	// 2. Environment variable
+	if envKey := viper.GetString("api_key"); envKey != "" {
+		return envKey
+	}
+
+	// 3. Config file profile
+	if cfg != nil {
+		profile, err := cfg.GetProfile(profileName)
+		if err == nil && profile != nil && profile.APIKey != "" {
+			return profile.APIKey
+		}
+	}
+
+	return ""
 }
 
 // outputJSON prints data as JSON
@@ -106,7 +148,7 @@ func outputError(msg string, err error) {
 func requireAPIKey() string {
 	key := getAPIKey()
 	if key == "" {
-		outputError("API key required", fmt.Errorf("set HAUSDOG_API_KEY or use --api-key"))
+		outputError("API key required", fmt.Errorf("set HAUSDOG_API_KEY, use --api-key, or configure a profile"))
 	}
 	return key
 }

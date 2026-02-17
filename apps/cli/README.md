@@ -54,14 +54,55 @@ mv $(go env GOPATH)/bin/cli $(go env GOPATH)/bin/hausdog
 
 The CLI requires an API key. Generate one from Settings > API Keys in the Hausdog web app.
 
+Configuration is loaded in this order of precedence:
+1. Command-line flags (`--api-url`, `--api-key`)
+2. Environment variables (`HAUSDOG_API_URL`, `HAUSDOG_API_KEY`)
+3. Config file profile (`~/.config/hausdog/config.yaml`)
+
+### Config File (Recommended)
+
+The easiest way to configure the CLI:
+
+```bash
+# Set up a profile
+hausdog config set local \
+  --api-url "http://localhost:3333/api/v1" \
+  --api-key "hd_your_key_here"
+
+# Set it as default
+hausdog config use local
+
+# Now commands work without flags or env vars
+hausdog properties list
+```
+
+Manage multiple environments:
+
+```bash
+# Add production profile
+hausdog config set prod \
+  --api-url "https://hausdog.app/api/v1" \
+  --api-key "hd_prod_key"
+
+# Use a specific profile
+hausdog --profile prod properties list
+
+# List all profiles
+hausdog config list
+```
+
 ### Environment Variables
+
+For CI/CD or LLM agents:
 
 ```bash
 export HAUSDOG_API_KEY="hd_your_api_key_here"
-export HAUSDOG_API_URL="https://your-hausdog-instance.com"  # Optional, defaults to localhost:3000
+export HAUSDOG_API_URL="http://localhost:3333/api/v1"
 ```
 
 ### Command-line Flags
+
+Override any configuration:
 
 ```bash
 hausdog --api-key="hd_..." --api-url="https://..." <command>
