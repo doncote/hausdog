@@ -3,7 +3,7 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import type { AuthContext } from '../middleware/auth'
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { ApiKeyService } from '@/features/api-keys'
+import { ApiKeyService } from '@/features/api-keys/service'
 
 const apiKeyService = new ApiKeyService({ db: prisma, logger })
 

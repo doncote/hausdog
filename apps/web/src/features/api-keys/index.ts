@@ -1,4 +1,5 @@
-export { ApiKeyService } from './service'
+// Note: ApiKeyService is NOT exported here to avoid bundling Node crypto into client.
+// Import directly from './service' in server-only code.
 export type {
   ApiKey,
   ApiKeyWithSecret,

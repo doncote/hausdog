@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
-import { ApiKeyService } from '@/features/api-keys'
+import { ApiKeyService } from '@/features/api-keys/service'
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
 
