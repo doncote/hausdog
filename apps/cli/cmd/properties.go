@@ -18,7 +18,7 @@ var propertiesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all properties",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/properties")
 		if err != nil {
@@ -39,7 +39,7 @@ var propertiesGetCmd = &cobra.Command{
 	Short: "Get a property by ID",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/properties/" + args[0])
 		if err != nil {
@@ -74,7 +74,7 @@ var propertiesCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new property",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := map[string]interface{}{
 			"name": propertyName,
@@ -134,7 +134,7 @@ var propertiesUpdateCmd = &cobra.Command{
 	Short: "Update a property",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := make(map[string]interface{})
 
@@ -199,7 +199,7 @@ var propertiesDeleteCmd = &cobra.Command{
 	Short: "Delete a property",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		_, err := c.Delete("/properties/" + args[0])
 		if err != nil {

@@ -295,6 +295,21 @@ documentsRouter.openapi(uploadDocument, async (c) => {
     return c.json({ error: 'bad_request', message: 'No file provided' }, 400)
   }
 
+  // Detect MIME type from extension if client didn't provide it
+  const mimeByExt: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.heic': 'image/heic',
+    '.pdf': 'application/pdf',
+  }
+  const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
+  const contentType = file.type && file.type !== 'application/octet-stream'
+    ? file.type
+    : mimeByExt[ext] || file.type
+
   // Validate file type
   const supportedTypes = [
     'image/jpeg',
@@ -304,9 +319,9 @@ documentsRouter.openapi(uploadDocument, async (c) => {
     'image/heic',
     'application/pdf',
   ]
-  if (!supportedTypes.includes(file.type)) {
+  if (!supportedTypes.includes(contentType)) {
     return c.json(
-      { error: 'bad_request', message: `Unsupported file type: ${file.type}` },
+      { error: 'bad_request', message: `Unsupported file type: ${contentType}` },
       400,
     )
   }
@@ -329,7 +344,7 @@ documentsRouter.openapi(uploadDocument, async (c) => {
   const { error: uploadError } = await supabase.storage
     .from('documents')
     .upload(storagePath, fileBuffer, {
-      contentType: file.type,
+      contentType,
       upsert: false,
     })
 
@@ -342,10 +357,10 @@ documentsRouter.openapi(uploadDocument, async (c) => {
   const document = await documentService.create(userId, {
     propertyId,
     itemId: itemId ?? undefined,
-    type: inferDocumentType(file.type, file.name),
+    type: inferDocumentType(contentType, file.name),
     fileName: file.name,
     storagePath,
-    contentType: file.type,
+    contentType,
     sizeBytes: file.size,
     source: 'upload',
   })
