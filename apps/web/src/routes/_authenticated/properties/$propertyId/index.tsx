@@ -37,15 +37,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import {
-  lookupPropertyData,
-  type PropertyLookupResponse,
   UpdatePropertySchema,
   useDeleteProperty,
   useProperty,
   useUpdateProperty,
 } from '@/features/properties'
+import { lookupPropertyData } from '@/features/properties/api'
 import { useSpacesForProperty } from '@/features/spaces'
 import type { AddressData } from '@/lib/address'
+import type { PropertyLookupResponse } from '@/lib/llm/property-lookup'
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/')({
   component: PropertyDetailPage,

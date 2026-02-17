@@ -27,12 +27,12 @@ import {
 import {
   DocumentStatus,
   type DocumentWithRelations,
-  getSignedUrl,
   useConfirmDocument,
   useDeleteDocument,
   usePendingReviewDocuments,
   useUpdateDocumentStatus,
 } from '@/features/documents'
+import { getSignedUrl } from '@/features/documents/upload'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 export const Route = createFileRoute('/_authenticated/review')({

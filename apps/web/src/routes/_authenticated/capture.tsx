@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DocumentType, uploadDocument } from '@/features/documents'
+import { DocumentType } from '@/features/documents'
+import { uploadDocument } from '@/features/documents/upload'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 import { capturePhoto, isNativePlatform, pickFromGallery } from '@/lib/camera'
 
