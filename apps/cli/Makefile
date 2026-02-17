@@ -25,7 +25,7 @@ clean:
 # Requires: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 generate:
 	@echo "Fetching OpenAPI spec from API..."
-	curl -s http://localhost:3000/api/v1/openapi.json -o openapi.json
+	curl -s http://localhost:3333/api/v1/openapi.json -o openapi.json
 	oapi-codegen -package client -generate types,client openapi.json > internal/client/generated.go
 	rm openapi.json
 	@echo "Client generated successfully"

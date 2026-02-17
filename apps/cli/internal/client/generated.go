@@ -2971,6 +2971,10 @@ type PostPropertiesPropertyIdDocumentsUploadResponse struct {
 		Error   string `json:"error"`
 		Message string `json:"message"`
 	}
+	JSON500 *struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -4581,6 +4585,16 @@ func ParsePostPropertiesPropertyIdDocumentsUploadResponse(rsp *http.Response) (*
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest struct {
+			Error   string `json:"error"`
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 
