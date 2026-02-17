@@ -3,64 +3,56 @@ import { EventService } from '@/features/events/service'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { prisma } from '@/lib/db/client'
-import { chatWithClaude } from '@/lib/llm'
 import { logger } from '@/lib/logger'
 import { ChatService } from './service'
 import type { CreateConversationInput, CreateMessageInput } from './types'
 
-const getChatService = () => new ChatService({ db: prisma, logger })
-const getPropertyService = () => new PropertyService({ db: prisma, logger })
-const getItemService = () => new ItemService({ db: prisma, logger })
-const getEventService = () => new EventService({ db: prisma, logger })
+const chat = new ChatService({ db: prisma, logger })
+const propertyService = new PropertyService({ db: prisma, logger })
+const itemService = new ItemService({ db: prisma, logger })
+const eventService = new EventService({ db: prisma, logger })
 
 export const fetchConversationsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.findConversationsForProperty(data.propertyId)
+    return chat.findConversationsForProperty(data.propertyId)
   })
 
 export const fetchConversation = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.findConversationById(data.id)
+    return chat.findConversationById(data.id)
   })
 
 export const fetchMessagesForConversation = createServerFn({ method: 'GET' })
   .inputValidator((d: { conversationId: string }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.getMessagesForConversation(data.conversationId)
+    return chat.getMessagesForConversation(data.conversationId)
   })
 
 export const createConversation = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateConversationInput }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.createConversation(data.userId, data.input)
+    return chat.createConversation(data.userId, data.input)
   })
 
 export const updateConversationTitle = createServerFn({ method: 'POST' })
   .inputValidator((d: { id: string; title: string }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.updateConversationTitle(data.id, data.title)
+    return chat.updateConversationTitle(data.id, data.title)
   })
 
 export const deleteConversation = createServerFn({ method: 'POST' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    await service.deleteConversation(data.id)
+    await chat.deleteConversation(data.id)
     return { success: true }
   })
 
 export const createMessage = createServerFn({ method: 'POST' })
   .inputValidator((d: { input: CreateMessageInput }) => d)
   .handler(async ({ data }) => {
-    const service = getChatService()
-    return service.createMessage(data.input)
+    return chat.createMessage(data.input)
   })
 
 interface SendMessageInput {
@@ -85,13 +77,10 @@ interface SendItemMessageInput {
 export const sendChatMessage = createServerFn({ method: 'POST' })
   .inputValidator((d: SendMessageInput) => d)
   .handler(async ({ data }) => {
-    const chatService = getChatService()
-    const propertyService = getPropertyService()
-    const itemService = getItemService()
-    const eventService = getEventService()
+    const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
-    const userMessage = await chatService.createMessage({
+    const userMessage = await chat.createMessage({
       conversationId: data.conversationId,
       role: 'user',
       content: data.message,
@@ -104,7 +93,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
     }
 
     // Get conversation history
-    const messages = await chatService.getMessagesForConversation(data.conversationId)
+    const messages = await chat.getMessagesForConversation(data.conversationId)
 
     // Search for relevant items based on the user's message
     // Simple keyword-based relevance for now
@@ -154,7 +143,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
     )
 
     // Save assistant message
-    const assistantMessage = await chatService.createMessage({
+    const assistantMessage = await chat.createMessage({
       conversationId: data.conversationId,
       role: 'assistant',
       content: assistantResponse,
@@ -163,7 +152,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
     // Update conversation title if this is the first exchange
     if (messages.length <= 1) {
       const title = data.message.slice(0, 50) + (data.message.length > 50 ? '...' : '')
-      await chatService.updateConversationTitle(data.conversationId, title)
+      await chat.updateConversationTitle(data.conversationId, title)
     }
 
     return {
@@ -179,13 +168,10 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
 export const sendItemChatMessage = createServerFn({ method: 'POST' })
   .inputValidator((d: SendItemMessageInput) => d)
   .handler(async ({ data }) => {
-    const chatService = getChatService()
-    const propertyService = getPropertyService()
-    const itemService = getItemService()
-    const eventService = getEventService()
+    const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
-    const userMessage = await chatService.createMessage({
+    const userMessage = await chat.createMessage({
       conversationId: data.conversationId,
       role: 'user',
       content: data.message,
@@ -204,7 +190,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     }
 
     // Get conversation history
-    const messages = await chatService.getMessagesForConversation(data.conversationId)
+    const messages = await chat.getMessagesForConversation(data.conversationId)
 
     // Build item lineage (ancestors)
     const ancestors: (typeof focalItem)[] = []
@@ -288,7 +274,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     )
 
     // Save assistant message
-    const assistantMessage = await chatService.createMessage({
+    const assistantMessage = await chat.createMessage({
       conversationId: data.conversationId,
       role: 'assistant',
       content: assistantResponse,
@@ -297,7 +283,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     // Update conversation title if this is the first exchange
     if (messages.length <= 1) {
       const title = `${focalItem.name}: ${data.message.slice(0, 30)}${data.message.length > 30 ? '...' : ''}`
-      await chatService.updateConversationTitle(data.conversationId, title)
+      await chat.updateConversationTitle(data.conversationId, title)
     }
 
     return {
