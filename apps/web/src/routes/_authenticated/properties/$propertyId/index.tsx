@@ -37,12 +37,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import {
+  lookupPropertyData,
   UpdatePropertySchema,
   useDeleteProperty,
   useProperty,
   useUpdateProperty,
 } from '@/features/properties'
-import { lookupPropertyData } from '@/features/properties/api'
 import { useSpacesForProperty } from '@/features/spaces'
 import type { AddressData } from '@/lib/address'
 import type { PropertyLookupResponse } from '@/lib/llm/property-lookup'
