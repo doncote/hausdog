@@ -1,14 +1,22 @@
-.PHONY: build install clean generate
+.PHONY: build install clean generate test lint
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags "-X github.com/hausdog/cli/cmd.Version=$(VERSION) -X github.com/hausdog/cli/cmd.Commit=$(COMMIT)"
+GOBIN ?= $(shell go env GOPATH)/bin
 
 build:
 	go build $(LDFLAGS) -o bin/hausdog .
 
-install:
-	go install $(LDFLAGS) .
+# Install to GOPATH/bin as 'hausdog'
+install: build
+	cp bin/hausdog $(GOBIN)/hausdog
+	@echo "Installed to $(GOBIN)/hausdog"
+
+# Install globally to /usr/local/bin (requires sudo)
+install-global: build
+	sudo cp bin/hausdog /usr/local/bin/hausdog
+	@echo "Installed to /usr/local/bin/hausdog"
 
 clean:
 	rm -rf bin/
