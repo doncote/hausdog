@@ -1,5 +1,5 @@
-import { createHash, randomBytes } from 'crypto'
-import type { PrismaClient, ApiKey as PrismaApiKey } from '@generated/prisma/client'
+import { createHash, randomBytes } from 'node:crypto'
+import type { ApiKey as PrismaApiKey, PrismaClient } from '@generated/prisma/client'
 import type { Logger } from '@/lib/logger'
 import type { ApiKey, ApiKeyWithSecret, CreateApiKeyInput, ValidatedApiKey } from './types'
 

@@ -1,11 +1,11 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
-import { apiKeyAuth, type AuthContext } from './middleware/auth'
+import { type AuthContext, apiKeyAuth } from './middleware/auth'
+import { authRouter } from './routes/auth'
+import { documentsRouter } from './routes/documents'
+import { eventsRouter } from './routes/events'
+import { itemsRouter } from './routes/items'
 import { propertiesRouter } from './routes/properties'
 import { spacesRouter } from './routes/spaces'
-import { itemsRouter } from './routes/items'
-import { eventsRouter } from './routes/events'
-import { documentsRouter } from './routes/documents'
-import { authRouter } from './routes/auth'
 
 // Create the API app with typed context
 export const api = new OpenAPIHono<{ Variables: AuthContext }>()
@@ -21,7 +21,8 @@ api.doc('/openapi.json', {
   info: {
     title: 'Hausdog API',
     version: '1.0.0',
-    description: 'API for managing home documentation - properties, spaces, items, events, and documents',
+    description:
+      'API for managing home documentation - properties, spaces, items, events, and documents',
   },
   servers: [
     {

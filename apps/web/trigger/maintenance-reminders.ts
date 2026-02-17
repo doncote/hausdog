@@ -1,7 +1,6 @@
 import { schedules } from '@trigger.dev/sdk/v3'
 import { PrismaClient } from '@generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { sendPushNotification } from '@/features/notifications'
 
 // Create a Prisma client for the task
 function createPrismaClient() {

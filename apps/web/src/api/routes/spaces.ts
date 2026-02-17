@@ -1,11 +1,10 @@
-import { createRoute, z } from '@hono/zod-openapi'
-import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AuthContext } from '../middleware/auth'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { PropertyService } from '@/features/properties/service'
+import { SpaceService } from '@/features/spaces/service'
+import { UpdateSpaceSchema } from '@/features/spaces/types'
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { SpaceService } from '@/features/spaces/service'
-import { PropertyService } from '@/features/properties/service'
-import { UpdateSpaceSchema } from '@/features/spaces/types'
+import type { AuthContext } from '../middleware/auth'
 
 const spaceService = new SpaceService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
@@ -20,9 +19,11 @@ const SpaceSchema = z.object({
 })
 
 const SpaceWithCountsSchema = SpaceSchema.extend({
-  _count: z.object({
-    items: z.number(),
-  }).optional(),
+  _count: z
+    .object({
+      items: z.number(),
+    })
+    .optional(),
 })
 
 const ErrorSchema = z.object({
@@ -211,6 +212,7 @@ spacesRouter.openapi(listSpaces, async (c) => {
       createdAt: s.createdAt.toISOString(),
       updatedAt: s.updatedAt.toISOString(),
     })),
+    200,
   )
 })
 
@@ -229,11 +231,14 @@ spacesRouter.openapi(getSpace, async (c) => {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
-  return c.json({
-    ...space,
-    createdAt: space.createdAt.toISOString(),
-    updatedAt: space.updatedAt.toISOString(),
-  })
+  return c.json(
+    {
+      ...space,
+      createdAt: space.createdAt.toISOString(),
+      updatedAt: space.updatedAt.toISOString(),
+    },
+    200,
+  )
 })
 
 spacesRouter.openapi(createSpace, async (c) => {
@@ -276,11 +281,14 @@ spacesRouter.openapi(updateSpace, async (c) => {
 
   const space = await spaceService.update(id, userId, input)
 
-  return c.json({
-    ...space,
-    createdAt: space.createdAt.toISOString(),
-    updatedAt: space.updatedAt.toISOString(),
-  })
+  return c.json(
+    {
+      ...space,
+      createdAt: space.createdAt.toISOString(),
+      updatedAt: space.updatedAt.toISOString(),
+    },
+    200,
+  )
 })
 
 spacesRouter.openapi(deleteSpace, async (c) => {

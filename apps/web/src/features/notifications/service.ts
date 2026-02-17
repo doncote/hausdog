@@ -1,5 +1,5 @@
-import { getMessaging } from '@/lib/firebase-admin'
 import { prisma as db } from '@/lib/db'
+import { getMessaging } from '@/lib/firebase-admin'
 
 export interface DeviceToken {
   id: string
@@ -13,7 +13,7 @@ export interface DeviceToken {
 export async function registerDeviceToken(
   userId: string,
   token: string,
-  platform: 'ios' | 'android' | 'web'
+  platform: 'ios' | 'android' | 'web',
 ): Promise<DeviceToken> {
   const result = await db.deviceToken.upsert({
     where: {
@@ -58,7 +58,7 @@ export async function sendPushNotification(
   userId: string,
   title: string,
   body: string,
-  data?: Record<string, string>
+  data?: Record<string, string>,
 ): Promise<{ successCount: number; failureCount: number }> {
   const tokens = await getDeviceTokens(userId)
 

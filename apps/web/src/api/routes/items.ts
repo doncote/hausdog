@@ -1,11 +1,9 @@
-import { createRoute, z } from '@hono/zod-openapi'
-import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AuthContext } from '../middleware/auth'
-import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
-import { UpdateItemSchema } from '@/features/items/types'
+import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import type { AuthContext } from '../middleware/auth'
 
 const itemService = new ItemService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
@@ -30,19 +28,27 @@ const ItemSchema = z.object({
 })
 
 const ItemWithRelationsSchema = ItemSchema.extend({
-  space: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-  }).nullable().optional(),
-  parent: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-  }).nullable().optional(),
-  _count: z.object({
-    events: z.number(),
-    documents: z.number(),
-    children: z.number(),
-  }).optional(),
+  space: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  parent: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  _count: z
+    .object({
+      events: z.number(),
+      documents: z.number(),
+      children: z.number(),
+    })
+    .optional(),
 })
 
 const ErrorSchema = z.object({
@@ -292,14 +298,11 @@ itemsRouter.openapi(listItems, async (c) => {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  let items
-  if (spaceId) {
-    items = await itemService.findAllForSpace(spaceId)
-  } else {
-    items = await itemService.findAllForProperty(propertyId)
-  }
+  const items = spaceId
+    ? await itemService.findAllForSpace(spaceId)
+    : await itemService.findAllForProperty(propertyId)
 
-  return c.json(items.map(serializeItem))
+  return c.json(items.map(serializeItem), 200)
 })
 
 itemsRouter.openapi(getItem, async (c) => {
@@ -317,7 +320,7 @@ itemsRouter.openapi(getItem, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  return c.json(serializeItem(item))
+  return c.json(serializeItem(item), 200)
 })
 
 itemsRouter.openapi(getItemChildren, async (c) => {
@@ -336,7 +339,7 @@ itemsRouter.openapi(getItemChildren, async (c) => {
   }
 
   const children = await itemService.findChildrenForItem(id)
-  return c.json(children.map(serializeItem))
+  return c.json(children.map(serializeItem), 200)
 })
 
 itemsRouter.openapi(createItem, async (c) => {
@@ -376,12 +379,20 @@ itemsRouter.openapi(updateItem, async (c) => {
   }
 
   const item = await itemService.update(id, userId, {
-    ...body,
-    acquiredDate: body.acquiredDate ? new Date(body.acquiredDate) : body.acquiredDate,
-    warrantyExpires: body.warrantyExpires ? new Date(body.warrantyExpires) : body.warrantyExpires,
+    name: body.name,
+    category: body.category,
+    spaceId: body.spaceId ?? undefined,
+    parentId: body.parentId ?? undefined,
+    manufacturer: body.manufacturer ?? undefined,
+    model: body.model ?? undefined,
+    serialNumber: body.serialNumber ?? undefined,
+    acquiredDate: body.acquiredDate ? new Date(body.acquiredDate) : undefined,
+    warrantyExpires: body.warrantyExpires ? new Date(body.warrantyExpires) : undefined,
+    purchasePrice: body.purchasePrice ?? undefined,
+    notes: body.notes ?? undefined,
   })
 
-  return c.json(serializeItem(item))
+  return c.json(serializeItem(item), 200)
 })
 
 itemsRouter.openapi(deleteItem, async (c) => {

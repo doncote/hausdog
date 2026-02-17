@@ -1,7 +1,7 @@
+export type { DeviceToken } from './service'
 export {
+  getDeviceTokens,
   registerDeviceToken,
   removeDeviceToken,
-  getDeviceTokens,
   sendPushNotification,
 } from './service'
-export type { DeviceToken } from './service'

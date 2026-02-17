@@ -1,5 +1,5 @@
-import { PushNotifications, type Token, type ActionPerformed } from '@capacitor/push-notifications'
 import { Capacitor } from '@capacitor/core'
+import { type ActionPerformed, PushNotifications, type Token } from '@capacitor/push-notifications'
 
 export interface PushNotificationCallbacks {
   onRegistration?: (token: string) => void
@@ -13,7 +13,7 @@ export interface PushNotificationCallbacks {
 }
 
 export async function initializePushNotifications(
-  callbacks: PushNotificationCallbacks
+  callbacks: PushNotificationCallbacks,
 ): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
     console.log('Push notifications only available on native platforms')
