@@ -27,6 +27,9 @@ npm-debug.log*
 # Local development
 tmp/
 
+# Plans (may contain secrets in examples)
+docs/plans/
+
 # Vite
 *.local
 
