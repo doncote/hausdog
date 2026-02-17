@@ -215,10 +215,17 @@ spacesRouter.openapi(listSpaces, async (c) => {
 })
 
 spacesRouter.openapi(getSpace, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
   const space = await spaceService.findById(id)
 
   if (!space) {
+    return c.json({ error: 'not_found', message: 'Space not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(space.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
@@ -261,6 +268,12 @@ spacesRouter.openapi(updateSpace, async (c) => {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
+  // Verify ownership through property
+  const property = await propertyService.findById(existing.propertyId, userId)
+  if (!property) {
+    return c.json({ error: 'not_found', message: 'Space not found' }, 404)
+  }
+
   const space = await spaceService.update(id, userId, input)
 
   return c.json({
@@ -271,10 +284,17 @@ spacesRouter.openapi(updateSpace, async (c) => {
 })
 
 spacesRouter.openapi(deleteSpace, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
   const existing = await spaceService.findById(id)
   if (!existing) {
+    return c.json({ error: 'not_found', message: 'Space not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(existing.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 

@@ -303,6 +303,7 @@ itemsRouter.openapi(listItems, async (c) => {
 })
 
 itemsRouter.openapi(getItem, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
   const item = await itemService.findById(id)
 
@@ -310,14 +311,27 @@ itemsRouter.openapi(getItem, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
+  // Verify ownership through property
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
   return c.json(serializeItem(item))
 })
 
 itemsRouter.openapi(getItemChildren, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
   const item = await itemService.findById(id)
   if (!item) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
@@ -355,6 +369,12 @@ itemsRouter.openapi(updateItem, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
+  // Verify ownership through property
+  const property = await propertyService.findById(existing.propertyId, userId)
+  if (!property) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
   const item = await itemService.update(id, userId, {
     ...body,
     acquiredDate: body.acquiredDate ? new Date(body.acquiredDate) : body.acquiredDate,
@@ -365,10 +385,17 @@ itemsRouter.openapi(updateItem, async (c) => {
 })
 
 itemsRouter.openapi(deleteItem, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
   const existing = await itemService.findById(id)
   if (!existing) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(existing.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 

@@ -5,9 +5,11 @@ import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { EventService } from '@/features/events/service'
 import { ItemService } from '@/features/items/service'
+import { PropertyService } from '@/features/properties/service'
 
 const eventService = new EventService({ db: prisma, logger })
 const itemService = new ItemService({ db: prisma, logger })
+const propertyService = new PropertyService({ db: prisma, logger })
 
 // Response schemas
 const EventSchema = z.object({
@@ -223,10 +225,17 @@ function serializeEvent(event: any) {
 export const eventsRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 
 eventsRouter.openapi(listEvents, async (c) => {
+  const userId = c.get('userId')
   const { itemId } = c.req.valid('param')
 
   const item = await itemService.findById(itemId)
   if (!item) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
@@ -235,10 +244,21 @@ eventsRouter.openapi(listEvents, async (c) => {
 })
 
 eventsRouter.openapi(getEvent, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
   const event = await eventService.findById(id)
 
   if (!event) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+
+  // Verify ownership through item -> property chain
+  const item = await itemService.findById(event.itemId)
+  if (!item) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
@@ -252,6 +272,12 @@ eventsRouter.openapi(createEvent, async (c) => {
 
   const item = await itemService.findById(itemId)
   if (!item) {
+    return c.json({ error: 'not_found', message: 'Item not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
@@ -274,6 +300,16 @@ eventsRouter.openapi(updateEvent, async (c) => {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
+  // Verify ownership through item -> property chain
+  const item = await itemService.findById(existing.itemId)
+  if (!item) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+
   const event = await eventService.update(id, userId, {
     ...body,
     date: body.date ? new Date(body.date) : undefined,
@@ -283,10 +319,21 @@ eventsRouter.openapi(updateEvent, async (c) => {
 })
 
 eventsRouter.openapi(deleteEvent, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
   const existing = await eventService.findById(id)
   if (!existing) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+
+  // Verify ownership through item -> property chain
+  const item = await itemService.findById(existing.itemId)
+  if (!item) {
+    return c.json({ error: 'not_found', message: 'Event not found' }, 404)
+  }
+  const property = await propertyService.findById(item.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
