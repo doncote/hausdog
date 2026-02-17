@@ -267,10 +267,17 @@ documentsRouter.openapi(listDocuments, async (c) => {
 })
 
 documentsRouter.openapi(getDocument, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
   const doc = await documentService.findById(id)
 
   if (!doc) {
+    return c.json({ error: 'not_found', message: 'Document not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(doc.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 
@@ -392,10 +399,17 @@ documentsRouter.openapi(uploadDocument, async (c) => {
 })
 
 documentsRouter.openapi(deleteDocument, async (c) => {
+  const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
   const existing = await documentService.findById(id)
   if (!existing) {
+    return c.json({ error: 'not_found', message: 'Document not found' }, 404)
+  }
+
+  // Verify ownership through property
+  const property = await propertyService.findById(existing.propertyId, userId)
+  if (!property) {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 
