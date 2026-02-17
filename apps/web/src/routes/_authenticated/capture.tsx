@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { DocumentType, uploadDocument } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
-import { capturePhoto, pickFromGallery, isNativePlatform } from '@/lib/camera'
+import { capturePhoto, isNativePlatform, pickFromGallery } from '@/lib/camera'
 
 interface UploadedDoc {
   id: string
@@ -127,9 +127,9 @@ function CapturePage() {
 
       // Create a File-like object for the existing upload flow
       const file = new File(
-        [Uint8Array.from(atob(result.base64), c => c.charCodeAt(0))],
+        [Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))],
         result.fileName,
-        { type: result.mimeType }
+        { type: result.mimeType },
       )
 
       // Add preview
@@ -147,9 +147,9 @@ function CapturePage() {
       if (!result) return
 
       const file = new File(
-        [Uint8Array.from(atob(result.base64), c => c.charCodeAt(0))],
+        [Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))],
         result.fileName,
-        { type: result.mimeType }
+        { type: result.mimeType },
       )
 
       setPreviews((prev) => [...prev, `data:${result.mimeType};base64,${result.base64}`])

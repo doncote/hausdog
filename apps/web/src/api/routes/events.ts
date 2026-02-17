@@ -1,11 +1,10 @@
-import { createRoute, z } from '@hono/zod-openapi'
-import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AuthContext } from '../middleware/auth'
-import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { EventService } from '@/features/events/service'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
+import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import type { AuthContext } from '../middleware/auth'
 
 const eventService = new EventService({ db: prisma, logger })
 const itemService = new ItemService({ db: prisma, logger })
@@ -25,13 +24,17 @@ const EventSchema = z.object({
 })
 
 const EventWithRelationsSchema = EventSchema.extend({
-  item: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-  }).optional(),
-  _count: z.object({
-    documents: z.number(),
-  }).optional(),
+  item: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .optional(),
+  _count: z
+    .object({
+      documents: z.number(),
+    })
+    .optional(),
 })
 
 const ErrorSchema = z.object({
@@ -240,7 +243,7 @@ eventsRouter.openapi(listEvents, async (c) => {
   }
 
   const events = await eventService.findAllForItem(itemId)
-  return c.json(events.map(serializeEvent))
+  return c.json(events.map(serializeEvent), 200)
 })
 
 eventsRouter.openapi(getEvent, async (c) => {
@@ -262,7 +265,7 @@ eventsRouter.openapi(getEvent, async (c) => {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
-  return c.json(serializeEvent(event))
+  return c.json(serializeEvent(event), 200)
 })
 
 eventsRouter.openapi(createEvent, async (c) => {
@@ -311,11 +314,14 @@ eventsRouter.openapi(updateEvent, async (c) => {
   }
 
   const event = await eventService.update(id, userId, {
-    ...body,
+    type: body.type,
     date: body.date ? new Date(body.date) : undefined,
+    description: body.description ?? undefined,
+    cost: body.cost ?? undefined,
+    performedBy: body.performedBy ?? undefined,
   })
 
-  return c.json(serializeEvent(event))
+  return c.json(serializeEvent(event), 200)
 })
 
 eventsRouter.openapi(deleteEvent, async (c) => {

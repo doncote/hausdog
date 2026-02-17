@@ -1,13 +1,12 @@
-import { createRoute, z } from '@hono/zod-openapi'
-import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AuthContext } from '../middleware/auth'
-import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { createClient } from '@supabase/supabase-js'
+import { configure, tasks } from '@trigger.dev/sdk/v3'
+import { v4 as uuidv4 } from 'uuid'
 import { DocumentService } from '@/features/documents/service'
 import { PropertyService } from '@/features/properties/service'
-import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid'
-import { tasks, configure } from '@trigger.dev/sdk/v3'
+import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import type { AuthContext } from '../middleware/auth'
 
 const documentService = new DocumentService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
@@ -40,19 +39,27 @@ const DocumentSchema = z.object({
 })
 
 const DocumentWithRelationsSchema = DocumentSchema.extend({
-  property: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-  }).optional(),
-  item: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-  }).nullable().optional(),
-  event: z.object({
-    id: z.string().uuid(),
-    type: z.string(),
-    date: z.string().datetime(),
-  }).nullable().optional(),
+  property: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .optional(),
+  item: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  event: z
+    .object({
+      id: z.string().uuid(),
+      type: z.string(),
+      date: z.string().datetime(),
+    })
+    .nullable()
+    .optional(),
 })
 
 const UploadResponseSchema = z.object({
@@ -180,6 +187,14 @@ const uploadDocument = createRoute({
         },
       },
     },
+    500: {
+      description: 'Server error',
+      content: {
+        'application/json': {
+          schema: ErrorSchema,
+        },
+      },
+    },
   },
 })
 
@@ -256,14 +271,11 @@ documentsRouter.openapi(listDocuments, async (c) => {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  let documents
-  if (status) {
-    documents = await documentService.findByStatus(propertyId, status)
-  } else {
-    documents = await documentService.findAllForProperty(propertyId)
-  }
+  const documents = status
+    ? await documentService.findByStatus(propertyId, status)
+    : await documentService.findAllForProperty(propertyId)
 
-  return c.json(documents.map(serializeDocument))
+  return c.json(documents.map(serializeDocument), 200)
 })
 
 documentsRouter.openapi(getDocument, async (c) => {
@@ -281,7 +293,7 @@ documentsRouter.openapi(getDocument, async (c) => {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 
-  return c.json(serializeDocument(doc))
+  return c.json(serializeDocument(doc), 200)
 })
 
 documentsRouter.openapi(uploadDocument, async (c) => {
@@ -313,9 +325,8 @@ documentsRouter.openapi(uploadDocument, async (c) => {
     '.pdf': 'application/pdf',
   }
   const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
-  const contentType = file.type && file.type !== 'application/octet-stream'
-    ? file.type
-    : mimeByExt[ext] || file.type
+  const contentType =
+    file.type && file.type !== 'application/octet-stream' ? file.type : mimeByExt[ext] || file.type
 
   // Validate file type
   const supportedTypes = [
@@ -327,10 +338,7 @@ documentsRouter.openapi(uploadDocument, async (c) => {
     'application/pdf',
   ]
   if (!supportedTypes.includes(contentType)) {
-    return c.json(
-      { error: 'bad_request', message: `Unsupported file type: ${contentType}` },
-      400,
-    )
+    return c.json({ error: 'bad_request', message: `Unsupported file type: ${contentType}` }, 400)
   }
 
   // Get Supabase client

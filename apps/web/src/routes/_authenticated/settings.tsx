@@ -1,19 +1,6 @@
-import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Bell, ChevronRight, Copy, Key, Palette, Plus, Shield, Trash2, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { useState } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +12,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '@/features/api-keys'
 
 export const Route = createFileRoute('/_authenticated/settings')({
@@ -238,11 +238,7 @@ function ApiKeysCard() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="flex items-center gap-2">
-                      <Input
-                        value={createdKey}
-                        readOnly
-                        className="font-mono text-sm"
-                      />
+                      <Input value={createdKey} readOnly className="font-mono text-sm" />
                       <Button
                         variant="outline"
                         size="icon"
@@ -252,9 +248,7 @@ function ApiKeysCard() {
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    {copied && (
-                      <p className="text-sm text-green-600">Copied to clipboard!</p>
-                    )}
+                    {copied && <p className="text-sm text-green-600">Copied to clipboard!</p>}
                     <div className="rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200">
                       <strong>Important:</strong> Store this key securely. Set it as the{' '}
                       <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">
@@ -290,10 +284,7 @@ function ApiKeysCard() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreateOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                       Cancel
                     </Button>
                     <Button
@@ -344,8 +335,8 @@ function ApiKeysCard() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete API Key</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{key.name}"? Any applications
-                        using this key will no longer be able to access your data.
+                        Are you sure you want to delete "{key.name}"? Any applications using this
+                        key will no longer be able to access your data.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

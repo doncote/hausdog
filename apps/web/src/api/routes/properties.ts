@@ -1,10 +1,9 @@
-import { createRoute, z } from '@hono/zod-openapi'
-import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AuthContext } from '../middleware/auth'
-import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { PropertyService } from '@/features/properties/service'
 import { CreatePropertySchema, UpdatePropertySchema } from '@/features/properties/types'
+import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import type { AuthContext } from '../middleware/auth'
 
 const propertyService = new PropertyService({ db: prisma, logger })
 
@@ -213,11 +212,14 @@ propertiesRouter.openapi(getProperty, async (c) => {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  return c.json({
-    ...property,
-    createdAt: property.createdAt.toISOString(),
-    updatedAt: property.updatedAt.toISOString(),
-  })
+  return c.json(
+    {
+      ...property,
+      createdAt: property.createdAt.toISOString(),
+      updatedAt: property.updatedAt.toISOString(),
+    },
+    200,
+  )
 })
 
 propertiesRouter.openapi(createProperty, async (c) => {
@@ -247,11 +249,14 @@ propertiesRouter.openapi(updateProperty, async (c) => {
 
   const property = await propertyService.update(id, userId, input)
 
-  return c.json({
-    ...property,
-    createdAt: property.createdAt.toISOString(),
-    updatedAt: property.updatedAt.toISOString(),
-  })
+  return c.json(
+    {
+      ...property,
+      createdAt: property.createdAt.toISOString(),
+      updatedAt: property.updatedAt.toISOString(),
+    },
+    200,
+  )
 })
 
 propertiesRouter.openapi(deleteProperty, async (c) => {

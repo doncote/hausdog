@@ -26,7 +26,9 @@ export const apiKeyAuth = createMiddleware<{ Variables: AuthContext }>(async (c,
   const [scheme, key] = authHeader.split(' ')
 
   if (scheme?.toLowerCase() !== 'bearer' || !key) {
-    throw new HTTPException(401, { message: 'Invalid Authorization header format. Use: Bearer <api_key>' })
+    throw new HTTPException(401, {
+      message: 'Invalid Authorization header format. Use: Bearer <api_key>',
+    })
   }
 
   const validatedKey = await apiKeyService.validate(key)

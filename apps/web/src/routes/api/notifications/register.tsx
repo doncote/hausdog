@@ -12,9 +12,9 @@ export const Route = createFileRoute('/api/notifications/register')({
       POST: async ({ request }) => {
         // Dynamic imports to avoid bundling server modules in client
         const { registerDeviceToken } = await import('@/features/notifications')
-        const { getSafeSession } = await import('@/lib/auth')
+        const { getSafeSession } = await import('@/lib/supabase')
 
-        const session = await getSafeSession(request)
+        const session = await getSafeSession()
         if (!session?.user) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
             status: 401,
@@ -26,13 +26,10 @@ export const Route = createFileRoute('/api/notifications/register')({
         const parsed = RegisterTokenSchema.safeParse(body)
 
         if (!parsed.success) {
-          return new Response(
-            JSON.stringify({ error: 'Invalid request', details: parsed.error }),
-            {
-              status: 400,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
+          return new Response(JSON.stringify({ error: 'Invalid request', details: parsed.error }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          })
         }
 
         const { token, platform } = parsed.data
