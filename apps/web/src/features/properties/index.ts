@@ -1,5 +1,5 @@
+export type { LookupPropertyInput } from './api'
+export { lookupPropertyData } from './api'
 export * from './mutations'
 export * from './queries'
 export * from './types'
-export { lookupPropertyData } from './api'
-export type { LookupPropertyInput } from './api'
