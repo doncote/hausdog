@@ -1,7 +1,7 @@
-// Note: ApiKeyService is NOT exported here to avoid bundling Node crypto into client.
-// Import directly from './service' in server-only code.
+// Note: Server functions (createApiKey, fetchApiKeys, etc.) are NOT exported here.
+// They are used internally by the hooks below. Import directly from './api' only in server code.
+// ApiKeyService is also not exported to avoid bundling Node crypto into client.
 
-export { createApiKey, deleteApiKey, fetchApiKeys } from './api'
 export { apiKeysQueryOptions, useApiKeys, useCreateApiKey, useDeleteApiKey } from './queries'
 export type {
   ApiKey,
