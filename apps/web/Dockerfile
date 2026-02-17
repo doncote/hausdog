@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1.3.8 AS base
 WORKDIR /app
 
 # Install dependencies
@@ -18,7 +18,7 @@ RUN bunx prisma generate
 RUN bun run build
 
 # Production image - use alpine for smaller size
-FROM oven/bun:1-alpine AS runner
+FROM oven/bun:1.3.8-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3333
