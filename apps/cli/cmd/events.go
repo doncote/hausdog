@@ -31,7 +31,7 @@ var eventsListCmd = &cobra.Command{
 			outputError("Item ID required", fmt.Errorf("use --item flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get(fmt.Sprintf("/items/%s/events", eventItemID))
 		if err != nil {
@@ -52,7 +52,7 @@ var eventsGetCmd = &cobra.Command{
 	Short: "Get an event by ID",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/events/" + args[0])
 		if err != nil {
@@ -83,7 +83,7 @@ Examples:
 			outputError("Item ID required", fmt.Errorf("use --item flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := map[string]interface{}{
 			"type": eventType,
@@ -119,7 +119,7 @@ var eventsUpdateCmd = &cobra.Command{
 	Short: "Update an event",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := make(map[string]interface{})
 		if cmd.Flags().Changed("type") {
@@ -161,7 +161,7 @@ var eventsDeleteCmd = &cobra.Command{
 	Short: "Delete an event",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		_, err := c.Delete("/events/" + args[0])
 		if err != nil {

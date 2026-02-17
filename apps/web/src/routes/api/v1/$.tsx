@@ -16,7 +16,10 @@ export const Route = createFileRoute('/api/v1/$')({
 async function handleRequest({ request }: { request: Request }): Promise<Response> {
   const { api } = await import('@/api')
 
-  // Hono's fetch expects the full URL but routes from /api/v1/
-  // The splat route captures everything after /api/v1/
-  return api.fetch(request)
+  // Rewrite URL to strip /api/v1 prefix since Hono routes start from /
+  const url = new URL(request.url)
+  url.pathname = url.pathname.replace(/^\/api\/v1/, '') || '/'
+  const rewrittenRequest = new Request(url.toString(), request)
+
+  return api.fetch(rewrittenRequest)
 }

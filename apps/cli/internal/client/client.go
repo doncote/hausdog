@@ -9,16 +9,16 @@ import (
 	"time"
 )
 
-// Client is the API client
-type Client struct {
+// SimpleClient is a basic API client for manual HTTP calls
+type SimpleClient struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
 }
 
-// New creates a new API client
-func New(baseURL, apiKey string) *Client {
-	return &Client{
+// NewSimple creates a new simple API client
+func NewSimple(baseURL, apiKey string) *SimpleClient {
+	return &SimpleClient{
 		BaseURL: baseURL,
 		APIKey:  apiKey,
 		HTTPClient: &http.Client{
@@ -34,7 +34,7 @@ type APIError struct {
 }
 
 // doRequest performs an HTTP request with authentication
-func (c *Client) doRequest(method, path string, body interface{}) ([]byte, error) {
+func (c *SimpleClient) doRequest(method, path string, body interface{}) ([]byte, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
@@ -76,21 +76,21 @@ func (c *Client) doRequest(method, path string, body interface{}) ([]byte, error
 }
 
 // Get performs a GET request
-func (c *Client) Get(path string) ([]byte, error) {
+func (c *SimpleClient) Get(path string) ([]byte, error) {
 	return c.doRequest("GET", path, nil)
 }
 
 // Post performs a POST request
-func (c *Client) Post(path string, body interface{}) ([]byte, error) {
+func (c *SimpleClient) Post(path string, body interface{}) ([]byte, error) {
 	return c.doRequest("POST", path, body)
 }
 
 // Patch performs a PATCH request
-func (c *Client) Patch(path string, body interface{}) ([]byte, error) {
+func (c *SimpleClient) Patch(path string, body interface{}) ([]byte, error) {
 	return c.doRequest("PATCH", path, body)
 }
 
 // Delete performs a DELETE request
-func (c *Client) Delete(path string) ([]byte, error) {
+func (c *SimpleClient) Delete(path string) ([]byte, error) {
 	return c.doRequest("DELETE", path, nil)
 }

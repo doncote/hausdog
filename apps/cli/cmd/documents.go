@@ -38,7 +38,7 @@ var documentsListCmd = &cobra.Command{
 			outputError("Property ID required", fmt.Errorf("use --property flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		path := fmt.Sprintf("/properties/%s/documents", docPropertyID)
 		if docStatus != "" {
@@ -64,7 +64,7 @@ var documentsGetCmd = &cobra.Command{
 	Short: "Get a document by ID",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/documents/" + args[0])
 		if err != nil {
@@ -185,7 +185,7 @@ var documentsDeleteCmd = &cobra.Command{
 	Short: "Delete a document",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		_, err := c.Delete("/documents/" + args[0])
 		if err != nil {

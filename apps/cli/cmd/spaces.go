@@ -27,7 +27,7 @@ var spacesListCmd = &cobra.Command{
 			outputError("Property ID required", fmt.Errorf("use --property flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get(fmt.Sprintf("/properties/%s/spaces", spacePropertyID))
 		if err != nil {
@@ -48,7 +48,7 @@ var spacesGetCmd = &cobra.Command{
 	Short: "Get a space by ID",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/spaces/" + args[0])
 		if err != nil {
@@ -72,7 +72,7 @@ var spacesCreateCmd = &cobra.Command{
 			outputError("Property ID required", fmt.Errorf("use --property flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := map[string]interface{}{
 			"name": spaceName,
@@ -97,7 +97,7 @@ var spacesUpdateCmd = &cobra.Command{
 	Short: "Update a space",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := make(map[string]interface{})
 		if cmd.Flags().Changed("name") {
@@ -127,7 +127,7 @@ var spacesDeleteCmd = &cobra.Command{
 	Short: "Delete a space",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		_, err := c.Delete("/spaces/" + args[0])
 		if err != nil {

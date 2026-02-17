@@ -34,7 +34,7 @@ var itemsListCmd = &cobra.Command{
 			outputError("Property ID required", fmt.Errorf("use --property flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		path := fmt.Sprintf("/properties/%s/items", itemPropertyID)
 		if itemSpaceID != "" {
@@ -60,7 +60,7 @@ var itemsGetCmd = &cobra.Command{
 	Short: "Get an item by ID",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/items/" + args[0])
 		if err != nil {
@@ -81,7 +81,7 @@ var itemsChildrenCmd = &cobra.Command{
 	Short: "List child items",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		data, err := c.Get("/items/" + args[0] + "/children")
 		if err != nil {
@@ -105,7 +105,7 @@ var itemsCreateCmd = &cobra.Command{
 			outputError("Property ID required", fmt.Errorf("use --property flag"))
 		}
 
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := map[string]interface{}{
 			"name":     itemName,
@@ -150,7 +150,7 @@ var itemsUpdateCmd = &cobra.Command{
 	Short: "Update an item",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		body := make(map[string]interface{})
 		if cmd.Flags().Changed("name") {
@@ -201,7 +201,7 @@ var itemsDeleteCmd = &cobra.Command{
 	Short: "Delete an item",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		c := client.New(getAPIURL(), requireAPIKey())
+		c := client.NewSimple(getAPIURL(), requireAPIKey())
 
 		_, err := c.Delete("/items/" + args[0])
 		if err != nil {
