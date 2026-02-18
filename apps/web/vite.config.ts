@@ -18,7 +18,12 @@ const config = defineConfig({
   plugins: [
     tailwindcss(),
     devtools({ eventBusConfig: { port: 42070 } }),
-    nitro(),
+    nitro({
+      // Don't bundle these - let Bun use native node_modules
+      externals: {
+        external: ['winston', 'readable-stream', 'stream'],
+      },
+    }),
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
