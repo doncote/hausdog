@@ -1,15 +1,7 @@
 import { defineConfig } from '@trigger.dev/sdk/v3'
 import { syncEnvVars } from '@trigger.dev/build/extensions/core'
 
-const SYNCED_ENV_VARS = [
-  'DATABASE_URL',
-  'SUPABASE_URL',
-  'SUPABASE_KEY',
-  'SUPABASE_SERVICE_KEY',
-  'GEMINI_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'FIREBASE_SERVICE_ACCOUNT_KEY',
-]
+const EXCLUDED_PREFIXES = ['npm_', 'BUN_', 'HOME', 'PATH', 'SHELL', 'USER', 'LANG', 'TERM', 'DOPPLER_']
 
 export default defineConfig({
   project: 'proj_aeybunmgupltmhuulrbr',
@@ -18,10 +10,10 @@ export default defineConfig({
   build: {
     extensions: [
       syncEnvVars(async () =>
-        SYNCED_ENV_VARS.filter((name) => process.env[name]).map((name) => ({
-          name,
-          value: process.env[name]!,
-        })),
+        Object.entries(process.env)
+          .filter(([key]) => !EXCLUDED_PREFIXES.some((p) => key.startsWith(p)))
+          .filter(([, value]) => value !== undefined)
+          .map(([name, value]) => ({ name, value: value! })),
       ),
     ],
   },
