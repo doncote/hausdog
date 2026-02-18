@@ -55,4 +55,4 @@ jobs:
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_ACCESS_TOKEN }}
-        run: doppler run -- npx trigger.dev@latest deploy
+        run: doppler run --project web --config prd -- npx trigger.dev@latest deploy
