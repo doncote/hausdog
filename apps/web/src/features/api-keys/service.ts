@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { ApiKey as PrismaApiKey, PrismaClient } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type { ApiKey, ApiKeyWithSecret, CreateApiKeyInput, ValidatedApiKey } from './types'
 
 const API_KEY_PREFIX = 'hd_'

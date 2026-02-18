@@ -1,5 +1,5 @@
 import { getServerEnv } from '@/lib/env'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 
 const GEMINI_API_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'

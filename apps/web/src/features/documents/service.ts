@@ -1,5 +1,5 @@
 import type { PrismaClient, Document as PrismaDocument } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type {
   CreateDocumentInput,
   Document,

@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { ApiKeyService } from '@/features/api-keys/service'
 import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import type { AuthContext } from '../middleware/auth'
 
 const apiKeyService = new ApiKeyService({ db: prisma, logger })

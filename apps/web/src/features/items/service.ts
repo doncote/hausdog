@@ -1,5 +1,5 @@
 import type { PrismaClient, Item as PrismaItem } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type { CreateItemInput, Item, ItemWithRelations, UpdateItemInput } from './types'
 
 export interface ItemServiceDeps {

@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { PropertyService } from '@/features/properties/service'
 import { CreatePropertySchema, UpdatePropertySchema } from '@/features/properties/types'
 import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import type { AuthContext } from '../middleware/auth'
 
 const propertyService = new PropertyService({ db: prisma, logger })

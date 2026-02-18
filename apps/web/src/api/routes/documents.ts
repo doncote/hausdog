@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { DocumentService } from '@/features/documents/service'
 import { PropertyService } from '@/features/properties/service'
 import { prisma } from '@/lib/db'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import type { AuthContext } from '../middleware/auth'
 
 const documentService = new DocumentService({ db: prisma, logger })

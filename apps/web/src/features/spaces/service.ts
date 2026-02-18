@@ -1,5 +1,5 @@
 import type { PrismaClient, Space as PrismaSpace } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type { CreateSpaceInput, Space, SpaceWithCounts, UpdateSpaceInput } from './types'
 
 export interface SpaceServiceDeps {

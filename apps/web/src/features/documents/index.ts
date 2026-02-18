@@ -1,4 +1,6 @@
+export * from './api'
+export * from './extract'
 export * from './mutations'
 export * from './queries'
 export * from './types'
-export { getSignedUrl, reprocessDocument, uploadDocument } from './upload'
+export * from './upload'

@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 
 async function getApiKeyService() {
   const { prisma } = await import('@/lib/db/client')
-  const { logger } = await import('@/lib/logger')
+  const { consoleLogger: logger } = await import('@/lib/console-logger')
   const { ApiKeyService } = await import('./service')
   return new ApiKeyService({ db: prisma, logger })
 }

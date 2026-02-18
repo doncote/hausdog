@@ -1,5 +1,5 @@
 import type { PrismaClient, Event as PrismaEvent } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type { CreateEventInput, Event, EventWithRelations, UpdateEventInput } from './types'
 
 export interface EventServiceDeps {

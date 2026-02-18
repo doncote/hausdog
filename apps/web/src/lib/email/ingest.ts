@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { getServerEnv } from '@/lib/env'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 
 /**
  * Inbound email webhook payload from Resend.

@@ -3,7 +3,7 @@ import type {
   Conversation as PrismaConversation,
   Message as PrismaMessage,
 } from '@generated/prisma/client'
-import type { Logger } from '@/lib/logger'
+import type { Logger } from '@/lib/console-logger'
 import type {
   Conversation,
   ConversationWithLastMessage,

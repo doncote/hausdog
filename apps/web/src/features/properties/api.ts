@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import type { PropertyLookupResponse } from '@/lib/llm/property-lookup'
 import { lookupPropertyWithGemini } from '@/lib/llm/property-lookup'
-import { logger } from '@/lib/logger'
 import { PropertyService } from './service'
 import type { CreatePropertyInput, UpdatePropertyInput } from './types'
 

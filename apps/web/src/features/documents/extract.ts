@@ -4,7 +4,7 @@ import { ItemService } from '@/features/items/service'
 import { prisma } from '@/lib/db/client'
 import { getServerEnv } from '@/lib/env'
 import { extractWithGemini, resolveWithClaude } from '@/lib/llm'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { DocumentService } from './service'
 
 interface ExtractDocumentInput {

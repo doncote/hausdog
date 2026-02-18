@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
-import { logger } from '@/lib/logger'
 import { EventService } from '../events/service'
 import { ItemService } from '../items/service'
 import { DocumentService } from './service'

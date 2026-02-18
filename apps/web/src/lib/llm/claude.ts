@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getServerEnv } from '@/lib/env'
-import { logger } from '@/lib/logger'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import type { GeminiExtractionResult } from './gemini'
 
 let anthropicClient: Anthropic | null = null

@@ -7,7 +7,7 @@ export const Route = createFileRoute('/api/ingest/email')({
       POST: async ({ request }) => {
         // Dynamic imports to avoid bundling server modules in client
         const { prisma } = await import('@/lib/db/client')
-        const { logger } = await import('@/lib/logger')
+        const { consoleLogger: logger } = await import('@/lib/console-logger')
         const { getServerEnv } = await import('@/lib/env')
         const { PropertyService } = await import('@/features/properties/service')
         const { DocumentService } = await import('@/features/documents/service')

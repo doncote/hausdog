@@ -1,9 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { EventService } from '@/features/events/service'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { prisma } from '@/lib/db/client'
-import { logger } from '@/lib/logger'
 import { ChatService } from './service'
 import type { CreateConversationInput, CreateMessageInput } from './types'
 
