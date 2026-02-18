@@ -17,8 +17,8 @@ RUN bunx prisma generate
 # Build the app
 RUN bun run build
 
-# Production image - use alpine for smaller size
-FROM oven/bun:1.3.8-alpine AS runner
+# Production image - use debian for glibc compatibility
+FROM oven/bun:1.3.8-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3333
