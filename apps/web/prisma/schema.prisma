@@ -4,8 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // Note: We don't manage auth.users - it's handled by Supabase
