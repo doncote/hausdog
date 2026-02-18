@@ -1,3 +1,4 @@
+import type { PluginOption } from 'vite'
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
@@ -18,7 +19,7 @@ const config = defineConfig({
   plugins: [
     tailwindcss(),
     devtools({ eventBusConfig: { port: 42070 } }),
-    nitro(),
+    nitro() as PluginOption,
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
