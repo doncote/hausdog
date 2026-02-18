@@ -1,9 +1,25 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useRouteContext,
+} from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { createServerFn } from '@tanstack/react-start'
 import { Toaster } from '@/components/ui/sonner'
 import { fetchSessionUser } from '@/lib/auth'
+
+// Server function to get client-safe env vars
+const getClientEnv = createServerFn({ method: 'GET' }).handler(async () => {
+  const { getServerEnv } = await import('@/lib/env')
+  const env = getServerEnv()
+  return {
+    GOOGLE_PLACES_API_KEY: env.GOOGLE_PLACES_API_KEY,
+  }
+})
 
 import appCss from '../styles/globals.css?url'
 
@@ -30,8 +46,8 @@ export const Route = createRootRoute({
   }),
 
   beforeLoad: async () => {
-    const { user } = await fetchSessionUser()
-    return { user }
+    const [{ user }, clientEnv] = await Promise.all([fetchSessionUser(), getClientEnv()])
+    return { user, clientEnv }
   },
 
   component: RootComponent,
@@ -47,12 +63,20 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { clientEnv } = useRouteContext({ from: '__root__' })
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Safe - injecting our own env vars
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(clientEnv)};`,
+          }}
+        />
         {children}
         <Toaster />
         <TanStackDevtools

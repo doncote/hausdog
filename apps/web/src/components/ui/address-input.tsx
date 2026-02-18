@@ -2,6 +2,7 @@ import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
 import { useEffect, useRef, useState } from 'react'
 import type { AddressData } from '@/lib/address'
 import { emptyAddressData } from '@/lib/address'
+import { getGooglePlacesApiKey } from '@/lib/env.client'
 import { cn } from '@/lib/utils'
 
 interface AddressInputProps {
@@ -11,8 +12,6 @@ interface AddressInputProps {
   disabled?: boolean
   className?: string
 }
-
-const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
 
 interface Suggestion {
   placeId: string
@@ -88,13 +87,14 @@ export function AddressInput({
   // Load Google Maps API
   useEffect(() => {
     if (!isMounted) return
-    if (!GOOGLE_PLACES_API_KEY) {
-      console.error('VITE_GOOGLE_PLACES_API_KEY is not set')
+    const apiKey = getGooglePlacesApiKey()
+    if (!apiKey) {
+      console.error('GOOGLE_PLACES_API_KEY is not set in window.ENV')
       return
     }
 
     setOptions({
-      key: GOOGLE_PLACES_API_KEY,
+      key: apiKey,
       v: 'weekly',
     })
 

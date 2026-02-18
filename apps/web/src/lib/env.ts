@@ -22,6 +22,9 @@ const serverEnvSchema = z.object({
   RESEND_WEBHOOK_SECRET: z.string().min(1),
   INGEST_EMAIL_DOMAIN: z.string().min(1),
 
+  // Google
+  GOOGLE_PLACES_API_KEY: z.string().min(1),
+
   // Server
   PORT: z.coerce.number(),
   PUBLIC_URL: z.string().url(),

@@ -3,6 +3,9 @@ primary_region = 'iad'
 
 [build]
 
+[deploy]
+  release_command = "bunx prisma migrate deploy"
+
 [http_service]
   internal_port = 3333
   force_https = true
