@@ -2,7 +2,8 @@ import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
 import { useEffect, useRef, useState } from 'react'
 import type { AddressData } from '@/lib/address'
 import { emptyAddressData } from '@/lib/address'
-import { getGooglePlacesApiKey } from '@/lib/env.client'
+const getGooglePlacesApiKey = () =>
+  typeof window !== 'undefined' ? window.ENV?.GOOGLE_PLACES_API_KEY : undefined
 import { cn } from '@/lib/utils'
 
 interface AddressInputProps {
