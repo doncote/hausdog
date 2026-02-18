@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
 import { ItemService } from '@/features/items/service'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { getServerEnv } from '@/lib/env'
 import { extractWithGemini, resolveWithClaude } from '@/lib/llm'
-import { consoleLogger as logger } from '@/lib/console-logger'
 import { DocumentService } from './service'
 
 interface ExtractDocumentInput {

@@ -2,8 +2,8 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { PropertyService } from '@/features/properties/service'
 import { SpaceService } from '@/features/spaces/service'
 import { UpdateSpaceSchema } from '@/features/spaces/types'
-import { prisma } from '@/lib/db'
 import { consoleLogger as logger } from '@/lib/console-logger'
+import { prisma } from '@/lib/db'
 import type { AuthContext } from '../middleware/auth'
 
 const spaceService = new SpaceService({ db: prisma, logger })

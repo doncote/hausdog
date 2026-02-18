@@ -4,8 +4,8 @@ import { configure, tasks } from '@trigger.dev/sdk/v3'
 import { v4 as uuidv4 } from 'uuid'
 import { DocumentService } from '@/features/documents/service'
 import { PropertyService } from '@/features/properties/service'
-import { prisma } from '@/lib/db'
 import { consoleLogger as logger } from '@/lib/console-logger'
+import { prisma } from '@/lib/db'
 import type { AuthContext } from '../middleware/auth'
 
 const documentService = new DocumentService({ db: prisma, logger })

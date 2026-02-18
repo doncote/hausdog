@@ -1,7 +1,7 @@
 import type { PrismaClient, Property as PrismaProperty } from '@generated/prisma/client'
 import { Prisma } from '@generated/prisma/client'
-import { generateIngestToken } from '@/lib/ingest-token'
 import type { Logger } from '@/lib/console-logger'
+import { generateIngestToken } from '@/lib/ingest-token'
 import type {
   CreatePropertyInput,
   Property,

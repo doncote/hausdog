@@ -1,8 +1,8 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
-import { prisma } from '@/lib/db'
 import { consoleLogger as logger } from '@/lib/console-logger'
+import { prisma } from '@/lib/db'
 import type { AuthContext } from '../middleware/auth'
 
 const itemService = new ItemService({ db: prisma, logger })

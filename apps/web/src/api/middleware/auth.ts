@@ -1,8 +1,8 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { ApiKeyService } from '@/features/api-keys/service'
-import { prisma } from '@/lib/db'
 import { consoleLogger as logger } from '@/lib/console-logger'
+import { prisma } from '@/lib/db'
 
 export interface AuthContext {
   userId: string
