@@ -10,10 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
-    "format": "biome format --write src",
-    "cap:sync": "cap sync",
-    "cap:open:ios": "cap open ios",
-    "cap:open:android": "cap open android"
+    "format": "biome format --write src"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

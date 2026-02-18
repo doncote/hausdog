@@ -1,10 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Box, Camera, ChevronRight, FileText, Home, Plus } from 'lucide-react'
-import { MobileCaptureDashboard } from '@/components/mobile-capture-dashboard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDashboardStats } from '@/features/dashboard'
-import { isNativePlatform } from '@/lib/camera'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
@@ -13,13 +11,6 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 function DashboardPage() {
   const { user } = Route.useRouteContext()
   const { data: stats, isPending } = useDashboardStats(user?.id)
-
-  // Show mobile capture-focused dashboard on native platforms
-  if (user && isNativePlatform()) {
-    return <MobileCaptureDashboard userId={user.id} />
-  }
-
-  // Desktop dashboard code below
   const firstName = (user?.user_metadata?.full_name || user?.email || 'User').split(' ')[0]
   const greeting = getGreeting()
 

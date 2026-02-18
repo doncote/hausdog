@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 const RegisterTokenSchema = z.object({
   token: z.string().min(1),
-  platform: z.enum(['ios', 'android', 'web']),
+  platform: z.enum(['web']),
 })
 
 export const Route = createFileRoute('/api/notifications/register')({

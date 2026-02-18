@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/select'
 import { DocumentType, uploadDocument } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
-import { capturePhoto, isNativePlatform, pickFromGallery } from '@/lib/camera'
 
 interface UploadedDoc {
   id: string
@@ -118,46 +117,6 @@ function CapturePage() {
     })
 
     setSelectedFiles((prev) => [...prev, ...files])
-  }
-
-  const handleNativeCapture = async () => {
-    try {
-      const result = await capturePhoto()
-      if (!result) return
-
-      // Create a File-like object for the existing upload flow
-      const file = new File(
-        [Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))],
-        result.fileName,
-        { type: result.mimeType },
-      )
-
-      // Add preview
-      setPreviews((prev) => [...prev, `data:${result.mimeType};base64,${result.base64}`])
-      setSelectedFiles((prev) => [...prev, file])
-    } catch (error) {
-      console.error('Native capture error:', error)
-      toast.error('Failed to capture photo')
-    }
-  }
-
-  const handleNativeGallery = async () => {
-    try {
-      const result = await pickFromGallery()
-      if (!result) return
-
-      const file = new File(
-        [Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))],
-        result.fileName,
-        { type: result.mimeType },
-      )
-
-      setPreviews((prev) => [...prev, `data:${result.mimeType};base64,${result.base64}`])
-      setSelectedFiles((prev) => [...prev, file])
-    } catch (error) {
-      console.error('Gallery pick error:', error)
-      toast.error('Failed to pick photo')
-    }
   }
 
   const removeFile = (index: number) => {
@@ -327,49 +286,24 @@ function CapturePage() {
 
             {/* Upload buttons */}
             <div className="flex gap-3">
-              {isNativePlatform() ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={handleNativeCapture}
-                  >
-                    <Camera className="h-4 w-4" />
-                    Take Photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={handleNativeGallery}
-                  >
-                    <Image className="h-4 w-4" />
-                    Gallery
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <FileUp className="h-4 w-4" />
-                    Choose Files
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => cameraInputRef.current?.click()}
-                  >
-                    <Camera className="h-4 w-4" />
-                    Take Photo
-                  </Button>
-                </>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="h-4 w-4" />
+                Choose Files
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera className="h-4 w-4" />
+                Take Photo
+              </Button>
             </div>
 
             {/* Preview area */}

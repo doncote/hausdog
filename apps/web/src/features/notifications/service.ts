@@ -5,7 +5,7 @@ export interface DeviceToken {
   id: string
   userId: string
   token: string
-  platform: 'ios' | 'android' | 'web'
+  platform: 'web'
   createdAt: Date
   updatedAt: Date
 }
@@ -13,7 +13,7 @@ export interface DeviceToken {
 export async function registerDeviceToken(
   userId: string,
   token: string,
-  platform: 'ios' | 'android' | 'web',
+  platform: 'web',
 ): Promise<DeviceToken> {
   const result = await db.deviceToken.upsert({
     where: {
@@ -33,7 +33,7 @@ export async function registerDeviceToken(
     id: result.id,
     userId: result.userId,
     token: result.token,
-    platform: result.platform as 'ios' | 'android' | 'web',
+    platform: result.platform as 'web',
     createdAt: result.createdAt,
     updatedAt: result.updatedAt,
   }
@@ -75,21 +75,6 @@ export async function sendPushNotification(
       body,
     },
     data,
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-    android: {
-      priority: 'high',
-      notification: {
-        sound: 'default',
-        channelId: 'default',
-      },
-    },
   })
 
   // Remove invalid tokens
