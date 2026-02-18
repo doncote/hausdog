@@ -28,6 +28,7 @@ COPY --from=build /app/.output ./.output
 COPY --from=build /app/generated ./generated
 COPY --from=build /app/package.json ./
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./
 
 EXPOSE 3333
 
