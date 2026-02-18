@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Box, Camera, ChevronRight, FileText, Home, Plus } from 'lucide-react'
+import { AlertTriangle, Box, Camera, ChevronRight, Clock, FileText, Home, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDashboardStats } from '@/features/dashboard'
@@ -22,7 +22,7 @@ function DashboardPage() {
         <p className="mt-2 text-muted-foreground">Here's an overview of your home documentation.</p>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
         <StatCard
           label="Properties"
           value={isPending ? '-' : (stats?.propertyCount ?? 0)}
@@ -41,6 +41,12 @@ function DashboardPage() {
           value={isPending ? '-' : (stats?.documentCount ?? 0)}
           icon={Camera}
           href="/documents"
+        />
+        <StatCard
+          label="Overdue"
+          value={isPending ? '-' : (stats?.overdueCount ?? 0)}
+          icon={AlertTriangle}
+          href="/maintenance"
         />
       </div>
 
@@ -102,6 +108,68 @@ function DashboardPage() {
                   <Link to="/capture">
                     <Button size="sm" variant="outline">
                       Capture your first item
+                    </Button>
+                  </Link>
+                }
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Maintenance</CardTitle>
+            <CardDescription>Tasks due soon</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isPending ? (
+              <div className="space-y-3">
+                <div className="h-12 bg-muted animate-pulse rounded" />
+                <div className="h-12 bg-muted animate-pulse rounded" />
+              </div>
+            ) : stats?.upcomingMaintenance && stats.upcomingMaintenance.length > 0 ? (
+              <div className="space-y-2">
+                {stats.upcomingMaintenance.slice(0, 5).map((task) => {
+                  const isOverdue = new Date(task.nextDueDate) < new Date()
+                  const dueDate = new Date(task.nextDueDate)
+                  const now = new Date()
+                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                  const dueLabel = isOverdue
+                    ? `${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} overdue`
+                    : diffDays === 0
+                      ? 'Due today'
+                      : `Due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`
+
+                  return (
+                    <Link
+                      key={task.id}
+                      to="/maintenance"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors group"
+                    >
+                      <div className={`rounded-lg p-2 ${isOverdue ? 'bg-destructive/10' : 'bg-secondary'}`}>
+                        <Clock className={`h-4 w-4 ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium group-hover:text-primary transition-colors truncate">
+                          {task.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {task.itemName ?? task.propertyName} &middot;{' '}
+                          <span className={isOverdue ? 'text-destructive' : ''}>{dueLabel}</span>
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                message="No maintenance tasks scheduled"
+                action={
+                  <Link to="/maintenance">
+                    <Button size="sm" variant="outline">
+                      Set up maintenance
                     </Button>
                   </Link>
                 }

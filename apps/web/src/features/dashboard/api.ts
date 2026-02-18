@@ -13,6 +13,14 @@ export interface DashboardStats {
     propertyName: string
     createdAt: Date
   }>
+  upcomingMaintenance: Array<{
+    id: string
+    name: string
+    nextDueDate: Date
+    itemName: string | null
+    propertyName: string
+  }>
+  overdueCount: number
 }
 
 export const fetchDashboardStats = createServerFn({ method: 'GET' })
@@ -33,11 +41,13 @@ export const fetchDashboardStats = createServerFn({ method: 'GET' })
         pendingReviewCount: 0,
         documentCount: 0,
         recentItems: [],
+        upcomingMaintenance: [],
+        overdueCount: 0,
       }
     }
 
     // Run counts in parallel
-    const [itemCount, pendingReviewCount, documentCount, recentItems] = await Promise.all([
+    const [itemCount, pendingReviewCount, documentCount, recentItems, maintenanceTasks, overdueCount] = await Promise.all([
       prisma.item.count({
         where: { propertyId: { in: propertyIds } },
       }),
@@ -58,6 +68,25 @@ export const fetchDashboardStats = createServerFn({ method: 'GET' })
           property: { select: { name: true } },
         },
       }),
+      prisma.maintenanceTask.findMany({
+        where: {
+          propertyId: { in: propertyIds },
+          status: 'active',
+        },
+        orderBy: { nextDueDate: 'asc' },
+        take: 10,
+        include: {
+          property: { select: { name: true } },
+          item: { select: { name: true } },
+        },
+      }),
+      prisma.maintenanceTask.count({
+        where: {
+          propertyId: { in: propertyIds },
+          status: 'active',
+          nextDueDate: { lt: new Date() },
+        },
+      }),
     ])
 
     return {
@@ -72,5 +101,13 @@ export const fetchDashboardStats = createServerFn({ method: 'GET' })
         propertyName: item.property.name,
         createdAt: item.createdAt,
       })),
+      upcomingMaintenance: maintenanceTasks.map((t) => ({
+        id: t.id,
+        name: t.name,
+        nextDueDate: t.nextDueDate,
+        itemName: t.item?.name ?? null,
+        propertyName: t.property.name,
+      })),
+      overdueCount,
     }
   })
