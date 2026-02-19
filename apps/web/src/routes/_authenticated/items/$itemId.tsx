@@ -4,6 +4,7 @@ import {
   Box,
   Calendar,
   ChevronRight,
+  MoreHorizontal,
   MoreVertical,
   Pencil,
   Plus,
@@ -14,6 +15,13 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { ItemChat } from '@/components/ItemChat'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -54,6 +62,16 @@ import {
   useItem,
   useUpdateItem,
 } from '@/features/items'
+import {
+  useMaintenanceForItem,
+  useTriggerMaintenanceSuggestions,
+  useCompleteMaintenanceTask,
+  useUpdateMaintenanceTask,
+  useDeleteMaintenanceTask,
+  useSnoozeMaintenanceTask,
+  CompleteMaintenanceTaskSchema,
+} from '@/features/maintenance'
+import type { MaintenanceTaskWithRelations, CompleteMaintenanceTaskInput } from '@/features/maintenance'
 import { useSpacesForProperty } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/items/$itemId')({
@@ -68,11 +86,18 @@ function ItemDetailPage() {
   const { data: item, isPending, error } = useItem(itemId)
   const { data: spaces } = useSpacesForProperty(item?.propertyId)
   const { data: events } = useEventsForItem(itemId)
+  const { data: maintenanceTasks, isPending: maintenanceLoading } = useMaintenanceForItem(itemId)
+  const triggerSuggestions = useTriggerMaintenanceSuggestions()
+  const completeMaintenance = useCompleteMaintenanceTask()
+  const updateMaintenance = useUpdateMaintenanceTask()
+  const deleteMaintenance = useDeleteMaintenanceTask()
+  const snoozeMaintenance = useSnoozeMaintenanceTask()
   const updateItem = useUpdateItem()
   const deleteItem = useDeleteItem()
   const createEvent = useCreateEvent()
   const deleteEvent = useDeleteEvent()
 
+  const [completingTask, setCompletingTask] = useState<MaintenanceTaskWithRelations | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEventDialog, setShowEventDialog] = useState(false)
@@ -594,6 +619,134 @@ function ItemDetailPage() {
         )}
       </div>
 
+      {/* Maintenance Schedule */}
+      <div className="mt-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Maintenance Schedule</CardTitle>
+              <CardDescription>Recurring maintenance tasks for this item</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => triggerSuggestions.mutate({ itemId, userId: user.id })}
+              disabled={triggerSuggestions.isPending}
+            >
+              {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {maintenanceLoading ? (
+              <div className="space-y-3">
+                <div className="h-12 bg-muted animate-pulse rounded" />
+              </div>
+            ) : maintenanceTasks && maintenanceTasks.length > 0 ? (
+              <div className="space-y-2">
+                {maintenanceTasks.map((task) => {
+                  const isOverdue = new Date(task.nextDueDate) < new Date()
+                  const dueDate = new Date(task.nextDueDate)
+                  const now = new Date()
+                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                  const dueLabel = isOverdue
+                    ? `${Math.abs(diffDays)}d overdue`
+                    : diffDays === 0
+                      ? 'Due today'
+                      : `${diffDays}d`
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{task.name}</p>
+                          {task.source === 'ai_suggested' && (
+                            <span className="text-xs bg-secondary px-1.5 py-0.5 rounded">AI</span>
+                          )}
+                          {task.status === 'paused' && (
+                            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Paused</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Every {task.intervalMonths} month{task.intervalMonths !== 1 ? 's' : ''} &middot;{' '}
+                          <span className={isOverdue ? 'text-destructive font-medium' : ''}>{dueLabel}</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCompletingTask(task)}
+                        >
+                          Complete
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                snoozeMaintenance.mutate({
+                                  id: task.id,
+                                  userId: user.id,
+                                  propertyId: task.propertyId,
+                                })
+                              }
+                            >
+                              Snooze
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                updateMaintenance.mutate({
+                                  id: task.id,
+                                  userId: user.id,
+                                  propertyId: task.propertyId,
+                                  input: { status: task.status === 'paused' ? 'active' : 'paused' },
+                                })
+                              }
+                            >
+                              {task.status === 'paused' ? 'Resume' : 'Pause'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() =>
+                                deleteMaintenance.mutate({
+                                  id: task.id,
+                                  propertyId: task.propertyId,
+                                })
+                              }
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="py-6 text-center">
+                <p className="text-muted-foreground mb-3">No maintenance tasks yet</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => triggerSuggestions.mutate({ itemId, userId: user.id })}
+                  disabled={triggerSuggestions.isPending}
+                >
+                  {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Item Chat */}
       {user && (
         <div className="mt-8">
@@ -746,6 +899,118 @@ function ItemDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Complete Maintenance Dialog */}
+      <Dialog open={!!completingTask} onOpenChange={(open) => !open && setCompletingTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete: {completingTask?.name}</DialogTitle>
+          </DialogHeader>
+          <CompleteMaintenanceForm
+            task={completingTask}
+            onSubmit={(input) => {
+              if (!completingTask) return
+              completeMaintenance.mutate(
+                {
+                  id: completingTask.id,
+                  userId: user.id,
+                  propertyId: completingTask.propertyId,
+                  itemId: completingTask.itemId,
+                  input,
+                },
+                {
+                  onSuccess: () => setCompletingTask(null),
+                },
+              )
+            }}
+            onSkip={() => {
+              if (!completingTask) return
+              completeMaintenance.mutate(
+                {
+                  id: completingTask.id,
+                  userId: user.id,
+                  propertyId: completingTask.propertyId,
+                  itemId: completingTask.itemId,
+                  input: { date: new Date() },
+                },
+                {
+                  onSuccess: () => setCompletingTask(null),
+                },
+              )
+            }}
+            isPending={completeMaintenance.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function CompleteMaintenanceForm({
+  task,
+  onSubmit,
+  onSkip,
+  isPending,
+}: {
+  task: MaintenanceTaskWithRelations | null
+  onSubmit: (input: CompleteMaintenanceTaskInput) => void
+  onSkip: () => void
+  isPending: boolean
+}) {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [cost, setCost] = useState('')
+  const [performedBy, setPerformedBy] = useState('')
+  const [description, setDescription] = useState('')
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Date Performed</Label>
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </div>
+      <div>
+        <Label>Cost</Label>
+        <Input
+          type="number"
+          placeholder="Optional"
+          value={cost}
+          onChange={(e) => setCost(e.target.value)}
+        />
+      </div>
+      <div>
+        <Label>Performed By</Label>
+        <Input
+          placeholder="Optional (e.g., Self, ABC Plumbing)"
+          value={performedBy}
+          onChange={(e) => setPerformedBy(e.target.value)}
+        />
+      </div>
+      <div>
+        <Label>Notes</Label>
+        <Textarea
+          placeholder="Optional notes"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      <div className="flex justify-between">
+        <Button variant="ghost" onClick={onSkip} disabled={isPending}>
+          Skip details
+        </Button>
+        <Button
+          onClick={() =>
+            onSubmit({
+              date: new Date(date),
+              ...(cost ? { cost: parseFloat(cost) } : {}),
+              ...(performedBy ? { performedBy } : {}),
+              ...(description ? { description } : {}),
+            })
+          }
+          disabled={isPending}
+        >
+          {isPending ? 'Saving...' : 'Complete'}
+        </Button>
+      </div>
     </div>
   )
 }
