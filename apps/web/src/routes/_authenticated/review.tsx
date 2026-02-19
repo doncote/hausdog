@@ -56,6 +56,7 @@ function getExtractedData(doc: DocumentWithRelations) {
       warrantyExpires?: string
     }
     suggestedItemName?: string
+    suggestedDescription?: string
     suggestedCategory?: string
   } | null
   return data
@@ -362,6 +363,12 @@ function ReviewPage() {
                         {extracted.suggestedCategory}
                       </p>
                     )}
+                    {extracted.suggestedDescription && (
+                      <p>
+                        <span className="text-muted-foreground">Description:</span>{' '}
+                        {extracted.suggestedDescription}
+                      </p>
+                    )}
                     {extracted.extracted.price && (
                       <p>
                         <span className="text-muted-foreground">Price:</span> $
@@ -521,6 +528,12 @@ function ReviewPage() {
                               <div>
                                 <dt className="text-muted-foreground">Category</dt>
                                 <dd>{extracted.suggestedCategory}</dd>
+                              </div>
+                            )}
+                            {extracted.suggestedDescription && (
+                              <div>
+                                <dt className="text-muted-foreground">Description</dt>
+                                <dd>{extracted.suggestedDescription}</dd>
                               </div>
                             )}
                             {extracted.extracted?.manufacturer && (

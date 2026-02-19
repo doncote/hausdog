@@ -22,7 +22,7 @@ lint:
 
 # Run TypeScript type checking
 tc:
-	cd apps/web && doppler run -- bunx tsc --noEmit
+	cd apps/web && bunx tsc --noEmit
 
 # Introspect database schema
 db-pull:

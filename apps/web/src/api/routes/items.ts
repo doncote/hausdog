@@ -15,6 +15,7 @@ const ItemSchema = z.object({
   spaceId: z.string().uuid().nullable(),
   parentId: z.string().uuid().nullable(),
   name: z.string(),
+  description: z.string().nullable(),
   category: z.string(),
   manufacturer: z.string().nullable(),
   model: z.string().nullable(),
@@ -167,6 +168,7 @@ const createItem = createRoute({
             spaceId: z.string().uuid().optional(),
             parentId: z.string().uuid().optional(),
             name: z.string().min(1, 'Name is required'),
+            description: z.string().optional(),
             category: z.string().min(1, 'Category is required'),
             manufacturer: z.string().optional(),
             model: z.string().optional(),
@@ -216,6 +218,7 @@ const updateItem = createRoute({
             spaceId: z.string().uuid().nullable().optional(),
             parentId: z.string().uuid().nullable().optional(),
             name: z.string().min(1).optional(),
+            description: z.string().nullable().optional(),
             category: z.string().min(1).optional(),
             manufacturer: z.string().nullable().optional(),
             model: z.string().nullable().optional(),
@@ -380,6 +383,7 @@ itemsRouter.openapi(updateItem, async (c) => {
 
   const item = await itemService.update(id, userId, {
     name: body.name,
+    description: body.description ?? undefined,
     category: body.category,
     spaceId: body.spaceId ?? undefined,
     parentId: body.parentId ?? undefined,

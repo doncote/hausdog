@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const ItemCategory = {
   APPLIANCE: 'appliance',
+  AUTOMOTIVE: 'automotive',
   HVAC: 'hvac',
   PLUMBING: 'plumbing',
   ELECTRICAL: 'electrical',
@@ -19,6 +20,7 @@ export const CreateItemSchema = z.object({
   spaceId: z.string().uuid().optional(),
   parentId: z.string().uuid().optional(),
   name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
   manufacturer: z.string().optional(),
   model: z.string().optional(),
@@ -40,6 +42,7 @@ export interface Item {
   spaceId: string | null
   parentId: string | null
   name: string
+  description: string | null
   category: string
   manufacturer: string | null
   model: string | null

@@ -38,7 +38,21 @@ export const createItem = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateItemInput }) => d)
   .handler(async ({ data }) => {
     const service = getItemService()
-    return service.create(data.userId, data.input)
+    const item = await service.create(data.userId, data.input)
+
+    // Trigger AI maintenance suggestions in background
+    try {
+      const { tasks } = await import('@trigger.dev/sdk/v3')
+      await tasks.trigger('suggest-maintenance', {
+        itemId: item.id,
+        userId: data.userId,
+      })
+      logger.info('Triggered maintenance suggestions', { itemId: item.id })
+    } catch (err) {
+      logger.warn('Failed to trigger maintenance suggestions', { itemId: item.id, error: err })
+    }
+
+    return item
   })
 
 export const updateItem = createServerFn({ method: 'POST' })

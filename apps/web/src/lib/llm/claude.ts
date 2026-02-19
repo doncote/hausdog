@@ -200,3 +200,85 @@ export async function chatWithClaude(
 
   return textContent.text
 }
+
+// --- Maintenance Suggestions ---
+
+export interface MaintenanceSuggestion {
+  name: string
+  description: string
+  intervalMonths: number
+}
+
+export interface ItemForMaintenance {
+  name: string
+  category: string
+  manufacturer: string | null
+  model: string | null
+  acquiredDate: Date | null
+  notes: string | null
+}
+
+const MAINTENANCE_SYSTEM_PROMPT = `You are a home maintenance expert. Given details about a home appliance, system, or component, suggest common recurring maintenance tasks with recommended intervals.
+
+Rules:
+- Only suggest maintenance that is standard and widely recommended
+- Prefer manufacturer-recommended intervals when the brand/model is known
+- Keep suggestions practical for a homeowner (not overly technical)
+- Maximum 5 suggestions per item
+- If the item type doesn't have meaningful recurring maintenance, return an empty array
+
+Return JSON only (no markdown):
+[
+  {
+    "name": "Short task name (e.g. Replace air filter)",
+    "description": "Brief guidance on how to do this or what to look for",
+    "intervalMonths": 3
+  }
+]`
+
+export async function suggestMaintenanceWithClaude(
+  item: ItemForMaintenance,
+): Promise<MaintenanceSuggestion[]> {
+  const client = getAnthropicClient()
+
+  const userPrompt = `ITEM DETAILS:
+Name: ${item.name}
+Category: ${item.category}
+${item.manufacturer ? `Manufacturer: ${item.manufacturer}` : ''}
+${item.model ? `Model: ${item.model}` : ''}
+${item.acquiredDate ? `Acquired: ${item.acquiredDate.toISOString().split('T')[0]}` : ''}
+${item.notes ? `Notes: ${item.notes}` : ''}
+
+Suggest recurring maintenance tasks for this item.`
+
+  logger.info('Calling Claude for maintenance suggestions', {
+    itemName: item.name,
+    category: item.category,
+  })
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1024,
+    system: MAINTENANCE_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
+  })
+
+  const textContent = response.content.find((c) => c.type === 'text')
+  if (!textContent || textContent.type !== 'text') {
+    throw new Error('No text response from Claude')
+  }
+
+  let jsonStr = textContent.text
+  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (jsonMatch) {
+    jsonStr = jsonMatch[1]
+  }
+
+  const suggestions = JSON.parse(jsonStr.trim()) as MaintenanceSuggestion[]
+
+  logger.info('Claude maintenance suggestions received', {
+    count: suggestions.length,
+  })
+
+  return suggestions.slice(0, 5)
+}

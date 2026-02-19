@@ -47,10 +47,11 @@ model Property {
   updatedById     String    @map("updated_by_id") @db.Uuid
   ingestToken     String?   @unique @map("ingest_token")
 
-  spaces        Space[]
-  items         Item[]
-  documents     Document[]
-  conversations Conversation[]
+  spaces           Space[]
+  items            Item[]
+  documents        Document[]
+  conversations    Conversation[]
+  maintenanceTasks MaintenanceTask[]
 
   @@index([userId], map: "idx_properties_user_id")
   @@map("properties")
@@ -78,6 +79,7 @@ model Item {
   spaceId         String?   @map("space_id")
   parentId        String?   @map("parent_id")
   name            String
+  description     String?
   category        String
   manufacturer    String?
   model           String?
@@ -96,8 +98,9 @@ model Item {
   space     Space?     @relation(fields: [spaceId], references: [id])
   parent    Item?      @relation("ItemHierarchy", fields: [parentId], references: [id])
   children  Item[]     @relation("ItemHierarchy")
-  events    Event[]
-  documents Document[]
+  events           Event[]
+  documents        Document[]
+  maintenanceTasks MaintenanceTask[]
 
   @@index([propertyId], map: "idx_items_property_id")
   @@index([spaceId], map: "idx_items_space_id")
@@ -125,6 +128,32 @@ model Event {
   @@index([itemId], map: "idx_events_item_id")
   @@index([date], map: "idx_events_date")
   @@map("events")
+}
+
+model MaintenanceTask {
+  id              String    @id @default(uuid())
+  propertyId      String    @map("property_id")
+  itemId          String?   @map("item_id")
+  name            String
+  description     String?
+  intervalMonths  Int       @map("interval_months")
+  nextDueDate     DateTime  @map("next_due_date")
+  lastCompletedAt DateTime? @map("last_completed_at")
+  source          String    @default("user_created")
+  status          String    @default("active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdById     String    @map("created_by_id") @db.Uuid
+  updatedById     String    @map("updated_by_id") @db.Uuid
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  item     Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId], map: "idx_maintenance_tasks_property_id")
+  @@index([itemId], map: "idx_maintenance_tasks_item_id")
+  @@index([nextDueDate], map: "idx_maintenance_tasks_next_due_date")
+  @@index([status], map: "idx_maintenance_tasks_status")
+  @@map("maintenance_tasks")
 }
 
 model Document {

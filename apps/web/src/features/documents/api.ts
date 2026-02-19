@@ -21,6 +21,7 @@ interface ExtractedData {
     warrantyExpires?: string
   }
   suggestedItemName?: string
+  suggestedDescription?: string
   suggestedCategory?: string
 }
 
@@ -144,6 +145,7 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
         parentId:
           action === 'CHILD_OF_ITEM' ? (resolveData?.matchedItemId ?? undefined) : undefined,
         name: itemName,
+        description: extractedData?.suggestedDescription || undefined,
         category,
         manufacturer:
           data.overrides?.manufacturer || extractedData?.extracted?.manufacturer || undefined,
@@ -161,6 +163,18 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
 
       itemId = newItem.id
       logger.info('Created item from document', { documentId: data.documentId, itemId })
+
+      // Trigger AI maintenance suggestions in background
+      try {
+        const { tasks } = await import('@trigger.dev/sdk/v3')
+        await tasks.trigger('suggest-maintenance', {
+          itemId: newItem.id,
+          userId: data.userId,
+        })
+        logger.info('Triggered maintenance suggestions', { itemId: newItem.id })
+      } catch (err) {
+        logger.warn('Failed to trigger maintenance suggestions', { itemId: newItem.id, error: err })
+      }
     } else if (action === 'ATTACH_TO_ITEM') {
       // Use the matched item
       itemId = resolveData?.matchedItemId || null

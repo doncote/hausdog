@@ -64,6 +64,7 @@ export const resolveEmailDocumentTask = task({
           specs: {},
         },
         suggestedItemName: 'Email Document',
+        suggestedDescription: '',
         suggestedCategory: 'other',
       }
 

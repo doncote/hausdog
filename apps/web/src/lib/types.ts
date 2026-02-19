@@ -8,6 +8,7 @@ export const ITEM_CATEGORIES = [
   'plumbing',
   'electrical',
   'appliance',
+  'automotive',
   'structure',
   'tool',
   'fixture',

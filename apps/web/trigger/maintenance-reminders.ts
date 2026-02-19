@@ -2,7 +2,6 @@ import { schedules } from '@trigger.dev/sdk/v3'
 import { PrismaClient } from '@generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
-// Create a Prisma client for the task
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {
@@ -14,46 +13,50 @@ function createPrismaClient() {
 
 export const checkMaintenanceReminders = schedules.task({
   id: 'check-maintenance-reminders',
-  cron: '0 9 * * *', // Daily at 9am UTC
+  cron: '0 9 * * *',
   run: async (payload) => {
     console.log('Checking maintenance reminders for', payload.timestamp)
     const prisma = createPrismaClient()
 
     try {
-      // TODO: Implement when maintenance schedules feature is added
-      // This will query items with nextMaintenanceDate due today
-      // and send push notifications to their owners
-      //
-      // Example implementation:
-      // const today = new Date()
-      // today.setHours(0, 0, 0, 0)
-      // const tomorrow = new Date(today)
-      // tomorrow.setDate(tomorrow.getDate() + 1)
-      //
-      // const dueItems = await prisma.item.findMany({
-      //   where: {
-      //     nextMaintenanceDate: {
-      //       gte: today,
-      //       lt: tomorrow,
-      //     },
-      //   },
-      //   include: {
-      //     property: {
-      //       select: {
-      //         name: true,
-      //         userId: true,
-      //       },
-      //     },
-      //   },
-      // })
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
 
-      // For now, just log that the task ran
-      console.log('Maintenance reminders task completed (no-op until maintenance schedules feature is implemented)')
+      const dueTasks = await prisma.maintenanceTask.findMany({
+        where: {
+          status: 'active',
+          nextDueDate: { lte: today },
+        },
+        include: {
+          property: {
+            select: {
+              name: true,
+              userId: true,
+            },
+          },
+          item: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      })
+
+      console.log(`Found ${dueTasks.length} overdue/due maintenance tasks`)
+
+      const tasksByUser = new Map<string, typeof dueTasks>()
+      for (const task of dueTasks) {
+        const userId = task.property.userId
+        if (!tasksByUser.has(userId)) {
+          tasksByUser.set(userId, [])
+        }
+        tasksByUser.get(userId)!.push(task)
+      }
 
       return {
         checkedAt: payload.timestamp,
-        itemsFound: 0,
-        usersNotified: 0,
+        tasksFound: dueTasks.length,
+        usersAffected: tasksByUser.size,
       }
     } finally {
       await prisma.$disconnect()

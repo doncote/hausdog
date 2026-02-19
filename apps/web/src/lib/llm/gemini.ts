@@ -20,6 +20,7 @@ Categories for home items:
 - plumbing: Water heaters, pipes, fixtures, water treatment
 - electrical: Panels, wiring, generators, solar
 - appliance: Kitchen appliances, laundry, etc.
+- automotive: Cars, trucks, motorcycles, trailers, ATVs, boats
 - structure: Roof, foundation, walls, insulation
 - tool: Power tools, hand tools, equipment
 - fixture: Lighting, faucets, hardware
@@ -44,7 +45,8 @@ Extract all visible information and return JSON only (no markdown):
     "specs": {}
   },
   "suggestedItemName": "descriptive name for the item",
-  "suggestedCategory": "hvac|plumbing|electrical|appliance|structure|tool|fixture|other"
+  "suggestedDescription": "1-2 sentence description of what this item is, its purpose, and key specs if visible",
+  "suggestedCategory": "hvac|plumbing|electrical|appliance|automotive|structure|tool|fixture|other"
 }`
 
 export interface GeminiExtractionResult {
@@ -63,6 +65,7 @@ export interface GeminiExtractionResult {
     specs: Record<string, unknown>
   }
   suggestedItemName: string
+  suggestedDescription: string
   suggestedCategory: string
 }
 
