@@ -979,38 +979,41 @@ function CompleteMaintenanceForm({
   const [description, setDescription] = useState('')
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label>Date Performed</Label>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+    <div className="space-y-4 pt-2">
+      <div className="grid gap-2">
+        <Label htmlFor="completion-date">Date Performed</Label>
+        <Input id="completion-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
-      <div>
-        <Label>Cost</Label>
+      <div className="grid gap-2">
+        <Label htmlFor="completion-cost">Cost</Label>
         <Input
+          id="completion-cost"
           type="number"
           placeholder="Optional"
           value={cost}
           onChange={(e) => setCost(e.target.value)}
         />
       </div>
-      <div>
-        <Label>Performed By</Label>
+      <div className="grid gap-2">
+        <Label htmlFor="completion-performed-by">Performed By</Label>
         <Input
+          id="completion-performed-by"
           placeholder="Optional (e.g., Self, ABC Plumbing)"
           value={performedBy}
           onChange={(e) => setPerformedBy(e.target.value)}
         />
       </div>
-      <div>
-        <Label>Notes</Label>
+      <div className="grid gap-2">
+        <Label htmlFor="completion-notes">Notes</Label>
         <Textarea
+          id="completion-notes"
           placeholder="Optional notes"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onSkip} disabled={isPending}>
+      <div className="flex justify-between pt-2">
+        <Button variant="outline" onClick={onSkip} disabled={isPending}>
           Skip details
         </Button>
         <Button
