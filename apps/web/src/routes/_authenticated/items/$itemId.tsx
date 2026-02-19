@@ -15,13 +15,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { ItemChat } from '@/components/ItemChat'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -62,16 +56,18 @@ import {
   useItem,
   useUpdateItem,
 } from '@/features/items'
-import {
-  useMaintenanceForItem,
-  useTriggerMaintenanceSuggestions,
-  useCompleteMaintenanceTask,
-  useUpdateMaintenanceTask,
-  useDeleteMaintenanceTask,
-  useSnoozeMaintenanceTask,
-  CompleteMaintenanceTaskSchema,
+import type {
+  CompleteMaintenanceTaskInput,
+  MaintenanceTaskWithRelations,
 } from '@/features/maintenance'
-import type { MaintenanceTaskWithRelations, CompleteMaintenanceTaskInput } from '@/features/maintenance'
+import {
+  useCompleteMaintenanceTask,
+  useDeleteMaintenanceTask,
+  useMaintenanceForItem,
+  useSnoozeMaintenanceTask,
+  useTriggerMaintenanceSuggestions,
+  useUpdateMaintenanceTask,
+} from '@/features/maintenance'
 import { useSpacesForProperty } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/items/$itemId')({
@@ -443,8 +439,9 @@ function ItemDetailPage() {
                 {item.serialNumber && (
                   <p className="text-sm text-muted-foreground mt-2">Serial: {item.serialNumber}</p>
                 )}
+                {item.description && <p className="text-sm mt-3">{item.description}</p>}
                 {item.notes && (
-                  <p className="text-sm text-muted-foreground mt-4 whitespace-pre-wrap">
+                  <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">
                     {item.notes}
                   </p>
                 )}
@@ -632,7 +629,7 @@ function ItemDetailPage() {
               size="sm"
               onClick={() =>
                 triggerSuggestions.mutate(
-                  { itemId, userId: user.id },
+                  { itemId, userId: user!.id },
                   {
                     onSuccess: () => toast.success('Maintenance suggestions generated'),
                     onError: () => toast.error('Failed to generate suggestions'),
@@ -655,7 +652,9 @@ function ItemDetailPage() {
                   const isOverdue = new Date(task.nextDueDate) < new Date()
                   const dueDate = new Date(task.nextDueDate)
                   const now = new Date()
-                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                  const diffDays = Math.ceil(
+                    (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                  )
                   const dueLabel = isOverdue
                     ? `${Math.abs(diffDays)}d overdue`
                     : diffDays === 0
@@ -663,10 +662,7 @@ function ItemDetailPage() {
                       : `${diffDays}d`
 
                   return (
-                    <div
-                      key={task.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border"
-                    >
+                    <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium truncate">{task.name}</p>
@@ -678,16 +674,15 @@ function ItemDetailPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Every {task.intervalMonths} month{task.intervalMonths !== 1 ? 's' : ''} &middot;{' '}
-                          <span className={isOverdue ? 'text-destructive font-medium' : ''}>{dueLabel}</span>
+                          Every {task.intervalMonths} month{task.intervalMonths !== 1 ? 's' : ''}{' '}
+                          &middot;{' '}
+                          <span className={isOverdue ? 'text-destructive font-medium' : ''}>
+                            {dueLabel}
+                          </span>
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCompletingTask(task)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setCompletingTask(task)}>
                           Complete
                         </Button>
                         <DropdownMenu>
@@ -701,7 +696,7 @@ function ItemDetailPage() {
                               onClick={() =>
                                 snoozeMaintenance.mutate({
                                   id: task.id,
-                                  userId: user.id,
+                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                 })
                               }
@@ -712,7 +707,7 @@ function ItemDetailPage() {
                               onClick={() =>
                                 updateMaintenance.mutate({
                                   id: task.id,
-                                  userId: user.id,
+                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                   input: { status: task.status === 'paused' ? 'active' : 'paused' },
                                 })
@@ -745,14 +740,14 @@ function ItemDetailPage() {
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                triggerSuggestions.mutate(
-                  { itemId, userId: user.id },
-                  {
-                    onSuccess: () => toast.success('Maintenance suggestions generated'),
-                    onError: () => toast.error('Failed to generate suggestions'),
-                  },
-                )
-              }
+                    triggerSuggestions.mutate(
+                      { itemId, userId: user!.id },
+                      {
+                        onSuccess: () => toast.success('Maintenance suggestions generated'),
+                        onError: () => toast.error('Failed to generate suggestions'),
+                      },
+                    )
+                  }
                   disabled={triggerSuggestions.isPending}
                 >
                   {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
@@ -926,13 +921,12 @@ function ItemDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <CompleteMaintenanceForm
-            task={completingTask}
             onSubmit={(input) => {
               if (!completingTask) return
               completeMaintenance.mutate(
                 {
                   id: completingTask.id,
-                  userId: user.id,
+                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input,
@@ -950,7 +944,7 @@ function ItemDetailPage() {
               completeMaintenance.mutate(
                 {
                   id: completingTask.id,
-                  userId: user.id,
+                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input: { date: new Date() },
@@ -972,12 +966,10 @@ function ItemDetailPage() {
 }
 
 function CompleteMaintenanceForm({
-  task,
   onSubmit,
   onSkip,
   isPending,
 }: {
-  task: MaintenanceTaskWithRelations | null
   onSubmit: (input: CompleteMaintenanceTaskInput) => void
   onSkip: () => void
   isPending: boolean
@@ -993,7 +985,12 @@ function CompleteMaintenanceForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="completion-date">Date Performed</Label>
-            <Input id="completion-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input
+              id="completion-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="completion-cost">Cost</Label>

@@ -1,4 +1,7 @@
-import type { PrismaClient, MaintenanceTask as PrismaMaintenanceTask } from '@generated/prisma/client'
+import type {
+  PrismaClient,
+  MaintenanceTask as PrismaMaintenanceTask,
+} from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
 import type {
   CompleteMaintenanceTaskInput,
@@ -138,9 +141,13 @@ export class MaintenanceService {
         continue
       }
 
-      const baseDate = lastEventDates?.[suggestion.name] ?? new Date()
-      const nextDueDate = new Date(baseDate)
-      nextDueDate.setMonth(nextDueDate.getMonth() + suggestion.intervalMonths)
+      // If we know when this was last done, schedule from that date.
+      // Otherwise, mark as due now — the item is new and we don't know
+      // the last time maintenance was performed.
+      const lastDone = lastEventDates?.[suggestion.name]
+      const nextDueDate = lastDone
+        ? new Date(lastDone.getTime() + suggestion.intervalMonths * 30 * 24 * 60 * 60 * 1000)
+        : new Date()
 
       const record = await this.db.maintenanceTask.create({
         data: {

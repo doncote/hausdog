@@ -1,20 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AlertTriangle, Clock, MoreHorizontal, Plus, Wrench } from 'lucide-react'
 import { useState } from 'react'
-import {
-  AlertTriangle,
-  Clock,
-  MoreHorizontal,
-  Plus,
-  Wrench,
-} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,17 +20,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  useUpcomingMaintenance,
-  useCompleteMaintenanceTask,
-  useSnoozeMaintenanceTask,
-  useUpdateMaintenanceTask,
-  useDeleteMaintenanceTask,
-  useCreateMaintenanceTask,
-} from '@/features/maintenance'
 import type {
-  MaintenanceTaskWithRelations,
   CompleteMaintenanceTaskInput,
+  MaintenanceTaskWithRelations,
+} from '@/features/maintenance'
+import {
+  useCompleteMaintenanceTask,
+  useCreateMaintenanceTask,
+  useDeleteMaintenanceTask,
+  useSnoozeMaintenanceTask,
+  useUpcomingMaintenance,
+  useUpdateMaintenanceTask,
 } from '@/features/maintenance'
 import { useProperties } from '@/features/properties'
 
@@ -56,8 +45,7 @@ function MaintenancePage() {
   const snoozeMutation = useSnoozeMaintenanceTask()
   const updateMutation = useUpdateMaintenanceTask()
   const deleteMutation = useDeleteMaintenanceTask()
-  const [completingTask, setCompletingTask] =
-    useState<MaintenanceTaskWithRelations | null>(null)
+  const [completingTask, setCompletingTask] = useState<MaintenanceTaskWithRelations | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   const now = new Date()
@@ -75,8 +63,7 @@ function MaintenancePage() {
       const d = new Date(t.nextDueDate)
       return d > endOfWeek && d <= endOfMonth
     }) ?? []
-  const future =
-    tasks?.filter((t) => new Date(t.nextDueDate) > endOfMonth) ?? []
+  const future = tasks?.filter((t) => new Date(t.nextDueDate) > endOfMonth) ?? []
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
@@ -103,9 +90,7 @@ function MaintenancePage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">
-              No maintenance tasks yet
-            </h3>
+            <h3 className="text-lg font-medium mb-2">No maintenance tasks yet</h3>
             <p className="text-muted-foreground mb-4">
               Add maintenance schedules to your items or let AI suggest them
             </p>
@@ -246,10 +231,7 @@ function MaintenancePage() {
       )}
 
       {/* Completion Dialog */}
-      <Dialog
-        open={!!completingTask}
-        onOpenChange={(open) => !open && setCompletingTask(null)}
-      >
+      <Dialog open={!!completingTask} onOpenChange={(open) => !open && setCompletingTask(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Complete: {completingTask?.name}</DialogTitle>
@@ -292,10 +274,7 @@ function MaintenancePage() {
           <DialogHeader>
             <DialogTitle>New Maintenance Task</DialogTitle>
           </DialogHeader>
-          <CreateMaintenanceForm
-            userId={user!.id}
-            onClose={() => setShowCreateDialog(false)}
-          />
+          <CreateMaintenanceForm userId={user!.id} onClose={() => setShowCreateDialog(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -338,9 +317,7 @@ function TaskGroup({
         {tasks.map((task) => {
           const dueDate = new Date(task.nextDueDate)
           const now = new Date()
-          const diffDays = Math.ceil(
-            (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-          )
+          const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
           return (
             <div
@@ -351,14 +328,12 @@ function TaskGroup({
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium truncate">{task.name}</p>
                   {task.source === 'ai_suggested' && (
-                    <span className="text-xs bg-secondary px-1.5 py-0.5 rounded shrink-0">
-                      AI
-                    </span>
+                    <span className="text-xs bg-secondary px-1.5 py-0.5 rounded shrink-0">AI</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {task.item?.name ?? task.property?.name ?? 'Property'}{' '}
-                  &middot; Every {task.intervalMonths} mo &middot;{' '}
+                  {task.item?.name ?? task.property?.name ?? 'Property'} &middot; Every{' '}
+                  {task.intervalMonths} mo &middot;{' '}
                   {isOverdue ? (
                     <span className="text-destructive font-medium">
                       {Math.abs(diffDays)}d overdue
@@ -368,11 +343,7 @@ function TaskGroup({
                   )}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onComplete(task)}
-              >
+              <Button variant="outline" size="sm" onClick={() => onComplete(task)}>
                 Complete
               </Button>
               <DropdownMenu>
@@ -382,16 +353,11 @@ function TaskGroup({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onSnooze(task)}>
-                    Snooze
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSnooze(task)}>Snooze</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onPauseToggle(task)}>
                     {task.status === 'paused' ? 'Resume' : 'Pause'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => onDelete(task)}
-                  >
+                  <DropdownMenuItem className="text-destructive" onClick={() => onDelete(task)}>
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -426,11 +392,7 @@ function CompleteMaintenanceForm({
     <div className="space-y-4">
       <div>
         <Label>Date Performed</Label>
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div>
         <Label>Cost</Label>
@@ -483,16 +445,9 @@ function CompleteMaintenanceForm({
 // CreateMaintenanceForm
 // ---------------------------------------------------------------------------
 
-function CreateMaintenanceForm({
-  userId,
-  onClose,
-}: {
-  userId: string
-  onClose: () => void
-}) {
+function CreateMaintenanceForm({ userId, onClose }: { userId: string; onClose: () => void }) {
   const createMutation = useCreateMaintenanceTask()
-  const { data: properties, isPending: propertiesLoading } =
-    useProperties(userId)
+  const { data: properties, isPending: propertiesLoading } = useProperties(userId)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -517,7 +472,7 @@ function CreateMaintenanceForm({
           propertyId,
           name,
           description: description || undefined,
-          intervalMonths: parseInt(intervalMonths),
+          intervalMonths: parseInt(intervalMonths, 10),
           nextDueDate: new Date(nextDueDate),
         },
       },
@@ -575,21 +530,14 @@ function CreateMaintenanceForm({
         </div>
         <div>
           <Label>Next Due Date</Label>
-          <Input
-            type="date"
-            value={nextDueDate}
-            onChange={(e) => setNextDueDate(e.target.value)}
-          />
+          <Input type="date" value={nextDueDate} onChange={(e) => setNextDueDate(e.target.value)} />
         </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={!name || !propertyId || createMutation.isPending}
-        >
+        <Button onClick={handleSubmit} disabled={!name || !propertyId || createMutation.isPending}>
           {createMutation.isPending ? 'Creating...' : 'Create Task'}
         </Button>
       </div>

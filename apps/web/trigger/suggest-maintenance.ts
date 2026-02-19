@@ -121,9 +121,12 @@ Suggest recurring maintenance tasks for this item.`
       for (const suggestion of suggestions) {
         if (existingNames.has(suggestion.name.toLowerCase())) continue
 
-        const baseDate = lastEventDates.get(suggestion.name.toLowerCase()) ?? new Date()
-        const nextDueDate = new Date(baseDate)
-        nextDueDate.setMonth(nextDueDate.getMonth() + suggestion.intervalMonths)
+        // If we know when this was last done, schedule from that date.
+        // Otherwise due now — we don't know the item's maintenance history.
+        const lastDone = lastEventDates.get(suggestion.name.toLowerCase())
+        const nextDueDate = lastDone
+          ? new Date(lastDone.getTime() + suggestion.intervalMonths * 30 * 24 * 60 * 60 * 1000)
+          : new Date()
 
         await prisma.maintenanceTask.create({
           data: {

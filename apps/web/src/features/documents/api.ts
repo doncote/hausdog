@@ -21,6 +21,7 @@ interface ExtractedData {
     warrantyExpires?: string
   }
   suggestedItemName?: string
+  suggestedDescription?: string
   suggestedCategory?: string
 }
 
@@ -144,6 +145,7 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
         parentId:
           action === 'CHILD_OF_ITEM' ? (resolveData?.matchedItemId ?? undefined) : undefined,
         name: itemName,
+        description: extractedData?.suggestedDescription || undefined,
         category,
         manufacturer:
           data.overrides?.manufacturer || extractedData?.extracted?.manufacturer || undefined,

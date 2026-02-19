@@ -4,6 +4,7 @@ import { authRouter } from './routes/auth'
 import { documentsRouter } from './routes/documents'
 import { eventsRouter } from './routes/events'
 import { itemsRouter } from './routes/items'
+import { maintenanceRouter } from './routes/maintenance'
 import { propertiesRouter } from './routes/properties'
 import { spacesRouter } from './routes/spaces'
 
@@ -46,6 +47,7 @@ api.use('/spaces/*', apiKeyAuth)
 api.use('/items/*', apiKeyAuth)
 api.use('/events/*', apiKeyAuth)
 api.use('/documents/*', apiKeyAuth)
+api.use('/maintenance/*', apiKeyAuth)
 api.use('/auth/*', apiKeyAuth)
 
 // Mount routers
@@ -53,6 +55,7 @@ api.route('/', propertiesRouter)
 api.route('/', spacesRouter)
 api.route('/', itemsRouter)
 api.route('/', eventsRouter)
+api.route('/', maintenanceRouter)
 api.route('/', documentsRouter)
 api.route('/', authRouter)
 

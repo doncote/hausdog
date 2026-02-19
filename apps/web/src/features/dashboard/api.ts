@@ -47,7 +47,14 @@ export const fetchDashboardStats = createServerFn({ method: 'GET' })
     }
 
     // Run counts in parallel
-    const [itemCount, pendingReviewCount, documentCount, recentItems, maintenanceTasks, overdueCount] = await Promise.all([
+    const [
+      itemCount,
+      pendingReviewCount,
+      documentCount,
+      recentItems,
+      maintenanceTasks,
+      overdueCount,
+    ] = await Promise.all([
       prisma.item.count({
         where: { propertyId: { in: propertyIds } },
       }),

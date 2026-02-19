@@ -133,7 +133,9 @@ function DashboardPage() {
                   const isOverdue = new Date(task.nextDueDate) < new Date()
                   const dueDate = new Date(task.nextDueDate)
                   const now = new Date()
-                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                  const diffDays = Math.ceil(
+                    (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                  )
                   const dueLabel = isOverdue
                     ? `${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} overdue`
                     : diffDays === 0
@@ -146,8 +148,12 @@ function DashboardPage() {
                       to="/maintenance"
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors group"
                     >
-                      <div className={`rounded-lg p-2 ${isOverdue ? 'bg-destructive/10' : 'bg-secondary'}`}>
-                        <Clock className={`h-4 w-4 ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`} />
+                      <div
+                        className={`rounded-lg p-2 ${isOverdue ? 'bg-destructive/10' : 'bg-secondary'}`}
+                      >
+                        <Clock
+                          className={`h-4 w-4 ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium group-hover:text-primary transition-colors truncate">

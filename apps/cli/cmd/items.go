@@ -13,6 +13,7 @@ var (
 	itemSpaceID      string
 	itemParentID     string
 	itemName         string
+	itemDescription  string
 	itemCategory     string
 	itemManufacturer string
 	itemModel        string
@@ -112,6 +113,9 @@ var itemsCreateCmd = &cobra.Command{
 			"category": itemCategory,
 		}
 
+		if itemDescription != "" {
+			body["description"] = itemDescription
+		}
 		if itemSpaceID != "" {
 			body["spaceId"] = itemSpaceID
 		}
@@ -155,6 +159,9 @@ var itemsUpdateCmd = &cobra.Command{
 		body := make(map[string]interface{})
 		if cmd.Flags().Changed("name") {
 			body["name"] = itemName
+		}
+		if cmd.Flags().Changed("description") {
+			body["description"] = itemDescription
 		}
 		if cmd.Flags().Changed("category") {
 			body["category"] = itemCategory
@@ -233,12 +240,13 @@ func init() {
 	// Create flags
 	itemsCreateCmd.Flags().StringVar(&itemPropertyID, "property", "", "Property ID (required)")
 	itemsCreateCmd.Flags().StringVar(&itemName, "name", "", "Item name (required)")
-	itemsCreateCmd.Flags().StringVar(&itemCategory, "category", "", "Category: appliance, hvac, plumbing, electrical, etc (required)")
+	itemsCreateCmd.Flags().StringVar(&itemCategory, "category", "", "Category: appliance, automotive, hvac, plumbing, electrical, etc (required)")
 	itemsCreateCmd.Flags().StringVar(&itemSpaceID, "space", "", "Space ID")
 	itemsCreateCmd.Flags().StringVar(&itemParentID, "parent", "", "Parent item ID")
 	itemsCreateCmd.Flags().StringVar(&itemManufacturer, "manufacturer", "", "Manufacturer")
 	itemsCreateCmd.Flags().StringVar(&itemModel, "model", "", "Model")
 	itemsCreateCmd.Flags().StringVar(&itemSerialNumber, "serial-number", "", "Serial number")
+	itemsCreateCmd.Flags().StringVar(&itemDescription, "description", "", "Item description")
 	itemsCreateCmd.Flags().StringVar(&itemNotes, "notes", "", "Notes")
 	itemsCreateCmd.MarkFlagRequired("property")
 	itemsCreateCmd.MarkFlagRequired("name")
@@ -252,5 +260,6 @@ func init() {
 	itemsUpdateCmd.Flags().StringVar(&itemManufacturer, "manufacturer", "", "Manufacturer")
 	itemsUpdateCmd.Flags().StringVar(&itemModel, "model", "", "Model")
 	itemsUpdateCmd.Flags().StringVar(&itemSerialNumber, "serial-number", "", "Serial number")
+	itemsUpdateCmd.Flags().StringVar(&itemDescription, "description", "", "Item description")
 	itemsUpdateCmd.Flags().StringVar(&itemNotes, "notes", "", "Notes")
 }
