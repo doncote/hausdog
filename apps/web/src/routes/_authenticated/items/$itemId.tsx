@@ -921,6 +921,9 @@ function ItemDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Complete: {completingTask?.name}</DialogTitle>
+            <DialogDescription>
+              Record details about this maintenance task. All fields except date are optional.
+            </DialogDescription>
           </DialogHeader>
           <CompleteMaintenanceForm
             task={completingTask}
@@ -935,7 +938,10 @@ function ItemDetailPage() {
                   input,
                 },
                 {
-                  onSuccess: () => setCompletingTask(null),
+                  onSuccess: () => {
+                    setCompletingTask(null)
+                    toast.success('Maintenance task completed')
+                  },
                 },
               )
             }}
@@ -950,7 +956,10 @@ function ItemDetailPage() {
                   input: { date: new Date() },
                 },
                 {
-                  onSuccess: () => setCompletingTask(null),
+                  onSuccess: () => {
+                    setCompletingTask(null)
+                    toast.success('Maintenance task completed')
+                  },
                 },
               )
             }}
@@ -979,40 +988,47 @@ function CompleteMaintenanceForm({
   const [description, setDescription] = useState('')
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="grid gap-2">
-        <Label htmlFor="completion-date">Date Performed</Label>
-        <Input id="completion-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+    <>
+      <div className="space-y-4 py-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="completion-date">Date Performed</Label>
+            <Input id="completion-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="completion-cost">Cost</Label>
+            <Input
+              id="completion-cost"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="completion-performed-by">Performed By</Label>
+          <Input
+            id="completion-performed-by"
+            placeholder="e.g., Self, ABC Plumbing"
+            value={performedBy}
+            onChange={(e) => setPerformedBy(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="completion-notes">Notes</Label>
+          <Textarea
+            id="completion-notes"
+            placeholder="What was done..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+          />
+        </div>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="completion-cost">Cost</Label>
-        <Input
-          id="completion-cost"
-          type="number"
-          placeholder="Optional"
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="completion-performed-by">Performed By</Label>
-        <Input
-          id="completion-performed-by"
-          placeholder="Optional (e.g., Self, ABC Plumbing)"
-          value={performedBy}
-          onChange={(e) => setPerformedBy(e.target.value)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="completion-notes">Notes</Label>
-        <Textarea
-          id="completion-notes"
-          placeholder="Optional notes"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
-      <div className="flex justify-between pt-2">
+      <DialogFooter>
         <Button variant="outline" onClick={onSkip} disabled={isPending}>
           Skip details
         </Button>
@@ -1029,7 +1045,7 @@ function CompleteMaintenanceForm({
         >
           {isPending ? 'Saving...' : 'Complete'}
         </Button>
-      </div>
-    </div>
+      </DialogFooter>
+    </>
   )
 }
