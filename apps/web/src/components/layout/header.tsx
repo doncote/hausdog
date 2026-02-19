@@ -11,6 +11,7 @@ import {
   Layers,
   MessageSquare,
   Plus,
+  Wrench,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -73,6 +74,12 @@ export function Header({ user }: HeaderProps) {
               <Button variant="ghost" size="sm" className="gap-2">
                 <FileText className="h-4 w-4" />
                 Documents
+              </Button>
+            </Link>
+            <Link to="/maintenance">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Wrench className="h-4 w-4" />
+                Maintenance
               </Button>
             </Link>
             <Link to="/capture">
