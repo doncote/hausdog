@@ -630,7 +630,15 @@ function ItemDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => triggerSuggestions.mutate({ itemId, userId: user.id })}
+              onClick={() =>
+                triggerSuggestions.mutate(
+                  { itemId, userId: user.id },
+                  {
+                    onSuccess: () => toast.success('Maintenance suggestions generated'),
+                    onError: () => toast.error('Failed to generate suggestions'),
+                  },
+                )
+              }
               disabled={triggerSuggestions.isPending}
             >
               {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
@@ -736,7 +744,15 @@ function ItemDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => triggerSuggestions.mutate({ itemId, userId: user.id })}
+                  onClick={() =>
+                triggerSuggestions.mutate(
+                  { itemId, userId: user.id },
+                  {
+                    onSuccess: () => toast.success('Maintenance suggestions generated'),
+                    onError: () => toast.error('Failed to generate suggestions'),
+                  },
+                )
+              }
                   disabled={triggerSuggestions.isPending}
                 >
                   {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}

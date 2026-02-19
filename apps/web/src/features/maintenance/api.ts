@@ -87,7 +87,49 @@ export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
 export const triggerMaintenanceSuggestions = createServerFn({ method: 'POST' })
   .inputValidator((d: { itemId: string; userId: string }) => d)
   .handler(async ({ data }) => {
-    const { tasks } = await import('@trigger.dev/sdk/v3')
-    await tasks.trigger('suggest-maintenance', { itemId: data.itemId, userId: data.userId })
-    return { success: true }
+    try {
+      const { tasks } = await import('@trigger.dev/sdk/v3')
+      await tasks.trigger('suggest-maintenance', {
+        itemId: data.itemId,
+        userId: data.userId,
+      })
+      logger.info('Triggered maintenance suggestions', { itemId: data.itemId })
+      return { success: true, method: 'trigger' as const }
+    } catch (err) {
+      // Trigger.dev not available — run inline instead
+      logger.warn('Trigger.dev unavailable, running suggestions inline', { error: err })
+      const { suggestMaintenanceWithClaude } = await import('@/lib/llm/claude')
+      const { MaintenanceService } = await import('./service')
+
+      const service = new MaintenanceService({ db: prisma, logger })
+
+      const item = await prisma.item.findUnique({
+        where: { id: data.itemId },
+        select: {
+          id: true,
+          propertyId: true,
+          name: true,
+          category: true,
+          manufacturer: true,
+          model: true,
+          acquiredDate: true,
+          notes: true,
+        },
+      })
+
+      if (!item) throw new Error('Item not found')
+
+      const suggestions = await suggestMaintenanceWithClaude({
+        name: item.name,
+        category: item.category,
+        manufacturer: item.manufacturer,
+        model: item.model,
+        acquiredDate: item.acquiredDate,
+        notes: item.notes,
+      })
+
+      await service.createFromAI(data.userId, item.propertyId, item.id, suggestions)
+
+      return { success: true, method: 'inline' as const, count: suggestions.length }
+    }
   })
