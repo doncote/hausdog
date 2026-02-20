@@ -41,6 +41,7 @@ function NewItemPage() {
   const [manufacturer, setManufacturer] = useState('')
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
+  const [acquiredDate, setAcquiredDate] = useState('')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -62,6 +63,7 @@ function NewItemPage() {
       manufacturer: manufacturer || undefined,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
+      acquiredDate: acquiredDate ? new Date(acquiredDate) : undefined,
       notes: notes || undefined,
     })
 
@@ -200,14 +202,26 @@ function NewItemPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="serialNumber">Serial Number</Label>
-            <Input
-              id="serialNumber"
-              placeholder="e.g., ABC123456789"
-              value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value)}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="serialNumber">Serial Number</Label>
+              <Input
+                id="serialNumber"
+                placeholder="e.g., ABC123456789"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="acquiredDate">Acquired / Installed Date</Label>
+              <Input
+                id="acquiredDate"
+                type="date"
+                value={acquiredDate}
+                onChange={(e) => setAcquiredDate(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
