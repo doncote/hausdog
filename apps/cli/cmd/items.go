@@ -18,6 +18,7 @@ var (
 	itemManufacturer string
 	itemModel        string
 	itemSerialNumber string
+	itemAcquiredDate string
 	itemNotes        string
 )
 
@@ -131,6 +132,9 @@ var itemsCreateCmd = &cobra.Command{
 		if itemSerialNumber != "" {
 			body["serialNumber"] = itemSerialNumber
 		}
+		if itemAcquiredDate != "" {
+			body["acquiredDate"] = itemAcquiredDate + "T00:00:00.000Z"
+		}
 		if itemNotes != "" {
 			body["notes"] = itemNotes
 		}
@@ -180,6 +184,9 @@ var itemsUpdateCmd = &cobra.Command{
 		}
 		if cmd.Flags().Changed("serial-number") {
 			body["serialNumber"] = itemSerialNumber
+		}
+		if cmd.Flags().Changed("acquired-date") {
+			body["acquiredDate"] = itemAcquiredDate + "T00:00:00.000Z"
 		}
 		if cmd.Flags().Changed("notes") {
 			body["notes"] = itemNotes
@@ -246,6 +253,7 @@ func init() {
 	itemsCreateCmd.Flags().StringVar(&itemManufacturer, "manufacturer", "", "Manufacturer")
 	itemsCreateCmd.Flags().StringVar(&itemModel, "model", "", "Model")
 	itemsCreateCmd.Flags().StringVar(&itemSerialNumber, "serial-number", "", "Serial number")
+	itemsCreateCmd.Flags().StringVar(&itemAcquiredDate, "acquired-date", "", "Acquired/installed date (YYYY-MM-DD)")
 	itemsCreateCmd.Flags().StringVar(&itemDescription, "description", "", "Item description")
 	itemsCreateCmd.Flags().StringVar(&itemNotes, "notes", "", "Notes")
 	itemsCreateCmd.MarkFlagRequired("property")
@@ -260,6 +268,7 @@ func init() {
 	itemsUpdateCmd.Flags().StringVar(&itemManufacturer, "manufacturer", "", "Manufacturer")
 	itemsUpdateCmd.Flags().StringVar(&itemModel, "model", "", "Model")
 	itemsUpdateCmd.Flags().StringVar(&itemSerialNumber, "serial-number", "", "Serial number")
+	itemsUpdateCmd.Flags().StringVar(&itemAcquiredDate, "acquired-date", "", "Acquired/installed date (YYYY-MM-DD)")
 	itemsUpdateCmd.Flags().StringVar(&itemDescription, "description", "", "Item description")
 	itemsUpdateCmd.Flags().StringVar(&itemNotes, "notes", "", "Notes")
 }

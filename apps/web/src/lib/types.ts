@@ -2,21 +2,6 @@
  * Shared constants and types for the Hausdog application.
  */
 
-// Item categories
-export const ITEM_CATEGORIES = [
-  'hvac',
-  'plumbing',
-  'electrical',
-  'appliance',
-  'automotive',
-  'structure',
-  'tool',
-  'fixture',
-  'other',
-] as const
-
-export type ItemCategory = (typeof ITEM_CATEGORIES)[number]
-
 // Event types
 export const EVENT_TYPES = [
   'installation',

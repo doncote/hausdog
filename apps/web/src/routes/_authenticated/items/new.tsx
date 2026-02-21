@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { CreateItemSchema, ItemCategory, useCreateItem } from '@/features/items'
+import { useCategories } from '@/features/categories'
+import { CreateItemSchema, useCreateItem } from '@/features/items'
 import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
 
@@ -34,6 +35,7 @@ function NewItemPage() {
 
   const { data: property } = useProperty(propertyId ?? '', user?.id)
   const { data: spaces } = useSpacesForProperty(propertyId)
+  const { data: categories } = useCategories(user?.id)
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -41,6 +43,7 @@ function NewItemPage() {
   const [manufacturer, setManufacturer] = useState('')
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
+  const [acquiredDate, setAcquiredDate] = useState('')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -62,6 +65,7 @@ function NewItemPage() {
       manufacturer: manufacturer || undefined,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
+      acquiredDate: acquiredDate ? new Date(acquiredDate) : undefined,
       notes: notes || undefined,
     })
 
@@ -150,9 +154,9 @@ function NewItemPage() {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(ItemCategory).map(([key, value]) => (
-                    <SelectItem key={value} value={value}>
-                      {key.charAt(0) + key.slice(1).toLowerCase()}
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.slug} value={cat.slug}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -200,14 +204,26 @@ function NewItemPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="serialNumber">Serial Number</Label>
-            <Input
-              id="serialNumber"
-              placeholder="e.g., ABC123456789"
-              value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value)}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="serialNumber">Serial Number</Label>
+              <Input
+                id="serialNumber"
+                placeholder="e.g., ABC123456789"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="acquiredDate">Acquired / Installed Date</Label>
+              <Input
+                id="acquiredDate"
+                type="date"
+                value={acquiredDate}
+                onChange={(e) => setAcquiredDate(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

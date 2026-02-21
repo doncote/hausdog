@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useCategories } from '@/features/categories'
 import {
   CreateEventSchema,
   type Event,
@@ -49,13 +50,7 @@ import {
   useDeleteEvent,
   useEventsForItem,
 } from '@/features/events'
-import {
-  ItemCategory,
-  UpdateItemSchema,
-  useDeleteItem,
-  useItem,
-  useUpdateItem,
-} from '@/features/items'
+import { UpdateItemSchema, useDeleteItem, useItem, useUpdateItem } from '@/features/items'
 import type {
   CompleteMaintenanceTaskInput,
   MaintenanceTaskWithRelations,
@@ -81,6 +76,7 @@ function ItemDetailPage() {
 
   const { data: item, isPending, error } = useItem(itemId)
   const { data: spaces } = useSpacesForProperty(item?.propertyId)
+  const { data: categories } = useCategories(user?.id)
   const { data: events } = useEventsForItem(itemId)
   const { data: maintenanceTasks, isPending: maintenanceLoading } = useMaintenanceForItem(itemId)
   const triggerSuggestions = useTriggerMaintenanceSuggestions()
@@ -111,6 +107,7 @@ function ItemDetailPage() {
   const [manufacturer, setManufacturer] = useState('')
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
+  const [acquiredDate, setAcquiredDate] = useState('')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -122,6 +119,9 @@ function ItemDetailPage() {
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
+      setAcquiredDate(
+        item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
+      )
       setNotes(item.notes ?? '')
     }
   }, [item])
@@ -136,6 +136,7 @@ function ItemDetailPage() {
       manufacturer: manufacturer || undefined,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
+      acquiredDate: acquiredDate ? new Date(acquiredDate) : undefined,
       notes: notes || undefined,
     })
 
@@ -186,6 +187,9 @@ function ItemDetailPage() {
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
+      setAcquiredDate(
+        item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
+      )
       setNotes(item.notes ?? '')
     }
     setErrors({})
@@ -350,9 +354,9 @@ function ItemDetailPage() {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(ItemCategory).map(([key, value]) => (
-                        <SelectItem key={value} value={value}>
-                          {key.charAt(0) + key.slice(1).toLowerCase()}
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.slug} value={cat.slug}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -394,13 +398,25 @@ function ItemDetailPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="serialNumber">Serial Number</Label>
-                <Input
-                  id="serialNumber"
-                  value={serialNumber}
-                  onChange={(e) => setSerialNumber(e.target.value)}
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="serialNumber">Serial Number</Label>
+                  <Input
+                    id="serialNumber"
+                    value={serialNumber}
+                    onChange={(e) => setSerialNumber(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="acquiredDate">Acquired / Installed Date</Label>
+                  <Input
+                    id="acquiredDate"
+                    type="date"
+                    value={acquiredDate}
+                    onChange={(e) => setAcquiredDate(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -436,8 +452,12 @@ function ItemDetailPage() {
                   {item.manufacturer && ` · ${item.manufacturer}`}
                   {item.model && ` ${item.model}`}
                 </p>
-                {item.serialNumber && (
-                  <p className="text-sm text-muted-foreground mt-2">Serial: {item.serialNumber}</p>
+                {(item.serialNumber || item.acquiredDate) && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {item.serialNumber && <>Serial: {item.serialNumber}</>}
+                    {item.serialNumber && item.acquiredDate && <> · </>}
+                    {item.acquiredDate && <>Acquired: {formatDate(item.acquiredDate)}</>}
+                  </p>
                 )}
                 {item.description && <p className="text-sm mt-3">{item.description}</p>}
                 {item.notes && (
