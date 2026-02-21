@@ -73,6 +73,22 @@ model Space {
   @@map("spaces")
 }
 
+model Category {
+  id        String   @id @default(uuid())
+  slug      String
+  name      String
+  icon      String?
+  isSystem  Boolean  @default(false) @map("is_system")
+  userId    String?  @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([slug, userId], map: "uq_categories_slug_user")
+  @@index([userId], map: "idx_categories_user_id")
+  @@index([isSystem], map: "idx_categories_is_system")
+  @@map("categories")
+}
+
 model Item {
   id              String    @id @default(uuid())
   propertyId      String    @map("property_id")

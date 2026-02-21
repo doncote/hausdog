@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ItemCategory, type ItemWithRelations, useItemsForProperty } from '@/features/items'
+import { useCategories } from '@/features/categories'
+import { type ItemWithRelations, useItemsForProperty } from '@/features/items'
 import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
 
@@ -25,6 +26,7 @@ function PropertyItemsPage() {
   const { data: property } = useProperty(propertyId, user?.id)
   const { data: items, isPending: itemsPending } = useItemsForProperty(propertyId)
   const { data: spaces } = useSpacesForProperty(propertyId)
+  const { data: categories } = useCategories(user?.id)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -102,9 +104,9 @@ function PropertyItemsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {Object.entries(ItemCategory).map(([key, value]) => (
-              <SelectItem key={value} value={value}>
-                {key.charAt(0) + key.slice(1).toLowerCase()}
+            {categories?.map((cat) => (
+              <SelectItem key={cat.slug} value={cat.slug}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>

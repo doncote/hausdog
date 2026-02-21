@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ItemCategory, useItemsForProperty } from '@/features/items'
+import { useCategories } from '@/features/categories'
+import { useItemsForProperty } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -19,6 +20,7 @@ export const Route = createFileRoute('/_authenticated/inventory')({
 })
 
 function InventoryPage() {
+  const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -27,6 +29,7 @@ function InventoryPage() {
 
   const { data: items, isPending: itemsLoading } = useItemsForProperty(currentProperty?.id)
   const { data: spaces } = useSpacesForProperty(currentProperty?.id)
+  const { data: categories } = useCategories(user?.id)
 
   // Filter items
   const filteredItems =
@@ -123,9 +126,9 @@ function InventoryPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {Object.entries(ItemCategory).map(([key, value]) => (
-              <SelectItem key={value} value={value}>
-                {key.charAt(0) + key.slice(1).toLowerCase()}
+            {categories?.map((cat) => (
+              <SelectItem key={cat.slug} value={cat.slug}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>

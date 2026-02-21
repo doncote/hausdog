@@ -49,8 +49,8 @@ import {
   useDeleteEvent,
   useEventsForItem,
 } from '@/features/events'
+import { useCategories } from '@/features/categories'
 import {
-  ItemCategory,
   UpdateItemSchema,
   useDeleteItem,
   useItem,
@@ -81,6 +81,7 @@ function ItemDetailPage() {
 
   const { data: item, isPending, error } = useItem(itemId)
   const { data: spaces } = useSpacesForProperty(item?.propertyId)
+  const { data: categories } = useCategories(user?.id)
   const { data: events } = useEventsForItem(itemId)
   const { data: maintenanceTasks, isPending: maintenanceLoading } = useMaintenanceForItem(itemId)
   const triggerSuggestions = useTriggerMaintenanceSuggestions()
@@ -354,9 +355,9 @@ function ItemDetailPage() {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(ItemCategory).map(([key, value]) => (
-                        <SelectItem key={value} value={value}>
-                          {key.charAt(0) + key.slice(1).toLowerCase()}
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.slug} value={cat.slug}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

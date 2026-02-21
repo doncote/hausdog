@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { CreateItemSchema, ItemCategory, useCreateItem } from '@/features/items'
+import { useCategories } from '@/features/categories'
+import { CreateItemSchema, useCreateItem } from '@/features/items'
 import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
 
@@ -34,6 +35,7 @@ function NewItemPage() {
 
   const { data: property } = useProperty(propertyId ?? '', user?.id)
   const { data: spaces } = useSpacesForProperty(propertyId)
+  const { data: categories } = useCategories(user?.id)
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -152,9 +154,9 @@ function NewItemPage() {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(ItemCategory).map(([key, value]) => (
-                    <SelectItem key={value} value={value}>
-                      {key.charAt(0) + key.slice(1).toLowerCase()}
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.slug} value={cat.slug}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

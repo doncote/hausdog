@@ -1,20 +1,5 @@
 import { z } from 'zod'
 
-export const ItemCategory = {
-  APPLIANCE: 'appliance',
-  AUTOMOTIVE: 'automotive',
-  HVAC: 'hvac',
-  PLUMBING: 'plumbing',
-  ELECTRICAL: 'electrical',
-  STRUCTURE: 'structure',
-  EXTERIOR: 'exterior',
-  FURNITURE: 'furniture',
-  ELECTRONICS: 'electronics',
-  OTHER: 'other',
-} as const
-
-export type ItemCategoryType = (typeof ItemCategory)[keyof typeof ItemCategory]
-
 export const CreateItemSchema = z.object({
   propertyId: z.string().uuid(),
   spaceId: z.string().uuid().optional(),

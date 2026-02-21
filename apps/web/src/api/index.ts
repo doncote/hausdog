@@ -1,6 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { type AuthContext, apiKeyAuth } from './middleware/auth'
 import { authRouter } from './routes/auth'
+import { categoriesRouter } from './routes/categories'
 import { documentsRouter } from './routes/documents'
 import { eventsRouter } from './routes/events'
 import { itemsRouter } from './routes/items'
@@ -48,6 +49,7 @@ api.use('/items/*', apiKeyAuth)
 api.use('/events/*', apiKeyAuth)
 api.use('/documents/*', apiKeyAuth)
 api.use('/maintenance/*', apiKeyAuth)
+api.use('/categories/*', apiKeyAuth)
 api.use('/auth/*', apiKeyAuth)
 
 // Mount routers
@@ -57,6 +59,7 @@ api.route('/', itemsRouter)
 api.route('/', eventsRouter)
 api.route('/', maintenanceRouter)
 api.route('/', documentsRouter)
+api.route('/', categoriesRouter)
 api.route('/', authRouter)
 
 export type ApiApp = typeof api
