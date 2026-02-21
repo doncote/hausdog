@@ -173,8 +173,8 @@ const createItem = createRoute({
             manufacturer: z.string().optional(),
             model: z.string().optional(),
             serialNumber: z.string().optional(),
-            acquiredDate: z.string().datetime().optional(),
-            warrantyExpires: z.string().datetime().optional(),
+            acquiredDate: z.string().optional(),
+            warrantyExpires: z.string().optional(),
             purchasePrice: z.number().positive().optional(),
             notes: z.string().optional(),
           }),
@@ -223,8 +223,8 @@ const updateItem = createRoute({
             manufacturer: z.string().nullable().optional(),
             model: z.string().nullable().optional(),
             serialNumber: z.string().nullable().optional(),
-            acquiredDate: z.string().datetime().nullable().optional(),
-            warrantyExpires: z.string().datetime().nullable().optional(),
+            acquiredDate: z.string().nullable().optional(),
+            warrantyExpires: z.string().nullable().optional(),
             purchasePrice: z.number().positive().nullable().optional(),
             notes: z.string().nullable().optional(),
           }),
@@ -358,8 +358,8 @@ itemsRouter.openapi(createItem, async (c) => {
   const item = await itemService.create(userId, {
     propertyId,
     ...body,
-    acquiredDate: body.acquiredDate ? new Date(body.acquiredDate) : undefined,
-    warrantyExpires: body.warrantyExpires ? new Date(body.warrantyExpires) : undefined,
+    acquiredDate: body.acquiredDate != null ? new Date(body.acquiredDate) : undefined,
+    warrantyExpires: body.warrantyExpires != null ? new Date(body.warrantyExpires) : undefined,
   })
 
   return c.json(serializeItem(item), 201)
@@ -390,8 +390,18 @@ itemsRouter.openapi(updateItem, async (c) => {
     manufacturer: body.manufacturer ?? undefined,
     model: body.model ?? undefined,
     serialNumber: body.serialNumber ?? undefined,
-    acquiredDate: body.acquiredDate ? new Date(body.acquiredDate) : undefined,
-    warrantyExpires: body.warrantyExpires ? new Date(body.warrantyExpires) : undefined,
+    acquiredDate:
+      body.acquiredDate != null
+        ? new Date(body.acquiredDate)
+        : body.acquiredDate === null
+          ? null
+          : undefined,
+    warrantyExpires:
+      body.warrantyExpires != null
+        ? new Date(body.warrantyExpires)
+        : body.warrantyExpires === null
+          ? null
+          : undefined,
     purchasePrice: body.purchasePrice ?? undefined,
     notes: body.notes ?? undefined,
   })

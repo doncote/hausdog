@@ -10,8 +10,8 @@ export const CreateItemSchema = z.object({
   manufacturer: z.string().optional(),
   model: z.string().optional(),
   serialNumber: z.string().optional(),
-  acquiredDate: z.date().optional(),
-  warrantyExpires: z.date().optional(),
+  acquiredDate: z.date().nullable().optional(),
+  warrantyExpires: z.date().nullable().optional(),
   purchasePrice: z.number().positive().optional(),
   notes: z.string().optional(),
 })
