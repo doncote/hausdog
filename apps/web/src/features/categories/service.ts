@@ -1,4 +1,4 @@
-import type { PrismaClient, Category as PrismaCategory } from '@generated/prisma/client'
+import type { Category as PrismaCategory, PrismaClient } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
 import type { Category, CreateCategoryInput, UpdateCategoryInput } from './types'
 

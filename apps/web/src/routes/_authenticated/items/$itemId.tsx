@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useCategories } from '@/features/categories'
 import {
   CreateEventSchema,
   type Event,
@@ -49,13 +50,7 @@ import {
   useDeleteEvent,
   useEventsForItem,
 } from '@/features/events'
-import { useCategories } from '@/features/categories'
-import {
-  UpdateItemSchema,
-  useDeleteItem,
-  useItem,
-  useUpdateItem,
-} from '@/features/items'
+import { UpdateItemSchema, useDeleteItem, useItem, useUpdateItem } from '@/features/items'
 import type {
   CompleteMaintenanceTaskInput,
   MaintenanceTaskWithRelations,
@@ -124,7 +119,9 @@ function ItemDetailPage() {
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
-      setAcquiredDate(item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '')
+      setAcquiredDate(
+        item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
+      )
       setNotes(item.notes ?? '')
     }
   }, [item])
@@ -190,7 +187,9 @@ function ItemDetailPage() {
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
-      setAcquiredDate(item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '')
+      setAcquiredDate(
+        item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
+      )
       setNotes(item.notes ?? '')
     }
     setErrors({})
