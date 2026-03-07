@@ -25,9 +25,4 @@ export function getPrisma() {
   return globalForPrisma.prisma
 }
 
-/** @deprecated Use getPrisma() for lazy initialization */
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_, prop) {
-    return (getPrisma() as any)[prop]
-  },
-})
+export const prisma = getPrisma()

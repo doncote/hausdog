@@ -1,1 +1,1 @@
-export { prisma } from './client'
+export { prisma, getPrisma } from './client'

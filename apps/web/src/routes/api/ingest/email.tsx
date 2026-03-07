@@ -12,6 +12,7 @@ export const Route = createFileRoute('/api/ingest/email')({
         const { PropertyService } = await import('@/features/properties/service')
         const { DocumentService } = await import('@/features/documents/service')
         const {
+          verifyWebhookSignature,
           extractIngestToken,
           fetchEmailContent,
           fetchEmailAttachments,
@@ -32,6 +33,14 @@ export const Route = createFileRoute('/api/ingest/email')({
 
         try {
           const body = await request.text()
+
+          // Verify webhook signature before processing
+          const signature = request.headers.get('svix-signature')
+          if (!verifyWebhookSignature(body, signature, env.RESEND_WEBHOOK_SECRET)) {
+            logger.warn('Invalid webhook signature')
+            return new Response('Unauthorized', { status: 401 })
+          }
+
           const payload = JSON.parse(body) as InboundEmailWebhook
 
           // Verify this is an inbound email event

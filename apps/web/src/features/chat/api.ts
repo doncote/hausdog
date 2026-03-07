@@ -109,20 +109,16 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
       })
       .slice(0, 10) // Limit to 10 most relevant items
 
-    // Get recent events for relevant items
-    const itemsWithEvents = await Promise.all(
-      relevantItems.map(async (item) => {
-        const events = await eventService.findAllForItem(item.id)
-        return {
-          ...item,
-          recentEvents: events.slice(0, 5).map((e) => ({
-            type: e.type,
-            date: e.date,
-            description: e.description,
-          })),
-        }
-      }),
-    )
+    // Get recent events for relevant items (batched to avoid N+1)
+    const eventsMap = await eventService.findAllForItems(relevantItems.map((i) => i.id))
+    const itemsWithEvents = relevantItems.map((item) => ({
+      ...item,
+      recentEvents: (eventsMap.get(item.id) ?? []).slice(0, 5).map((e) => ({
+        type: e.type,
+        date: e.date,
+        description: e.description,
+      })),
+    }))
 
     // Build chat messages for Claude
     const chatMessages = messages.map((m) => ({
@@ -205,54 +201,45 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     // Get children of the focal item
     const children = await itemService.findChildrenForItem(data.itemId)
 
-    // Get events for the focal item
-    const focalEvents = await eventService.findAllForItem(data.itemId)
+    // Batch fetch events for all context items (focal + ancestors + children)
+    const allContextItemIds = [data.itemId, ...ancestors.map((i) => i.id), ...children.map((i) => i.id)]
+    const eventsMap = await eventService.findAllForItems(allContextItemIds)
 
     // Build context items array with lineage info
     const contextItems = [
       // Ancestors (from root to parent)
-      ...(await Promise.all(
-        ancestors.map(async (item, idx) => {
-          const events = await eventService.findAllForItem(item.id)
-          return {
-            ...item,
-            lineageRole: 'ancestor' as const,
-            lineageDepth: idx,
-            recentEvents: events.slice(0, 3).map((e) => ({
-              type: e.type,
-              date: e.date,
-              description: e.description,
-            })),
-          }
-        }),
-      )),
+      ...ancestors.map((item, idx) => ({
+        ...item,
+        lineageRole: 'ancestor' as const,
+        lineageDepth: idx,
+        recentEvents: (eventsMap.get(item.id) ?? []).slice(0, 3).map((e) => ({
+          type: e.type,
+          date: e.date,
+          description: e.description,
+        })),
+      })),
       // Focal item
       {
         ...focalItem,
         lineageRole: 'focal' as const,
         lineageDepth: ancestors.length,
-        recentEvents: focalEvents.slice(0, 10).map((e) => ({
+        recentEvents: (eventsMap.get(data.itemId) ?? []).slice(0, 10).map((e) => ({
           type: e.type,
           date: e.date,
           description: e.description,
         })),
       },
       // Children
-      ...(await Promise.all(
-        children.map(async (item) => {
-          const events = await eventService.findAllForItem(item.id)
-          return {
-            ...item,
-            lineageRole: 'child' as const,
-            lineageDepth: ancestors.length + 1,
-            recentEvents: events.slice(0, 3).map((e) => ({
-              type: e.type,
-              date: e.date,
-              description: e.description,
-            })),
-          }
-        }),
-      )),
+      ...children.map((item) => ({
+        ...item,
+        lineageRole: 'child' as const,
+        lineageDepth: ancestors.length + 1,
+        recentEvents: (eventsMap.get(item.id) ?? []).slice(0, 3).map((e) => ({
+          type: e.type,
+          date: e.date,
+          description: e.description,
+        })),
+      })),
     ]
 
     // Build chat messages for Claude

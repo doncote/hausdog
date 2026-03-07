@@ -1,5 +1,6 @@
 import type { PrismaClient, Item as PrismaItem } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
+import { buildPaginatedResult, type PaginatedResult, type PaginationParams } from '@/lib/pagination'
 import type { CreateItemInput, Item, ItemWithRelations, UpdateItemInput } from './types'
 
 export interface ItemServiceDeps {
@@ -85,6 +86,44 @@ export class ItemService {
     return records.map((r) => this.toDomainWithRelations(r))
   }
 
+  async findPaginatedForProperty(
+    propertyId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<ItemWithRelations>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = {
+      space: { select: { id: true, name: true } },
+      parent: { select: { id: true, name: true } },
+      _count: { select: { events: true, documents: true, children: true } },
+    } as const
+    const where = { propertyId }
+    const [records, total] = await Promise.all([
+      this.db.item.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit, include }),
+      this.db.item.count({ where }),
+    ])
+    return buildPaginatedResult(records.map((r) => this.toDomainWithRelations(r)), total, page, limit)
+  }
+
+  async findPaginatedForSpace(
+    spaceId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<ItemWithRelations>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = {
+      space: { select: { id: true, name: true } },
+      parent: { select: { id: true, name: true } },
+      _count: { select: { events: true, documents: true, children: true } },
+    } as const
+    const where = { spaceId }
+    const [records, total] = await Promise.all([
+      this.db.item.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit, include }),
+      this.db.item.count({ where }),
+    ])
+    return buildPaginatedResult(records.map((r) => this.toDomainWithRelations(r)), total, page, limit)
+  }
+
   async create(userId: string, input: CreateItemInput): Promise<Item> {
     this.logger.info('Creating item', { userId, name: input.name, propertyId: input.propertyId })
     const record = await this.db.item.create({
@@ -102,6 +141,7 @@ export class ItemService {
         warrantyExpires: input.warrantyExpires ?? null,
         purchasePrice: input.purchasePrice ?? null,
         notes: input.notes ?? null,
+        searchText: this.buildSearchText(input),
         createdById: userId,
         updatedById: userId,
       },
@@ -128,6 +168,7 @@ export class ItemService {
         }),
         ...(input.purchasePrice !== undefined && { purchasePrice: input.purchasePrice ?? null }),
         ...(input.notes !== undefined && { notes: input.notes ?? null }),
+        searchText: this.buildSearchText(input),
         updatedById: userId,
       },
     })
@@ -137,6 +178,13 @@ export class ItemService {
   async delete(id: string): Promise<void> {
     this.logger.info('Deleting item', { id })
     await this.db.item.delete({ where: { id } })
+  }
+
+  private buildSearchText(input: Partial<CreateItemInput>): string {
+    return [input.name, input.manufacturer, input.model, input.category, input.notes]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
   }
 
   private toDomain(record: PrismaItem): Item {
