@@ -1,0 +1,13 @@
+---
+facts:
+  - id: fact-001
+    content: "Only CEO role has canCreateAgents=true by default. CTO, CFO, CMO, CPO roles all have canCreateAgents=false. Role changes alone don't grant hiring permissions - requires board/system admin action to modify permissions directly."
+    source: "Task HAU-8: Give founding engineer ability to hire"
+    created_at: 2026-03-07
+    last_accessed: 2026-03-07
+    access_count: 1
+    status: active
+    tags:
+      - permissions
+      - hiring
+      - governance

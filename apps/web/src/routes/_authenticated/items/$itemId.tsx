@@ -107,7 +107,9 @@ function ItemDetailPage() {
   const [manufacturer, setManufacturer] = useState('')
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
+  const [description, setDescription] = useState('')
   const [acquiredDate, setAcquiredDate] = useState('')
+  const [purchasePrice, setPurchasePrice] = useState('')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -116,12 +118,14 @@ function ItemDetailPage() {
       setName(item.name)
       setCategory(item.category)
       setSpaceId(item.spaceId ?? 'none')
+      setDescription(item.description ?? '')
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
       setAcquiredDate(
         item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
       )
+      setPurchasePrice(item.purchasePrice != null ? String(item.purchasePrice) : '')
       setNotes(item.notes ?? '')
     }
   }, [item])
@@ -132,11 +136,13 @@ function ItemDetailPage() {
     const result = UpdateItemSchema.safeParse({
       name,
       category,
+      description: description || undefined,
       spaceId: spaceId === 'none' ? undefined : spaceId,
       manufacturer: manufacturer || undefined,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
       acquiredDate: acquiredDate ? new Date(acquiredDate) : undefined,
+      purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
       notes: notes || undefined,
     })
 
@@ -184,12 +190,14 @@ function ItemDetailPage() {
       setName(item.name)
       setCategory(item.category)
       setSpaceId(item.spaceId ?? 'none')
+      setDescription(item.description ?? '')
       setManufacturer(item.manufacturer ?? '')
       setModel(item.model ?? '')
       setSerialNumber(item.serialNumber ?? '')
       setAcquiredDate(
         item.acquiredDate ? new Date(item.acquiredDate).toISOString().split('T')[0] : '',
       )
+      setPurchasePrice(item.purchasePrice != null ? String(item.purchasePrice) : '')
       setNotes(item.notes ?? '')
     }
     setErrors({})
@@ -346,6 +354,16 @@ function ItemDetailPage() {
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
@@ -420,6 +438,19 @@ function ItemDetailPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="purchasePrice">Purchase Price</Label>
+                <Input
+                  id="purchasePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea
                   id="notes"
@@ -452,11 +483,13 @@ function ItemDetailPage() {
                   {item.manufacturer && ` · ${item.manufacturer}`}
                   {item.model && ` ${item.model}`}
                 </p>
-                {(item.serialNumber || item.acquiredDate) && (
+                {(item.serialNumber || item.acquiredDate || item.purchasePrice) && (
                   <p className="text-sm text-muted-foreground mt-2">
                     {item.serialNumber && <>Serial: {item.serialNumber}</>}
                     {item.serialNumber && item.acquiredDate && <> · </>}
                     {item.acquiredDate && <>Acquired: {formatDate(item.acquiredDate)}</>}
+                    {(item.serialNumber || item.acquiredDate) && item.purchasePrice && <> · </>}
+                    {item.purchasePrice && <>Cost: {formatCurrency(item.purchasePrice)}</>}
                   </p>
                 )}
                 {item.description && <p className="text-sm mt-3">{item.description}</p>}

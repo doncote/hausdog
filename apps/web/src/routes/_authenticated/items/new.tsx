@@ -44,6 +44,8 @@ function NewItemPage() {
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [acquiredDate, setAcquiredDate] = useState('')
+  const [description, setDescription] = useState('')
+  const [purchasePrice, setPurchasePrice] = useState('')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -62,10 +64,12 @@ function NewItemPage() {
       spaceId: selectedSpaceId === 'none' ? undefined : selectedSpaceId,
       name,
       category,
+      description: description || undefined,
       manufacturer: manufacturer || undefined,
       model: model || undefined,
       serialNumber: serialNumber || undefined,
       acquiredDate: acquiredDate ? new Date(acquiredDate) : undefined,
+      purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
       notes: notes || undefined,
     })
 
@@ -146,6 +150,17 @@ function NewItemPage() {
             {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Brief description of this item..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
@@ -224,6 +239,19 @@ function NewItemPage() {
                 onChange={(e) => setAcquiredDate(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="purchasePrice">Purchase Price</Label>
+            <Input
+              id="purchasePrice"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
