@@ -38,8 +38,8 @@ export function useDeleteSpace() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string }) =>
-      deleteSpace({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
+      deleteSpace({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: spaceKeys.listByProperty(variables.propertyId) })
       queryClient.removeQueries({ queryKey: spaceKeys.detail(variables.id) })

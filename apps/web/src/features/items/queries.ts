@@ -2,6 +2,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import {
   fetchItem,
   fetchItemsForProperty,
+  fetchItemsForPropertyPaginated,
   fetchItemsForSpace,
   fetchRootItemsForProperty,
 } from './api'
@@ -39,6 +40,27 @@ export const itemQueryOptions = (id: string) =>
     queryKey: itemKeys.detail(id),
     queryFn: () => fetchItem({ data: { id } }),
   })
+
+export const itemsForPropertyPaginatedQueryOptions = (
+  propertyId: string,
+  page: number,
+  limit?: number,
+) =>
+  queryOptions({
+    queryKey: [...itemKeys.listByProperty(propertyId), 'paginated', page, limit],
+    queryFn: () => fetchItemsForPropertyPaginated({ data: { propertyId, page, limit } }),
+  })
+
+export function useItemsForPropertyPaginated(
+  propertyId: string | undefined,
+  page: number,
+  limit?: number,
+) {
+  return useQuery({
+    ...itemsForPropertyPaginatedQueryOptions(propertyId ?? '', page, limit),
+    enabled: !!propertyId,
+  })
+}
 
 export function useItemsForProperty(propertyId: string | undefined) {
   return useQuery({

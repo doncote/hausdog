@@ -41,8 +41,8 @@ export function useDeleteItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string }) =>
-      deleteItem({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
+      deleteItem({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: itemKeys.listByProperty(variables.propertyId) })
       queryClient.invalidateQueries({ queryKey: itemKeys.rootByProperty(variables.propertyId) })

@@ -106,8 +106,8 @@ export function useDeleteMaintenanceTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string }) =>
-      deleteMaintenanceTask({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
+      deleteMaintenanceTask({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.removeQueries({ queryKey: maintenanceKeys.detail(variables.id) })
       queryClient.invalidateQueries({
