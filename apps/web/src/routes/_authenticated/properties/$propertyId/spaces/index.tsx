@@ -130,6 +130,7 @@ function SpacesPage() {
     try {
       await deleteSpace.mutateAsync({
         id: selectedSpace.id,
+        userId: user!.id,
         propertyId,
       })
       toast.success('Space deleted')

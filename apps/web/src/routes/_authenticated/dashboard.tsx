@@ -3,6 +3,7 @@ import { AlertTriangle, Box, Camera, ChevronRight, Clock, FileText, Home, Plus }
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDashboardStats } from '@/features/dashboard'
+import { PendingInvitesBanner } from '@/features/members/PendingInvitesBanner'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
@@ -21,6 +22,8 @@ function DashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">{firstName}</h1>
         <p className="mt-2 text-muted-foreground">Here's an overview of your home documentation.</p>
       </header>
+
+      {user?.email && <PendingInvitesBanner userId={user.id} userEmail={user.email} />}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
         <StatCard

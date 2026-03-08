@@ -129,6 +129,7 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
+                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -160,6 +161,7 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
+                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -191,6 +193,7 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
+                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -222,6 +225,7 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
+                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }

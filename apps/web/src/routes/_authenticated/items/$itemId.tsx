@@ -177,7 +177,7 @@ function ItemDetailPage() {
     if (!item) return
 
     try {
-      await deleteItem.mutateAsync({ id: itemId, propertyId: item.propertyId })
+      await deleteItem.mutateAsync({ id: itemId, userId: user!.id, propertyId: item.propertyId })
       toast.success('Item deleted')
       navigate({ to: '/properties/$propertyId', params: { propertyId: item.propertyId } })
     } catch {
@@ -773,6 +773,7 @@ function ItemDetailPage() {
                               onClick={() =>
                                 deleteMaintenance.mutate({
                                   id: task.id,
+                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                 })
                               }

@@ -11,9 +11,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCategories } from '@/features/categories'
-import { type ItemWithRelations, useItemsForProperty } from '@/features/items'
+import { type ItemWithRelations, useItemsForPropertyPaginated } from '@/features/items'
 import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
+
+const PAGE_SIZE = 50
 
 export const Route = createFileRoute('/_authenticated/properties/$propertyId/items/')({
   component: PropertyItemsPage,
@@ -24,7 +26,12 @@ function PropertyItemsPage() {
   const { user } = Route.useRouteContext()
 
   const { data: property } = useProperty(propertyId, user?.id)
-  const { data: items, isPending: itemsPending } = useItemsForProperty(propertyId)
+  const [page, setPage] = useState(1)
+  const { data: pagedResult, isPending: itemsPending } = useItemsForPropertyPaginated(
+    propertyId,
+    page,
+    PAGE_SIZE,
+  )
   const { data: spaces } = useSpacesForProperty(propertyId)
   const { data: categories } = useCategories(user?.id)
 
@@ -32,22 +39,25 @@ function PropertyItemsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [spaceFilter, setSpaceFilter] = useState<string>('all')
 
+  const items = pagedResult?.data ?? []
+  const total = pagedResult?.total ?? 0
+  const hasMore = pagedResult?.hasMore ?? false
+
   // Filter items based on search and filters
-  const filteredItems =
-    items?.filter((item) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.model?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = items.filter((item) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.model?.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
-      const matchesSpace =
-        spaceFilter === 'all' ||
-        (spaceFilter === 'none' ? !item.spaceId : item.spaceId === spaceFilter)
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
+    const matchesSpace =
+      spaceFilter === 'all' ||
+      (spaceFilter === 'none' ? !item.spaceId : item.spaceId === spaceFilter)
 
-      return matchesSearch && matchesCategory && matchesSpace
-    }) || []
+    return matchesSearch && matchesCategory && matchesSpace
+  })
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
@@ -74,7 +84,9 @@ function PropertyItemsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Items</h1>
           <p className="text-muted-foreground mt-1">
-            All items tracked for {property?.name || 'this property'}
+            {total > 0
+              ? `${total} item${total === 1 ? '' : 's'} tracked for ${property?.name || 'this property'}`
+              : `All items tracked for ${property?.name || 'this property'}`}
           </p>
         </div>
         <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
@@ -171,6 +183,34 @@ function PropertyItemsPage() {
               Add Your First Item
             </Button>
           </Link>
+        </div>
+      )}
+
+      {/* Pagination controls */}
+      {(page > 1 || hasMore) && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasMore}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>
