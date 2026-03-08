@@ -36,6 +36,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
+import { SharingSection } from '@/features/members/SharingSection'
 import {
   lookupPropertyData,
   UpdatePropertySchema,
@@ -476,6 +477,15 @@ function PropertyDetailPage() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Sharing Section */}
+      {user && (
+        <SharingSection
+          propertyId={propertyId}
+          userId={user.id}
+          isOwner={property.userId === user.id}
+        />
       )}
 
       {/* Spaces Section */}

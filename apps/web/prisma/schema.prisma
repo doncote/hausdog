@@ -52,9 +52,32 @@ model Property {
   documents        Document[]
   conversations    Conversation[]
   maintenanceTasks MaintenanceTask[]
+  members          PropertyMember[]
+  activity         PropertyActivity[]
 
   @@index([userId], map: "idx_properties_user_id")
   @@map("properties")
+}
+
+model PropertyMember {
+  id          String   @id @default(uuid())
+  propertyId  String   @map("property_id")
+  userId      String?  @map("user_id") @db.Uuid
+  email       String
+  role        String   @default("viewer")
+  status      String   @default("pending")
+  invitedById String   @map("invited_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, email], map: "uq_property_members_property_email")
+  @@index([propertyId], map: "idx_property_members_property_id")
+  @@index([userId], map: "idx_property_members_user_id")
+  @@index([email], map: "idx_property_members_email")
+  @@index([status], map: "idx_property_members_status")
+  @@map("property_members")
 }
 
 model Space {
@@ -228,6 +251,23 @@ model Message {
 
   @@index([conversationId], map: "idx_messages_conversation_id")
   @@map("messages")
+}
+
+model PropertyActivity {
+  id          String   @id @default(uuid())
+  propertyId  String   @map("property_id")
+  userId      String   @map("user_id") @db.Uuid
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  entityName  String?  @map("entity_name")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, createdAt(sort: Desc)], map: "idx_property_activity_property_created")
+  @@map("property_activity")
 }
 
 model DeviceToken {

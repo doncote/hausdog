@@ -2,6 +2,7 @@ import type { PrismaClient, Property as PrismaProperty } from '@generated/prisma
 import { Prisma } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
 import { generateIngestToken } from '@/lib/ingest-token'
+import { buildPaginatedResult, type PaginatedResult, type PaginationParams } from '@/lib/pagination'
 import type {
   CreatePropertyInput,
   Property,
@@ -23,10 +24,23 @@ export class PropertyService {
     this.logger = deps.logger
   }
 
+  /**
+   * Prisma `where` clause that finds properties accessible to a user:
+   * either owned by them or shared via an active membership.
+   */
+  private accessibleWhere(userId: string) {
+    return {
+      OR: [{ userId }, { members: { some: { userId, status: 'active' } } }] as [
+        { userId: string },
+        { members: { some: { userId: string; status: string } } },
+      ],
+    }
+  }
+
   async findAllForUser(userId: string): Promise<Property[]> {
     this.logger.debug('Finding all properties for user', { userId })
     const records = await this.db.property.findMany({
-      where: { userId },
+      where: this.accessibleWhere(userId),
       orderBy: { createdAt: 'desc' },
     })
     return records.map((r) => this.toDomain(r))
@@ -35,7 +49,7 @@ export class PropertyService {
   async findAllForUserWithCounts(userId: string): Promise<PropertyWithCounts[]> {
     this.logger.debug('Finding all properties with counts for user', { userId })
     const records = await this.db.property.findMany({
-      where: { userId },
+      where: this.accessibleWhere(userId),
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -49,12 +63,65 @@ export class PropertyService {
     }))
   }
 
+  async findPaginatedForUser(
+    userId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<PropertyWithCounts>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = { _count: { select: { items: true, spaces: true } } } as const
+    const where = this.accessibleWhere(userId)
+    const [records, total] = await Promise.all([
+      this.db.property.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include,
+      }),
+      this.db.property.count({ where }),
+    ])
+    return buildPaginatedResult(
+      records.map((r) => ({
+        ...this.toDomain(r),
+        _count: { items: r._count.items, spaces: r._count.spaces },
+      })),
+      total,
+      page,
+      limit,
+    )
+  }
+
   async findById(id: string, userId: string): Promise<Property | null> {
     this.logger.debug('Finding property by id', { id, userId })
     const record = await this.db.property.findFirst({
-      where: { id, userId },
+      where: { id, ...this.accessibleWhere(userId) },
     })
     return record ? this.toDomain(record) : null
+  }
+
+  /** Returns true if user can write to this property (owner or active editor). */
+  async canWrite(id: string, userId: string): Promise<boolean> {
+    const record = await this.db.property.findFirst({
+      where: {
+        id,
+        OR: [
+          { userId },
+          { members: { some: { userId, status: 'active', role: { in: ['owner', 'editor'] } } } },
+        ],
+      },
+      select: { id: true },
+    })
+    return record !== null
+  }
+
+  /** Returns true if user is the property owner. */
+  async isOwner(id: string, userId: string): Promise<boolean> {
+    const record = await this.db.property.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    })
+    return record !== null
   }
 
   async create(userId: string, input: CreatePropertyInput): Promise<Property> {
@@ -104,6 +171,8 @@ export class PropertyService {
 
   async update(id: string, userId: string, input: UpdatePropertyInput): Promise<Property> {
     this.logger.info('Updating property', { id, userId })
+    const allowed = await this.canWrite(id, userId)
+    if (!allowed) throw new Error('Access denied')
     const record = await this.db.property.update({
       where: { id },
       data: {
@@ -149,6 +218,8 @@ export class PropertyService {
 
   async delete(id: string, userId: string): Promise<void> {
     this.logger.info('Deleting property', { id, userId })
+    const owned = await this.isOwner(id, userId)
+    if (!owned) throw new Error('Access denied: only the owner can delete a property')
     await this.db.property.delete({
       where: { id },
     })
