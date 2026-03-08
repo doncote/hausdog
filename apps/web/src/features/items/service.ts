@@ -102,7 +102,12 @@ export class ItemService {
       this.db.item.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit, include }),
       this.db.item.count({ where }),
     ])
-    return buildPaginatedResult(records.map((r) => this.toDomainWithRelations(r)), total, page, limit)
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async findPaginatedForSpace(
@@ -121,7 +126,12 @@ export class ItemService {
       this.db.item.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit, include }),
       this.db.item.count({ where }),
     ])
-    return buildPaginatedResult(records.map((r) => this.toDomainWithRelations(r)), total, page, limit)
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async create(userId: string, input: CreateItemInput): Promise<Item> {

@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { ActivityService } from '@/features/activity/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { MaintenanceService } from './service'
@@ -9,6 +10,7 @@ import type {
 } from './types'
 
 const getMaintenanceService = () => new MaintenanceService({ db: prisma, logger })
+const getActivityService = () => new ActivityService(prisma)
 
 export const fetchMaintenanceTasksForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
@@ -52,7 +54,20 @@ export const createMaintenanceTask = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
     const service = getMaintenanceService()
-    return service.create(data.userId, data.input)
+    const task = await service.create(data.userId, data.input)
+
+    getActivityService()
+      .record({
+        propertyId: task.propertyId,
+        userId: data.userId,
+        action: 'created',
+        entityType: 'maintenance_task',
+        entityId: task.id,
+        entityName: task.name,
+      })
+      .catch(() => {})
+
+    return task
   })
 
 export const updateMaintenanceTask = createServerFn({ method: 'POST' })
@@ -66,7 +81,20 @@ export const completeMaintenanceTask = createServerFn({ method: 'POST' })
   .inputValidator((d: { id: string; userId: string; input: CompleteMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
     const service = getMaintenanceService()
-    return service.complete(data.id, data.userId, data.input)
+    const task = await service.complete(data.id, data.userId, data.input)
+
+    getActivityService()
+      .record({
+        propertyId: task.propertyId,
+        userId: data.userId,
+        action: 'completed',
+        entityType: 'maintenance_task',
+        entityId: task.id,
+        entityName: task.name,
+      })
+      .catch(() => {})
+
+    return task
   })
 
 export const snoozeMaintenanceTask = createServerFn({ method: 'POST' })
@@ -77,10 +105,25 @@ export const snoozeMaintenanceTask = createServerFn({ method: 'POST' })
   })
 
 export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: { id: string; userId: string }) => d)
   .handler(async ({ data }) => {
     const service = getMaintenanceService()
+    const task = await service.findById(data.id)
     await service.delete(data.id)
+
+    if (task) {
+      getActivityService()
+        .record({
+          propertyId: task.propertyId,
+          userId: data.userId,
+          action: 'deleted',
+          entityType: 'maintenance_task',
+          entityId: data.id,
+          entityName: task.name,
+        })
+        .catch(() => {})
+    }
+
     return { success: true }
   })
 

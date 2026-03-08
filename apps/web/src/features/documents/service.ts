@@ -1,5 +1,6 @@
 import type { PrismaClient, Document as PrismaDocument } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
+import { buildPaginatedResult, type PaginatedResult, type PaginationParams } from '@/lib/pagination'
 import type {
   CreateDocumentInput,
   Document,
@@ -50,6 +51,37 @@ export class DocumentService {
       },
     })
     return records.map((r) => this.toDomainWithRelations(r))
+  }
+
+  async findPaginatedForProperty(
+    propertyId: string,
+    pagination: PaginationParams,
+    status?: string,
+  ): Promise<PaginatedResult<DocumentWithRelations>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = {
+      property: { select: { id: true, name: true } },
+      item: { select: { id: true, name: true } },
+      event: { select: { id: true, type: true, date: true } },
+    } as const
+    const where = status ? { propertyId, status } : { propertyId }
+    const [records, total] = await Promise.all([
+      this.db.document.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include,
+      }),
+      this.db.document.count({ where }),
+    ])
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async findById(id: string): Promise<DocumentWithRelations | null> {

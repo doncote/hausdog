@@ -63,7 +63,12 @@ export class EventService {
       this.db.event.findMany({ where, orderBy: { date: 'desc' }, skip, take: limit, include }),
       this.db.event.count({ where }),
     ])
-    return buildPaginatedResult(records.map((r) => this.toDomainWithRelations(r)), total, page, limit)
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async findById(id: string): Promise<EventWithRelations | null> {

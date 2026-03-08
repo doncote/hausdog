@@ -1,5 +1,6 @@
 import type { PrismaClient, Space as PrismaSpace } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
+import { buildPaginatedResult, type PaginatedResult, type PaginationParams } from '@/lib/pagination'
 import type { CreateSpaceInput, Space, SpaceWithCounts, UpdateSpaceInput } from './types'
 
 export interface SpaceServiceDeps {
@@ -26,6 +27,26 @@ export class SpaceService {
       },
     })
     return records.map((r) => this.toDomainWithCounts(r))
+  }
+
+  async findPaginatedForProperty(
+    propertyId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<SpaceWithCounts>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = { _count: { select: { items: true } } } as const
+    const where = { propertyId }
+    const [records, total] = await Promise.all([
+      this.db.space.findMany({ where, orderBy: { name: 'asc' }, skip, take: limit, include }),
+      this.db.space.count({ where }),
+    ])
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithCounts(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async findById(id: string): Promise<Space | null> {

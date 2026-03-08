@@ -6,6 +6,7 @@ import { DocumentService } from '@/features/documents/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const documentService = new DocumentService({ db: prisma, logger })
@@ -74,6 +75,20 @@ const ErrorSchema = z.object({
   message: z.string(),
 })
 
+const PaginationQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+})
+
+const PaginatedDocumentsSchema = z.object({
+  data: z.array(DocumentWithRelationsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 // Routes
 const listDocuments = createRoute({
   method: 'get',
@@ -84,17 +99,17 @@ const listDocuments = createRoute({
     params: z.object({
       propertyId: z.string().uuid(),
     }),
-    query: z.object({
+    query: PaginationQuerySchema.extend({
       itemId: z.string().uuid().optional(),
       status: z.string().optional(),
     }),
   },
   responses: {
     200: {
-      description: 'List of documents',
+      description: 'Paginated list of documents',
       content: {
         'application/json': {
-          schema: z.array(DocumentWithRelationsSchema),
+          schema: PaginatedDocumentsSchema,
         },
       },
     },
@@ -264,18 +279,17 @@ export const documentsRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 documentsRouter.openapi(listDocuments, async (c) => {
   const userId = c.get('userId')
   const { propertyId } = c.req.valid('param')
-  const { status } = c.req.valid('query')
+  const { status, page, limit } = c.req.valid('query')
 
   const property = await propertyService.findById(propertyId, userId)
   if (!property) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  const documents = status
-    ? await documentService.findByStatus(propertyId, status)
-    : await documentService.findAllForProperty(propertyId)
+  const pagination = parsePaginationParams({ page, limit })
+  const result = await documentService.findPaginatedForProperty(propertyId, pagination, status)
 
-  return c.json(documents.map(serializeDocument), 200)
+  return c.json({ ...result, data: result.data.map(serializeDocument) }, 200)
 })
 
 documentsRouter.openapi(getDocument, async (c) => {

@@ -3,6 +3,7 @@ import type {
   MaintenanceTask as PrismaMaintenanceTask,
 } from '@generated/prisma/client'
 import type { Logger } from '@/lib/console-logger'
+import { buildPaginatedResult, type PaginatedResult, type PaginationParams } from '@/lib/pagination'
 import type {
   CompleteMaintenanceTaskInput,
   CreateMaintenanceTaskInput,
@@ -55,6 +56,64 @@ export class MaintenanceService {
       },
     })
     return records.map((r) => this.toDomainWithRelations(r))
+  }
+
+  async findPaginatedForProperty(
+    propertyId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<MaintenanceTaskWithRelations>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = {
+      property: { select: { id: true, name: true } },
+      item: { select: { id: true, name: true } },
+    } as const
+    const where = { propertyId, status: { not: 'dismissed' } }
+    const [records, total] = await Promise.all([
+      this.db.maintenanceTask.findMany({
+        where,
+        orderBy: { nextDueDate: 'asc' },
+        skip,
+        take: limit,
+        include,
+      }),
+      this.db.maintenanceTask.count({ where }),
+    ])
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
+  }
+
+  async findPaginatedForItem(
+    itemId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<MaintenanceTaskWithRelations>> {
+    const { page, limit } = pagination
+    const skip = (page - 1) * limit
+    const include = {
+      property: { select: { id: true, name: true } },
+      item: { select: { id: true, name: true } },
+    } as const
+    const where = { itemId, status: { not: 'dismissed' } }
+    const [records, total] = await Promise.all([
+      this.db.maintenanceTask.findMany({
+        where,
+        orderBy: { nextDueDate: 'asc' },
+        skip,
+        take: limit,
+        include,
+      }),
+      this.db.maintenanceTask.count({ where }),
+    ])
+    return buildPaginatedResult(
+      records.map((r) => this.toDomainWithRelations(r)),
+      total,
+      page,
+      limit,
+    )
   }
 
   async findUpcoming(

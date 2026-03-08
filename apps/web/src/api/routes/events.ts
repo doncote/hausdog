@@ -4,6 +4,7 @@ import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const eventService = new EventService({ db: prisma, logger })
@@ -42,6 +43,20 @@ const ErrorSchema = z.object({
   message: z.string(),
 })
 
+const PaginationQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+})
+
+const PaginatedEventsSchema = z.object({
+  data: z.array(EventWithRelationsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 // Routes
 const listEvents = createRoute({
   method: 'get',
@@ -52,13 +67,14 @@ const listEvents = createRoute({
     params: z.object({
       itemId: z.string().uuid(),
     }),
+    query: PaginationQuerySchema,
   },
   responses: {
     200: {
-      description: 'List of events',
+      description: 'Paginated list of events',
       content: {
         'application/json': {
-          schema: z.array(EventWithRelationsSchema),
+          schema: PaginatedEventsSchema,
         },
       },
     },
@@ -230,6 +246,7 @@ export const eventsRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 eventsRouter.openapi(listEvents, async (c) => {
   const userId = c.get('userId')
   const { itemId } = c.req.valid('param')
+  const { page, limit } = c.req.valid('query')
 
   const item = await itemService.findById(itemId)
   if (!item) {
@@ -242,8 +259,9 @@ eventsRouter.openapi(listEvents, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  const events = await eventService.findAllForItem(itemId)
-  return c.json(events.map(serializeEvent), 200)
+  const pagination = parsePaginationParams({ page, limit })
+  const result = await eventService.findPaginatedForItem(itemId, pagination)
+  return c.json({ ...result, data: result.data.map(serializeEvent) }, 200)
 })
 
 eventsRouter.openapi(getEvent, async (c) => {

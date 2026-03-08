@@ -3,6 +3,7 @@ import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const itemService = new ItemService({ db: prisma, logger })
@@ -57,6 +58,28 @@ const ErrorSchema = z.object({
   message: z.string(),
 })
 
+const PaginationQuerySchema = z.object({
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '1', description: 'Page number (1-based)' }),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '50', description: 'Items per page (max 100)' }),
+})
+
+const PaginatedItemsSchema = z.object({
+  data: z.array(ItemWithRelationsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 // Routes
 const listItems = createRoute({
   method: 'get',
@@ -67,17 +90,17 @@ const listItems = createRoute({
     params: z.object({
       propertyId: z.string().uuid(),
     }),
-    query: z.object({
+    query: PaginationQuerySchema.extend({
       spaceId: z.string().uuid().optional(),
       category: z.string().optional(),
     }),
   },
   responses: {
     200: {
-      description: 'List of items',
+      description: 'Paginated list of items',
       content: {
         'application/json': {
-          schema: z.array(ItemWithRelationsSchema),
+          schema: PaginatedItemsSchema,
         },
       },
     },
@@ -131,6 +154,7 @@ const getItemChildren = createRoute({
     params: z.object({
       id: z.string().uuid(),
     }),
+    query: PaginationQuerySchema,
   },
   responses: {
     200: {
@@ -294,18 +318,19 @@ export const itemsRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 itemsRouter.openapi(listItems, async (c) => {
   const userId = c.get('userId')
   const { propertyId } = c.req.valid('param')
-  const { spaceId } = c.req.valid('query')
+  const { spaceId, page, limit } = c.req.valid('query')
 
   const property = await propertyService.findById(propertyId, userId)
   if (!property) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  const items = spaceId
-    ? await itemService.findAllForSpace(spaceId)
-    : await itemService.findAllForProperty(propertyId)
+  const pagination = parsePaginationParams({ page, limit })
+  const result = spaceId
+    ? await itemService.findPaginatedForSpace(spaceId, pagination)
+    : await itemService.findPaginatedForProperty(propertyId, pagination)
 
-  return c.json(items.map(serializeItem), 200)
+  return c.json({ ...result, data: result.data.map(serializeItem) }, 200)
 })
 
 itemsRouter.openapi(getItem, async (c) => {

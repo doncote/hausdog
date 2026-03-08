@@ -3,6 +3,7 @@ import { PropertyService } from '@/features/properties/service'
 import { CreatePropertySchema, UpdatePropertySchema } from '@/features/properties/types'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const propertyService = new PropertyService({ db: prisma, logger })
@@ -39,19 +40,44 @@ const ErrorSchema = z.object({
   message: z.string(),
 })
 
+const PaginationQuerySchema = z.object({
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '1', description: 'Page number (1-based)' }),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '50', description: 'Items per page (max 100)' }),
+})
+
+const PaginatedPropertiesSchema = z.object({
+  data: z.array(PropertyWithCountsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 // Routes
 const listProperties = createRoute({
   method: 'get',
   path: '/properties',
   tags: ['Properties'],
   summary: 'List all properties',
-  description: 'Returns all properties for the authenticated user',
+  description: 'Returns paginated properties for the authenticated user',
+  request: {
+    query: PaginationQuerySchema,
+  },
   responses: {
     200: {
-      description: 'List of properties',
+      description: 'Paginated list of properties',
       content: {
         'application/json': {
-          schema: z.array(PropertyWithCountsSchema),
+          schema: PaginatedPropertiesSchema,
         },
       },
     },
@@ -193,14 +219,17 @@ export const propertiesRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 
 propertiesRouter.openapi(listProperties, async (c) => {
   const userId = c.get('userId')
-  const properties = await propertyService.findAllForUserWithCounts(userId)
-  return c.json(
-    properties.map((p) => ({
+  const { page, limit } = c.req.valid('query')
+  const pagination = parsePaginationParams({ page, limit })
+  const result = await propertyService.findPaginatedForUser(userId, pagination)
+  return c.json({
+    ...result,
+    data: result.data.map((p) => ({
       ...p,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
     })),
-  )
+  })
 })
 
 propertiesRouter.openapi(getProperty, async (c) => {

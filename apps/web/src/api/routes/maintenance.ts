@@ -4,6 +4,7 @@ import { MaintenanceService } from '@/features/maintenance/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const maintenanceService = new MaintenanceService({ db: prisma, logger })
@@ -48,6 +49,20 @@ const ErrorSchema = z.object({
 
 // Routes
 
+const PaginationQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+})
+
+const PaginatedMaintenanceSchema = z.object({
+  data: z.array(MaintenanceTaskWithRelationsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 const listMaintenanceForItem = createRoute({
   method: 'get',
   path: '/items/{itemId}/maintenance',
@@ -57,13 +72,14 @@ const listMaintenanceForItem = createRoute({
     params: z.object({
       itemId: z.string().uuid(),
     }),
+    query: PaginationQuerySchema,
   },
   responses: {
     200: {
-      description: 'List of maintenance tasks',
+      description: 'Paginated list of maintenance tasks',
       content: {
         'application/json': {
-          schema: z.array(MaintenanceTaskWithRelationsSchema),
+          schema: PaginatedMaintenanceSchema,
         },
       },
     },
@@ -365,8 +381,12 @@ maintenanceRouter.openapi(listMaintenanceForItem, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  const tasks = await maintenanceService.findAllForItem(itemId)
-  return c.json(tasks.map(serializeTask), 200)
+  const pagination = parsePaginationParams({
+    page: c.req.query('page'),
+    limit: c.req.query('limit'),
+  })
+  const result = await maintenanceService.findPaginatedForItem(itemId, pagination)
+  return c.json({ ...result, data: result.data.map(serializeTask) }, 200)
 })
 
 maintenanceRouter.openapi(listUpcomingMaintenance, async (c) => {

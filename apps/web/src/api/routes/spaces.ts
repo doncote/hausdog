@@ -4,6 +4,7 @@ import { SpaceService } from '@/features/spaces/service'
 import { UpdateSpaceSchema } from '@/features/spaces/types'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const spaceService = new SpaceService({ db: prisma, logger })
@@ -31,6 +32,28 @@ const ErrorSchema = z.object({
   message: z.string(),
 })
 
+const PaginationQuerySchema = z.object({
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '1', description: 'Page number (1-based)' }),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .openapi({ example: '50', description: 'Items per page (max 100)' }),
+})
+
+const PaginatedSpacesSchema = z.object({
+  data: z.array(SpaceWithCountsSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+  pages: z.number().int(),
+  hasMore: z.boolean(),
+})
+
 // Routes
 const listSpaces = createRoute({
   method: 'get',
@@ -41,13 +64,14 @@ const listSpaces = createRoute({
     params: z.object({
       propertyId: z.string().uuid(),
     }),
+    query: PaginationQuerySchema,
   },
   responses: {
     200: {
-      description: 'List of spaces',
+      description: 'Paginated list of spaces',
       content: {
         'application/json': {
-          schema: z.array(SpaceWithCountsSchema),
+          schema: PaginatedSpacesSchema,
         },
       },
     },
@@ -199,19 +223,24 @@ export const spacesRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 spacesRouter.openapi(listSpaces, async (c) => {
   const userId = c.get('userId')
   const { propertyId } = c.req.valid('param')
+  const { page, limit } = c.req.valid('query')
 
   const property = await propertyService.findById(propertyId, userId)
   if (!property) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
-  const spaces = await spaceService.findAllForProperty(propertyId)
+  const pagination = parsePaginationParams({ page, limit })
+  const result = await spaceService.findPaginatedForProperty(propertyId, pagination)
   return c.json(
-    spaces.map((s) => ({
-      ...s,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
-    })),
+    {
+      ...result,
+      data: result.data.map((s) => ({
+        ...s,
+        createdAt: s.createdAt.toISOString(),
+        updatedAt: s.updatedAt.toISOString(),
+      })),
+    },
     200,
   )
 })
