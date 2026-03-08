@@ -202,7 +202,11 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     const children = await itemService.findChildrenForItem(data.itemId)
 
     // Batch fetch events for all context items (focal + ancestors + children)
-    const allContextItemIds = [data.itemId, ...ancestors.map((i) => i.id), ...children.map((i) => i.id)]
+    const allContextItemIds = [
+      data.itemId,
+      ...ancestors.map((i) => i.id),
+      ...children.map((i) => i.id),
+    ]
     const eventsMap = await eventService.findAllForItems(allContextItemIds)
 
     // Build context items array with lineage info

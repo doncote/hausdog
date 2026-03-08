@@ -32,9 +32,11 @@ db-pull:
 db-generate:
 	cd apps/web && bunx prisma generate
 
-# Push schema to database
+# FORBIDDEN: push schema without migration (causes schema drift)
 db-push:
-	cd apps/web && doppler run -- bunx prisma db push
+	@echo "ERROR: 'make db-push' is forbidden. Use 'make migrate' instead."
+	@echo "See CONTRIBUTING.md for the migration workflow."
+	@exit 1
 
 # Run migrations and regenerate client
 migrate:
