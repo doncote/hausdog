@@ -46,6 +46,7 @@ import {
   CreateEventSchema,
   type Event,
   EventType,
+  type EventTypeValue,
   useCreateEvent,
   useDeleteEvent,
   useEventsForItem,
@@ -95,7 +96,7 @@ function ItemDetailPage() {
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [showDeleteEventDialog, setShowDeleteEventDialog] = useState(false)
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null)
-  const [eventType, setEventType] = useState('')
+  const [eventType, setEventType] = useState<EventTypeValue | ''>('')
   const [eventDate, setEventDate] = useState('')
   const [eventDescription, setEventDescription] = useState('')
   const [eventCost, setEventCost] = useState('')
@@ -243,7 +244,7 @@ function ItemDetailPage() {
         userId: user.id,
         input: {
           itemId,
-          type: eventType,
+          type: eventType as EventTypeValue,
           date: new Date(eventDate),
           description: eventDescription || undefined,
           cost: eventCost ? parseFloat(eventCost) : undefined,
@@ -843,7 +844,7 @@ function ItemDetailPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="event-type">Type *</Label>
-                <Select value={eventType} onValueChange={setEventType}>
+                <Select value={eventType} onValueChange={(v) => setEventType(v as EventTypeValue)}>
                   <SelectTrigger id="event-type" aria-invalid={!!eventErrors.type}>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>

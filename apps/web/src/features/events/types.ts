@@ -11,9 +11,11 @@ export const EventType = {
 
 export type EventTypeValue = (typeof EventType)[keyof typeof EventType]
 
+export const EVENT_TYPE_VALUES = Object.values(EventType) as [EventTypeValue, ...EventTypeValue[]]
+
 export const CreateEventSchema = z.object({
   itemId: z.string().uuid(),
-  type: z.string().min(1, 'Type is required'),
+  type: z.enum(EVENT_TYPE_VALUES),
   date: z.date(),
   description: z.string().optional(),
   cost: z.number().positive().optional(),

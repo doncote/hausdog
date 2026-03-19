@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { configure, tasks } from '@trigger.dev/sdk/v3'
 import { v4 as uuidv4 } from 'uuid'
 import { DocumentService } from '@/features/documents/service'
+import type { DocumentTypeValue } from '@/features/documents/types'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
@@ -254,7 +255,7 @@ function serializeDocument(doc: any) {
 }
 
 // Infer document type from content type and filename
-function inferDocumentType(contentType: string, fileName: string): string {
+function inferDocumentType(contentType: string, fileName: string): DocumentTypeValue {
   const lowerFileName = fileName.toLowerCase()
 
   if (contentType === 'application/pdf') {

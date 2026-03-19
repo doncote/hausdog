@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { EventService } from '../events/service'
+import { EVENT_TYPE_VALUES } from '../events/types'
+import type { EventTypeValue } from '../events/types'
 import { ItemService } from '../items/service'
 import { DocumentService } from './service'
 import type { CreateDocumentInput, UpdateDocumentInput } from './types'
@@ -183,13 +185,18 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
 
     // 3. Create an event if suggested
     let eventId: string | null = null
-    if (itemId && resolveData?.suggestedEventType) {
+    const suggestedType = resolveData?.suggestedEventType
+    const validSuggestedType =
+      suggestedType && (EVENT_TYPE_VALUES as readonly string[]).includes(suggestedType)
+        ? (suggestedType as EventTypeValue)
+        : null
+    if (itemId && validSuggestedType) {
       const vendorInfo = extractedData?.extracted?.vendor
         ? ` (${extractedData.extracted.vendor})`
         : ''
       const event = await eventService.create(data.userId, {
         itemId,
-        type: resolveData.suggestedEventType,
+        type: validSuggestedType,
         date: extractedData?.extracted?.date ? new Date(extractedData.extracted.date) : new Date(),
         description: `Document: ${document.fileName}${vendorInfo}`,
         cost: extractedData?.extracted?.price || undefined,

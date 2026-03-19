@@ -22,7 +22,7 @@ const MaintenanceTaskSchema = z.object({
   nextDueDate: z.string().datetime(),
   lastCompletedAt: z.string().datetime().nullable(),
   source: z.string(),
-  status: z.string(),
+  status: z.enum(['active', 'paused', 'dismissed']),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

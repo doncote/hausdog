@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db/client'
 import { getServerEnv } from '@/lib/env'
 import type { processDocumentTask } from '../../../trigger/process-document'
 import { DocumentService } from './service'
-import { DocumentType } from './types'
+import { DocumentType, type DocumentTypeValue } from './types'
 
 // Configure Trigger.dev with our API key
 function configureTrigger() {
@@ -35,7 +35,7 @@ interface UploadInput {
   propertyId: string
   itemId?: string
   eventId?: string
-  type?: string
+  type?: DocumentTypeValue
 }
 
 export const uploadDocument = createServerFn({ method: 'POST' })
@@ -230,7 +230,7 @@ export const reprocessDocument = createServerFn({ method: 'POST' })
     }
   })
 
-function inferDocumentType(contentType: string, fileName: string): string {
+function inferDocumentType(contentType: string, fileName: string): DocumentTypeValue {
   const lowerFileName = fileName.toLowerCase()
 
   if (contentType === 'application/pdf') {

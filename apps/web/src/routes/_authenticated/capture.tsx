@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DocumentType, uploadDocument } from '@/features/documents'
+import { DocumentType, type DocumentTypeValue, uploadDocument } from '@/features/documents'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 interface UploadedDoc {
@@ -80,7 +80,7 @@ function CapturePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
-  const [selectedType, setSelectedType] = useState<string>(DocumentType.PHOTO)
+  const [selectedType, setSelectedType] = useState<DocumentTypeValue>(DocumentType.PHOTO)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -248,7 +248,7 @@ function CapturePage() {
           {/* Document Type */}
           <div className="space-y-2">
             <Label htmlFor="type">Document Type</Label>
-            <Select value={selectedType} onValueChange={setSelectedType}>
+            <Select value={selectedType} onValueChange={(v) => setSelectedType(v as DocumentTypeValue)}>
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>

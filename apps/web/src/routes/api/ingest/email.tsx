@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import type { InboundEmailWebhook } from '@/lib/email/ingest'
+import type { DocumentTypeValue } from '@/features/documents/types'
 
 export const Route = createFileRoute('/api/ingest/email')({
   server: {
@@ -216,7 +217,7 @@ export const Route = createFileRoute('/api/ingest/email')({
   },
 })
 
-function inferDocumentType(contentType: string, fileName: string): string {
+function inferDocumentType(contentType: string, fileName: string): DocumentTypeValue {
   const lowerFileName = fileName.toLowerCase()
 
   if (contentType === 'application/pdf') {

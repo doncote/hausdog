@@ -22,11 +22,20 @@ export const DocumentStatus = {
 
 export type DocumentStatusValue = (typeof DocumentStatus)[keyof typeof DocumentStatus]
 
+export const DOCUMENT_TYPE_VALUES = Object.values(DocumentType) as [
+  DocumentTypeValue,
+  ...DocumentTypeValue[],
+]
+export const DOCUMENT_STATUS_VALUES = Object.values(DocumentStatus) as [
+  DocumentStatusValue,
+  ...DocumentStatusValue[],
+]
+
 export const CreateDocumentSchema = z.object({
   propertyId: z.string().uuid(),
   itemId: z.string().uuid().optional(),
   eventId: z.string().uuid().optional(),
-  type: z.string().min(1, 'Type is required'),
+  type: z.enum(DOCUMENT_TYPE_VALUES),
   fileName: z.string().min(1, 'File name is required'),
   storagePath: z.string().min(1, 'Storage path is required'),
   contentType: z.string().min(1, 'Content type is required'),
@@ -38,8 +47,8 @@ export const CreateDocumentSchema = z.object({
 export const UpdateDocumentSchema = z.object({
   itemId: z.string().uuid().nullable().optional(),
   eventId: z.string().uuid().nullable().optional(),
-  type: z.string().optional(),
-  status: z.string().optional(),
+  type: z.enum(DOCUMENT_TYPE_VALUES).optional(),
+  status: z.enum(DOCUMENT_STATUS_VALUES).optional(),
   extractedText: z.string().nullable().optional(),
   extractedData: z.any().nullable().optional(),
   resolveData: z.any().nullable().optional(),

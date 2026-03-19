@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { EventService } from '@/features/events/service'
+import { EVENT_TYPE_VALUES } from '@/features/events/types'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
@@ -132,7 +133,7 @@ const createEvent = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            type: z.string().min(1, 'Type is required'),
+            type: z.enum(EVENT_TYPE_VALUES),
             date: z.string().datetime(),
             description: z.string().optional(),
             cost: z.number().positive().optional(),
@@ -175,7 +176,7 @@ const updateEvent = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            type: z.string().min(1).optional(),
+            type: z.enum(EVENT_TYPE_VALUES).optional(),
             date: z.string().datetime().optional(),
             description: z.string().nullable().optional(),
             cost: z.number().positive().nullable().optional(),
