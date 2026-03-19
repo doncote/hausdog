@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Box, ChevronRight, Filter, Home, Loader2, Plus, Search } from 'lucide-react'
+import { Box, Camera, ChevronRight, Filter, Home, Loader2, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -164,11 +164,17 @@ function InventoryPage() {
           <h3 className="text-lg font-semibold mb-2">
             {items && items.length > 0 ? 'No matching items' : 'No items yet'}
           </h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-2">
             {items && items.length > 0
               ? 'Try adjusting your filters'
               : 'Add your first item to start tracking'}
           </p>
+          {!(items && items.length > 0) && (
+            <p className="text-sm text-muted-foreground mb-6">
+              Tip: Use Capture to add items with AI extraction — just snap a photo of any label,
+              manual, or receipt.
+            </p>
+          )}
           {items && items.length > 0 ? (
             <Button
               variant="outline"
@@ -181,15 +187,23 @@ function InventoryPage() {
               Clear filters
             </Button>
           ) : (
-            <Link
-              to="/items/new"
-              search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
-            >
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Item
-              </Button>
-            </Link>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link to="/capture">
+                <Button variant="outline" className="gap-2">
+                  <Camera className="h-4 w-4" />
+                  Use Capture
+                </Button>
+              </Link>
+              <Link
+                to="/items/new"
+                search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
+              >
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       ) : (

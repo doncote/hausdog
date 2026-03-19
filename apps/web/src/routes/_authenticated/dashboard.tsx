@@ -106,11 +106,12 @@ function DashboardPage() {
               </div>
             ) : (
               <EmptyState
-                message="No items yet"
+                message="Start by snapping a photo of any appliance, system, or receipt. AI will extract the details automatically."
                 action={
                   <Link to="/capture">
-                    <Button size="sm" variant="outline">
-                      Capture your first item
+                    <Button size="sm" variant="outline" className="gap-2">
+                      <Camera className="h-4 w-4" />
+                      Capture Your First Item
                     </Button>
                   </Link>
                 }

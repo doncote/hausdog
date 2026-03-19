@@ -70,8 +70,11 @@ function PropertiesPage() {
             <Building2 className="h-8 w-8 text-primary" />
           </div>
           <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
-          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          <p className="text-muted-foreground mb-2 max-w-sm mx-auto">
             Add your first property to start tracking your home documentation
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            It takes about 2 minutes to add your first property.
           </p>
           <Link to="/properties/new">
             <Button className="gap-2">
