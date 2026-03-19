@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { AlertTriangle, Box, Camera, ChevronRight, Clock, FileText, Home, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { WelcomeModal } from '@/components/onboarding/welcome-modal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDashboardStats } from '@/features/dashboard'
 import { PendingInvitesBanner } from '@/features/members/PendingInvitesBanner'
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
@@ -14,9 +17,11 @@ function DashboardPage() {
   const { data: stats, isPending } = useDashboardStats(user?.id)
   const firstName = (user?.user_metadata?.full_name || user?.email || 'User').split(' ')[0]
   const greeting = getGreeting()
+  const [modalOpen, setModalOpen] = useState(user?.user_metadata?.onboarding_seen !== true)
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
+      <WelcomeModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <header className="mb-10">
         <p className="text-sm font-medium text-primary mb-1">{greeting}</p>
         <h1 className="text-3xl font-bold tracking-tight">{firstName}</h1>
@@ -24,6 +29,8 @@ function DashboardPage() {
       </header>
 
       {user?.email && <PendingInvitesBanner userId={user.id} userEmail={user.email} />}
+
+      {user && <OnboardingChecklist user={user} stats={stats} />}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
         <StatCard
