@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import type { InboundEmailWebhook } from '@/lib/email/ingest'
 import type { DocumentTypeValue } from '@/features/documents/types'
+import type { InboundEmailWebhook } from '@/lib/email/ingest'
 
 export const Route = createFileRoute('/api/ingest/email')({
   server: {

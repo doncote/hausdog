@@ -1,8 +1,9 @@
-import type { PrismaClient } from '@generated/prisma/client'
+import type { Prisma, PrismaClient } from '@generated/prisma/client'
 import type {
   ActivityAction,
   ActivityEntityType,
   ActivityEvent,
+  JsonObject,
   RecordActivityInput,
 } from './types'
 
@@ -18,7 +19,7 @@ export class ActivityService {
         entityType: input.entityType,
         entityId: input.entityId,
         entityName: input.entityName ?? null,
-        metadata: input.metadata ?? undefined,
+        metadata: (input.metadata as Prisma.InputJsonValue | undefined) ?? undefined,
       },
     })
   }
@@ -37,7 +38,7 @@ export class ActivityService {
       entityType: r.entityType as ActivityEntityType,
       entityId: r.entityId,
       entityName: r.entityName,
-      metadata: r.metadata as Record<string, unknown> | null,
+      metadata: r.metadata as JsonObject | null,
       createdAt: r.createdAt,
     }))
   }

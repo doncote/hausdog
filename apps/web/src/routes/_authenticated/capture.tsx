@@ -248,7 +248,10 @@ function CapturePage() {
           {/* Document Type */}
           <div className="space-y-2">
             <Label htmlFor="type">Document Type</Label>
-            <Select value={selectedType} onValueChange={(v) => setSelectedType(v as DocumentTypeValue)}>
+            <Select
+              value={selectedType}
+              onValueChange={(v) => setSelectedType(v as DocumentTypeValue)}
+            >
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>

@@ -1,3 +1,12 @@
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[]
+export type JsonObject = { [key: string]: JsonValue }
+
 export type ActivityAction =
   | 'created'
   | 'updated'
@@ -18,7 +27,7 @@ export interface ActivityEvent {
   entityType: ActivityEntityType
   entityId: string
   entityName: string | null
-  metadata: Record<string, unknown> | null
+  metadata: JsonObject | null
   createdAt: Date
 }
 
@@ -29,5 +38,5 @@ export interface RecordActivityInput {
   entityType: ActivityEntityType
   entityId: string
   entityName?: string
-  metadata?: Record<string, unknown>
+  metadata?: JsonObject
 }
