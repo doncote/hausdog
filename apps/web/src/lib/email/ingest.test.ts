@@ -134,7 +134,7 @@ describe('hasSubstantialContent', () => {
   })
 
   it('strips re: prefix before measuring length', () => {
-    const reShort = 're: ' + 'a'.repeat(50)
+    const reShort = `re: ${'a'.repeat(50)}`
     expect(hasSubstantialContent(reShort)).toBe(false)
   })
 })
