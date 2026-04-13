@@ -160,7 +160,14 @@ export async function extractWithGemini(
     jsonStr = jsonMatch[1]
   }
 
-  const result = JSON.parse(jsonStr.trim()) as GeminiExtractionResult
+  let result: GeminiExtractionResult
+  try {
+    result = JSON.parse(jsonStr.trim()) as GeminiExtractionResult
+  } catch (e) {
+    throw new Error(
+      `Failed to parse Gemini extraction response as JSON: ${e instanceof Error ? e.message : e}`,
+    )
+  }
 
   logger.info('Gemini extraction complete', {
     documentType: result.documentType,

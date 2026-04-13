@@ -92,7 +92,14 @@ Determine how to handle this document.`
     jsonStr = jsonMatch[1]
   }
 
-  const result = JSON.parse(jsonStr.trim()) as ResolutionResult
+  let result: ResolutionResult
+  try {
+    result = JSON.parse(jsonStr.trim()) as ResolutionResult
+  } catch (e) {
+    throw new Error(
+      `Failed to parse Claude resolution response as JSON: ${e instanceof Error ? e.message : e}`,
+    )
+  }
 
   logger.info('Claude resolution complete', {
     action: result.action,
@@ -274,7 +281,15 @@ Suggest recurring maintenance tasks for this item.`
     jsonStr = jsonMatch[1]
   }
 
-  const suggestions = JSON.parse(jsonStr.trim()) as MaintenanceSuggestion[]
+  let suggestions: MaintenanceSuggestion[]
+  try {
+    const parsed = JSON.parse(jsonStr.trim())
+    suggestions = Array.isArray(parsed) ? parsed : []
+  } catch (e) {
+    throw new Error(
+      `Failed to parse Claude maintenance suggestions as JSON: ${e instanceof Error ? e.message : e}`,
+    )
+  }
 
   logger.info('Claude maintenance suggestions received', {
     count: suggestions.length,
