@@ -107,9 +107,28 @@ Suggest recurring maintenance tasks for this item.`
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) jsonStr = jsonMatch[1]
 
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(jsonStr.trim())
+      } catch {
+        // Claude returned non-JSON — skip suggestion creation rather than crash+retry
+        return { itemId, suggestionsReceived: 0, tasksCreated: 0, taskNames: [] }
+      }
+
+      if (!Array.isArray(parsed)) {
+        return { itemId, suggestionsReceived: 0, tasksCreated: 0, taskNames: [] }
+      }
+
       const suggestions = (
-        JSON.parse(jsonStr.trim()) as Array<{ name: string; description: string; intervalMonths: number }>
-      ).slice(0, 5)
+        parsed as Array<{ name: string; description: string; intervalMonths: number }>
+      )
+        .filter(
+          (s) =>
+            typeof s?.name === 'string' &&
+            typeof s?.description === 'string' &&
+            typeof s?.intervalMonths === 'number',
+        )
+        .slice(0, 5)
 
       const lastEventDates = new Map<string, Date>()
       for (const event of recentEvents) {
