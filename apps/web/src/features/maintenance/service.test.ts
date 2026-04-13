@@ -199,9 +199,7 @@ describe('MaintenanceService', () => {
   describe('createFromAI', () => {
     it('skips suggestions that already exist', async () => {
       const { service, mockDb } = makeService()
-      mockDb.maintenanceTask.findMany.mockResolvedValue([
-        { name: 'Change HVAC Filter' },
-      ])
+      mockDb.maintenanceTask.findMany.mockResolvedValue([{ name: 'Change HVAC Filter' }])
       mockDb.maintenanceTask.create.mockResolvedValue(makePrismaTask())
 
       const result = await service.createFromAI('user-1', 'prop-1', null, [

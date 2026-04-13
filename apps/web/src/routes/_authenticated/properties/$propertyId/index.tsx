@@ -35,8 +35,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import { ActivityFeed } from '@/features/activity'
+import { type ItemWithRelations, useRootItemsForProperty } from '@/features/items'
 import { SharingSection } from '@/features/members/SharingSection'
 import {
   lookupPropertyData,
@@ -490,9 +490,7 @@ function PropertyDetailPage() {
       )}
 
       {/* Activity Feed */}
-      {user && (
-        <ActivityFeed propertyId={propertyId} userId={user.id} currentUserId={user.id} />
-      )}
+      {user && <ActivityFeed propertyId={propertyId} userId={user.id} currentUserId={user.id} />}
 
       {/* Spaces Section */}
       <div className="mb-8">
