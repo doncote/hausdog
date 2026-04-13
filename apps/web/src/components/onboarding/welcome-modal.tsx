@@ -29,7 +29,12 @@ export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleExplore() }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleExplore()
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-center items-center">
           <div className="rounded-full bg-primary/10 p-4 mb-3">
@@ -43,7 +48,7 @@ export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
 
         <div className="mt-4 space-y-3">
           {steps.map((step, i) => (
-            <div key={i} className="flex items-start gap-3">
+            <div key={step.title} className="flex items-start gap-3">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
                 {i + 1}
               </div>

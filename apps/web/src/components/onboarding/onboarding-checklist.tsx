@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Circle, PartyPopper, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
 import type { DashboardStats } from '@/features/dashboard/api'
-import type { User } from '@supabase/supabase-js'
+import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 interface OnboardingChecklistProps {
   user: User
@@ -38,9 +38,7 @@ export function OnboardingChecklist({ user, stats }: OnboardingChecklistProps) {
   const onboardingComplete = user.user_metadata?.onboarding_complete === true
   const onboardingDismissed = user.user_metadata?.onboarding_dismissed === true
 
-  const completedCount = stats
-    ? STEPS.filter((step) => step.isComplete(stats)).length
-    : 0
+  const completedCount = stats ? STEPS.filter((step) => step.isComplete(stats)).length : 0
 
   const allComplete = completedCount === STEPS.length
 
@@ -69,9 +67,7 @@ export function OnboardingChecklist({ user, stats }: OnboardingChecklistProps) {
   }
 
   // Find the next incomplete step for the Continue button
-  const nextStep = stats
-    ? STEPS.find((step) => !step.isComplete(stats))
-    : STEPS[0]
+  const nextStep = stats ? STEPS.find((step) => !step.isComplete(stats)) : STEPS[0]
 
   if (celebrating) {
     return (
@@ -98,6 +94,7 @@ export function OnboardingChecklist({ user, stats }: OnboardingChecklistProps) {
             </p>
           </div>
           <button
+            type="button"
             onClick={handleDismiss}
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Dismiss"
@@ -113,12 +110,12 @@ export function OnboardingChecklist({ user, stats }: OnboardingChecklistProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {STEPS.map((step, i) => {
+        {STEPS.map((step) => {
           const complete = stats ? step.isComplete(stats) : false
           const progressLabel = 'progress' in step && stats ? step.progress(stats) : null
 
           return (
-            <div key={i} className="flex items-center gap-3">
+            <div key={step.label} className="flex items-center gap-3">
               {complete ? (
                 <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
               ) : (

@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { AlertTriangle, Box, Camera, ChevronRight, Clock, FileText, Home, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 import { WelcomeModal } from '@/components/onboarding/welcome-modal'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDashboardStats } from '@/features/dashboard'
 import { PendingInvitesBanner } from '@/features/members/PendingInvitesBanner'
-import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,

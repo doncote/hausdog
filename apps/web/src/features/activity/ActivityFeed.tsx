@@ -1,11 +1,4 @@
-import {
-  Box,
-  CheckSquare,
-  ChevronRight,
-  DoorOpen,
-  FileText,
-  Users,
-} from 'lucide-react'
+import { Box, CheckSquare, ChevronRight, DoorOpen, FileText, Users } from 'lucide-react'
 import { useActivityFeed } from './queries'
 import type { ActivityAction, ActivityEntityType, ActivityEvent } from './types'
 
@@ -69,13 +62,7 @@ function formatRelativeTime(date: Date): string {
   return new Date(date).toLocaleDateString()
 }
 
-function ActivityRow({
-  event,
-  currentUserId,
-}: {
-  event: ActivityEvent
-  currentUserId: string
-}) {
+function ActivityRow({ event, currentUserId }: { event: ActivityEvent; currentUserId: string }) {
   const Icon = getEntityIcon(event.entityType)
   const actor = event.userId === currentUserId ? 'You' : 'A collaborator'
   const actionLabel = getActionLabel(event.action, event.entityType)
