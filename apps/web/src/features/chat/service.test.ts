@@ -221,7 +221,9 @@ describe('ChatService', () => {
 
     it('creates message with correct fields', async () => {
       const { service, mockDb } = makeService()
-      mockDb.message.create.mockResolvedValue(makePrismaMessage({ role: 'assistant', content: 'Hi' }))
+      mockDb.message.create.mockResolvedValue(
+        makePrismaMessage({ role: 'assistant', content: 'Hi' }),
+      )
       mockDb.conversation.update.mockResolvedValue(makePrismaConversation())
       mockDb.$transaction.mockImplementation(async (promises: Promise<unknown>[]) =>
         Promise.all(promises),

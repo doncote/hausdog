@@ -183,7 +183,9 @@ describe('DocumentService', () => {
   describe('createFromEmailBody', () => {
     it('creates email document with processing status', async () => {
       const { service, mockDb } = makeService()
-      mockDb.document.create.mockResolvedValue(makePrismaDocument({ status: 'processing', source: 'email' }))
+      mockDb.document.create.mockResolvedValue(
+        makePrismaDocument({ status: 'processing', source: 'email' }),
+      )
 
       await service.createFromEmailBody(
         'user-1',

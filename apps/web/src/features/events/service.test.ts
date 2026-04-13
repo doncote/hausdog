@@ -81,9 +81,7 @@ describe('EventService', () => {
 
     it('converts cost to number', async () => {
       const { service, mockDb } = makeService()
-      mockDb.event.findMany.mockResolvedValue([
-        makePrismaEventWithRelations({ cost: 75.5 }),
-      ])
+      mockDb.event.findMany.mockResolvedValue([makePrismaEventWithRelations({ cost: 75.5 })])
 
       const result = await service.findAllForItem('item-1')
 
@@ -92,9 +90,7 @@ describe('EventService', () => {
 
     it('returns null cost when not set', async () => {
       const { service, mockDb } = makeService()
-      mockDb.event.findMany.mockResolvedValue([
-        makePrismaEventWithRelations({ cost: null }),
-      ])
+      mockDb.event.findMany.mockResolvedValue([makePrismaEventWithRelations({ cost: null })])
 
       const result = await service.findAllForItem('item-1')
 
@@ -203,7 +199,7 @@ describe('EventService', () => {
 
       await service.create('user-1', {
         itemId: 'item-1',
-        type: 'purchase',
+        type: 'installation',
         date: new Date('2024-03-15'),
       })
 

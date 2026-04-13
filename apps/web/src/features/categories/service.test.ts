@@ -100,7 +100,11 @@ describe('CategoryService', () => {
       const { service, mockDb } = makeService()
       mockDb.category.create.mockResolvedValue(makePrismaCategory())
 
-      await service.create('user-1', { slug: 'appliances', name: 'Appliances', icon: 'refrigerator' })
+      await service.create('user-1', {
+        slug: 'appliances',
+        name: 'Appliances',
+        icon: 'refrigerator',
+      })
 
       const createCall = mockDb.category.create.mock.calls[0][0]
       expect(createCall.data.isSystem).toBe(false)
