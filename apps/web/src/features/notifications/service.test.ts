@@ -27,7 +27,7 @@ import {
   sendPushNotification,
 } from './service'
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   deviceToken: {
     upsert: ReturnType<typeof vi.fn>
     deleteMany: ReturnType<typeof vi.fn>
