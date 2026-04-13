@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
+import { SpaceService } from '@/features/spaces/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
 import { parsePaginationParams } from '@/lib/pagination'
@@ -8,6 +9,7 @@ import type { AuthContext } from '../middleware/auth'
 
 const itemService = new ItemService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
+const spaceService = new SpaceService({ db: prisma, logger })
 
 // Response schemas
 const ItemSchema = z.object({
@@ -323,6 +325,14 @@ itemsRouter.openapi(listItems, async (c) => {
   const property = await propertyService.findById(propertyId, userId)
   if (!property) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
+  }
+
+  // If filtering by space, verify it belongs to this property
+  if (spaceId) {
+    const space = await spaceService.findById(spaceId)
+    if (!space || space.propertyId !== propertyId) {
+      return c.json({ error: 'not_found', message: 'Space not found' }, 404)
+    }
   }
 
   const pagination = parsePaginationParams({ page, limit })
