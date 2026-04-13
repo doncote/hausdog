@@ -436,7 +436,24 @@ documentsRouter.openapi(deleteDocument, async (c) => {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 
-  // TODO: Also delete from storage
+  // Delete from Supabase Storage (best-effort — log on failure, don't block)
+  if (existing.storagePath) {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([existing.storagePath])
+      if (storageError) {
+        logger.warn('Failed to delete document from storage', {
+          documentId: id,
+          storagePath: existing.storagePath,
+          error: storageError.message,
+        })
+      }
+    }
+  }
 
   await documentService.delete(id)
   return c.body(null, 204)
