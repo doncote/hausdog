@@ -28,8 +28,8 @@ export function useUpdateConversationTitle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string; title: string }) =>
-      updateConversationTitle({ data: { id: input.id, title: input.title } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string; title: string }) =>
+      updateConversationTitle({ data: { id: input.id, userId: input.userId, title: input.title } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: chatKeys.conversationsByProperty(variables.propertyId),
@@ -45,8 +45,8 @@ export function useDeleteConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string }) =>
-      deleteConversation({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
+      deleteConversation({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: chatKeys.conversationsByProperty(variables.propertyId),
@@ -65,8 +65,8 @@ export function useCreateMessage() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { conversationId: string; input: CreateMessageInput }) =>
-      createMessage({ data: { input: input.input } }),
+    mutationFn: (input: { conversationId: string; userId: string; input: CreateMessageInput }) =>
+      createMessage({ data: { userId: input.userId, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: chatKeys.messages(variables.conversationId),

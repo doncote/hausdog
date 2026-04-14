@@ -33,25 +33,48 @@ export const fetchMessagesForConversation = createServerFn({ method: 'GET' })
 export const createConversation = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateConversationInput }) => d)
   .handler(async ({ data }) => {
+    const property = await propertyService.findById(data.input.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return chat.createConversation(data.userId, data.input)
   })
 
 export const updateConversationTitle = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; title: string }) => d)
+  .inputValidator((d: { id: string; userId: string; title: string }) => d)
   .handler(async ({ data }) => {
+    const existing = await prisma.conversation.findUnique({
+      where: { id: data.id },
+      select: { propertyId: true },
+    })
+    if (!existing) throw new Error('Conversation not found')
+    const property = await propertyService.findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return chat.updateConversationTitle(data.id, data.title)
   })
 
 export const deleteConversation = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: { id: string; userId: string }) => d)
   .handler(async ({ data }) => {
+    const existing = await prisma.conversation.findUnique({
+      where: { id: data.id },
+      select: { propertyId: true },
+    })
+    if (!existing) throw new Error('Conversation not found')
+    const property = await propertyService.findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     await chat.deleteConversation(data.id)
     return { success: true }
   })
 
 export const createMessage = createServerFn({ method: 'POST' })
-  .inputValidator((d: { input: CreateMessageInput }) => d)
+  .inputValidator((d: { userId: string; input: CreateMessageInput }) => d)
   .handler(async ({ data }) => {
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: data.input.conversationId },
+      select: { propertyId: true },
+    })
+    if (!conversation) throw new Error('Conversation not found')
+    const property = await propertyService.findById(conversation.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return chat.createMessage(data.input)
   })
 

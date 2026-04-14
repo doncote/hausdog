@@ -104,6 +104,7 @@ function ChatPage() {
     try {
       await deleteConversation.mutateAsync({
         id: conversationToDelete.id,
+        userId: user!.id,
         propertyId: conversationToDelete.propertyId,
       })
       if (selectedConversationId === conversationToDelete.id) {

@@ -21,16 +21,26 @@ export const createCategory = createServerFn({ method: 'POST' })
   })
 
 export const updateCategory = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; input: UpdateCategoryInput }) => d)
+  .inputValidator((d: { id: string; userId: string; input: UpdateCategoryInput }) => d)
   .handler(async ({ data }) => {
     const service = getCategoryService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Category not found')
+    if (existing.isSystem || existing.userId !== data.userId) {
+      throw new Error('Access denied')
+    }
     return service.update(data.id, data.input)
   })
 
 export const deleteCategory = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: { id: string; userId: string }) => d)
   .handler(async ({ data }) => {
     const service = getCategoryService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Category not found')
+    if (existing.isSystem || existing.userId !== data.userId) {
+      throw new Error('Access denied')
+    }
     await service.delete(data.id)
     return { success: true }
   })

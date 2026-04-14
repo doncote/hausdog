@@ -20,7 +20,7 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: (input: { id: string; userId: string; input: UpdateCategoryInput }) =>
-      updateCategory({ data: { id: input.id, input: input.input } }),
+      updateCategory({ data: { id: input.id, userId: input.userId, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.list(variables.userId) })
     },
@@ -32,7 +32,7 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: (input: { id: string; userId: string }) =>
-      deleteCategory({ data: { id: input.id } }),
+      deleteCategory({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.list(variables.userId) })
     },

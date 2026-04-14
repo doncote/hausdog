@@ -100,6 +100,7 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
     try {
       await deleteConversation.mutateAsync({
         id: conversationToDelete.id,
+        userId,
         propertyId: conversationToDelete.propertyId,
       })
       if (selectedConversationId === conversationToDelete.id) {
