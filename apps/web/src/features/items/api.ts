@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { ActivityService } from '@/features/activity/service'
+import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { parsePaginationParams } from '@/lib/pagination'
@@ -8,6 +9,7 @@ import type { CreateItemInput, UpdateItemInput } from './types'
 
 const getItemService = () => new ItemService({ db: prisma, logger })
 const getActivityService = () => new ActivityService(prisma)
+const getPropertyService = () => new PropertyService({ db: prisma, logger })
 
 export const fetchItemsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
@@ -48,6 +50,8 @@ export const fetchItem = createServerFn({ method: 'GET' })
 export const createItem = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateItemInput }) => d)
   .handler(async ({ data }) => {
+    const property = await getPropertyService().findById(data.input.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
     const item = await service.create(data.userId, data.input)
 
@@ -81,6 +85,10 @@ export const updateItem = createServerFn({ method: 'POST' })
   .inputValidator((d: { id: string; userId: string; input: UpdateItemInput }) => d)
   .handler(async ({ data }) => {
     const service = getItemService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Item not found')
+    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     const item = await service.update(data.id, data.userId, data.input)
 
     getActivityService()
@@ -102,6 +110,9 @@ export const deleteItem = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const service = getItemService()
     const item = await service.findById(data.id)
+    if (!item) throw new Error('Item not found')
+    const property = await getPropertyService().findById(item.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
     if (item) {

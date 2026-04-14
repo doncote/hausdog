@@ -266,6 +266,7 @@ function ItemDetailPage() {
       await deleteEvent.mutateAsync({
         id: eventToDelete.id,
         itemId,
+        userId: user!.id,
       })
       toast.success('Event deleted')
       setShowDeleteEventDialog(false)

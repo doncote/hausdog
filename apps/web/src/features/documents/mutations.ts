@@ -31,8 +31,8 @@ export function useUpdateDocument() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string; input: UpdateDocumentInput }) =>
-      updateDocument({ data: { id: input.id, input: input.input } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string; input: UpdateDocumentInput }) =>
+      updateDocument({ data: { id: input.id, userId: input.userId, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),
@@ -51,8 +51,8 @@ export function useUpdateDocumentStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string; status: string }) =>
-      updateDocumentStatus({ data: { id: input.id, status: input.status } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string; status: string }) =>
+      updateDocumentStatus({ data: { id: input.id, userId: input.userId, status: input.status } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),
@@ -71,8 +71,8 @@ export function useDeleteDocument() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; propertyId: string }) =>
-      deleteDocument({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
+      deleteDocument({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),

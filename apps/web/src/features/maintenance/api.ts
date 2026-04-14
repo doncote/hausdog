@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { ActivityService } from '@/features/activity/service'
+import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { MaintenanceService } from './service'
@@ -11,6 +12,7 @@ import type {
 
 const getMaintenanceService = () => new MaintenanceService({ db: prisma, logger })
 const getActivityService = () => new ActivityService(prisma)
+const getPropertyService = () => new PropertyService({ db: prisma, logger })
 
 export const fetchMaintenanceTasksForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
@@ -53,6 +55,8 @@ export const fetchMaintenanceTask = createServerFn({ method: 'GET' })
 export const createMaintenanceTask = createServerFn({ method: 'POST' })
   .inputValidator((d: { userId: string; input: CreateMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
+    const property = await getPropertyService().findById(data.input.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getMaintenanceService()
     const task = await service.create(data.userId, data.input)
 
@@ -74,6 +78,10 @@ export const updateMaintenanceTask = createServerFn({ method: 'POST' })
   .inputValidator((d: { id: string; userId: string; input: UpdateMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
     const service = getMaintenanceService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Maintenance task not found')
+    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return service.update(data.id, data.userId, data.input)
   })
 
@@ -109,6 +117,9 @@ export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const service = getMaintenanceService()
     const task = await service.findById(data.id)
+    if (!task) throw new Error('Maintenance task not found')
+    const property = await getPropertyService().findById(task.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
     if (task) {

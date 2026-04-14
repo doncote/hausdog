@@ -35,7 +35,8 @@ export function useDeleteEvent() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; itemId: string }) => deleteEvent({ data: { id: input.id } }),
+    mutationFn: (input: { id: string; itemId: string; userId: string }) =>
+      deleteEvent({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: eventKeys.listByItem(variables.itemId) })
       queryClient.removeQueries({ queryKey: eventKeys.detail(variables.id) })

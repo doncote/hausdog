@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { EventService } from '../events/service'
@@ -36,6 +37,7 @@ interface ResolveData {
 }
 
 const getDocumentService = () => new DocumentService({ db: prisma, logger })
+const getPropertyService = () => new PropertyService({ db: prisma, logger })
 
 export const fetchDocumentsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
@@ -73,23 +75,35 @@ export const createDocument = createServerFn({ method: 'POST' })
   })
 
 export const updateDocument = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; input: UpdateDocumentInput }) => d)
+  .inputValidator((d: { id: string; userId: string; input: UpdateDocumentInput }) => d)
   .handler(async ({ data }) => {
     const service = getDocumentService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Document not found')
+    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return service.update(data.id, data.input)
   })
 
 export const updateDocumentStatus = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; status: string }) => d)
+  .inputValidator((d: { id: string; userId: string; status: string }) => d)
   .handler(async ({ data }) => {
     const service = getDocumentService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Document not found')
+    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     return service.updateStatus(data.id, data.status)
   })
 
 export const deleteDocument = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: { id: string; userId: string }) => d)
   .handler(async ({ data }) => {
     const service = getDocumentService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Document not found')
+    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
     return { success: true }
   })
@@ -112,6 +126,8 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
     }) => d,
   )
   .handler(async ({ data }) => {
+    const property = await getPropertyService().findById(data.propertyId, data.userId)
+    if (!property) throw new Error('Property not found or access denied')
     const documentService = getDocumentService()
     const itemService = new ItemService({ db: prisma, logger })
     const eventService = new EventService({ db: prisma, logger })
