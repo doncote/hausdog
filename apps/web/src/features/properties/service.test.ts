@@ -115,6 +115,46 @@ describe('PropertyService', () => {
       expect(result?.id).toBe('prop-1')
       expect(result?.ingestToken).toBe('my-home-abc123')
     })
+
+    it('queries with both id and userId in WHERE clause', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(makePrismaProperty())
+
+      await service.findById('prop-1', 'user-1')
+
+      const whereArg = mockDb.property.findFirst.mock.calls[0][0].where
+      expect(whereArg.id).toBe('prop-1')
+      // accessibleWhere must include userId as an OR condition
+      expect(whereArg.OR).toBeDefined()
+      expect(whereArg.OR).toEqual(
+        expect.arrayContaining([expect.objectContaining({ userId: 'user-1' })]),
+      )
+    })
+
+    it('returns null when db returns null — simulates wrong-user access', async () => {
+      const { service, mockDb } = makeService()
+      // Prisma returns null when WHERE clause filters out the row (wrong userId)
+      mockDb.property.findFirst.mockResolvedValue(null)
+
+      const result = await service.findById('prop-1', 'user-2')
+      expect(result).toBeNull()
+    })
+
+    it('does not return property owned by a different user', async () => {
+      const { service, mockDb } = makeService()
+      // Property exists for user-1; user-2 queries it
+      // Correct behavior: db returns null because userId doesn't match
+      mockDb.property.findFirst.mockResolvedValue(null)
+
+      const result = await service.findById('prop-1', 'user-2')
+
+      expect(result).toBeNull()
+      // Verify the query was scoped to user-2, not user-1
+      const whereArg = mockDb.property.findFirst.mock.calls[0][0].where
+      expect(whereArg.OR).toEqual(
+        expect.arrayContaining([expect.objectContaining({ userId: 'user-2' })]),
+      )
+    })
   })
 
   describe('create', () => {
