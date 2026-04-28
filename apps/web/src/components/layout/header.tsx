@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { Link } from '@tanstack/react-router'
 import {
   Box,
+  Briefcase,
   Building2,
   Camera,
   Check,
@@ -92,6 +93,12 @@ export function Header({ user }: HeaderProps) {
               <Button variant="ghost" size="sm" className="gap-2">
                 <Check className="h-4 w-4" />
                 Review
+              </Button>
+            </Link>
+            <Link to="/work" search={{}}>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Briefcase className="h-4 w-4" />
+                Work
               </Button>
             </Link>
             <Link to="/chat" search={{ conversationId: undefined }}>

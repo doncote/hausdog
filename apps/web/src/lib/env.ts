@@ -25,6 +25,10 @@ const serverEnvSchema = z.object({
   // Google
   GOOGLE_PLACES_API_KEY: z.string().min(1),
 
+  // Lattice work tracking
+  LATTICE_API_URL: z.string().url().optional(),
+  LATTICE_API_KEY: z.string().min(1).optional(),
+
   // Server
   PORT: z.coerce.number(),
   PUBLIC_URL: z.string().url(),

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Box, Camera, Home, MessageSquare, Wrench } from 'lucide-react'
+import { Box, Briefcase, Camera, Home, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -7,7 +7,7 @@ const navItems = [
   { to: '/inventory', icon: Box, label: 'Inventory' },
   { to: '/capture', icon: Camera, label: 'Capture' },
   { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
-  { to: '/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/work', icon: Briefcase, label: 'Work' },
 ] as const
 
 export function MobileNav() {

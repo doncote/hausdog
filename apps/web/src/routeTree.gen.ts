@@ -21,6 +21,7 @@ import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCaptureRouteImport } from './routes/_authenticated/capture'
+import { Route as AuthenticatedWorkRouteImport } from './routes/_authenticated/work'
 import { Route as AuthenticatedSpacesIndexRouteImport } from './routes/_authenticated/spaces/index'
 import { Route as AuthenticatedPropertiesIndexRouteImport } from './routes/_authenticated/properties/index'
 import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
@@ -94,6 +95,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
 const AuthenticatedCaptureRoute = AuthenticatedCaptureRouteImport.update({
   id: '/capture',
   path: '/capture',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedWorkRoute = AuthenticatedWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSpacesIndexRoute =
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/items/$itemId': typeof AuthenticatedItemsItemIdRoute
   '/items/new': typeof AuthenticatedItemsNewRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/items/$itemId': typeof AuthenticatedItemsItemIdRoute
   '/items/new': typeof AuthenticatedItemsNewRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/work': typeof AuthenticatedWorkRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/items/$itemId': typeof AuthenticatedItemsItemIdRoute
   '/_authenticated/items/new': typeof AuthenticatedItemsNewRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/review'
     | '/settings'
+    | '/work'
     | '/auth/callback'
     | '/items/$itemId'
     | '/items/new'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/review'
     | '/settings'
+    | '/work'
     | '/auth/callback'
     | '/items/$itemId'
     | '/items/new'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/maintenance'
     | '/_authenticated/review'
     | '/_authenticated/settings'
+    | '/_authenticated/work'
     | '/auth/callback'
     | '/_authenticated/items/$itemId'
     | '/_authenticated/items/new'
@@ -438,6 +450,13 @@ declare module '@tanstack/react-router' {
       path: '/capture'
       fullPath: '/capture'
       preLoaderRoute: typeof AuthenticatedCaptureRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/work': {
+      id: '/_authenticated/work'
+      path: '/work'
+      fullPath: '/work'
+      preLoaderRoute: typeof AuthenticatedWorkRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/spaces/': {
@@ -574,6 +593,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedWorkRoute: typeof AuthenticatedWorkRoute
   AuthenticatedItemsItemIdRoute: typeof AuthenticatedItemsItemIdRoute
   AuthenticatedItemsNewRoute: typeof AuthenticatedItemsNewRoute
   AuthenticatedPropertiesPropertyIdRoute: typeof AuthenticatedPropertiesPropertyIdRouteWithChildren
@@ -592,6 +612,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedWorkRoute: AuthenticatedWorkRoute,
   AuthenticatedItemsItemIdRoute: AuthenticatedItemsItemIdRoute,
   AuthenticatedItemsNewRoute: AuthenticatedItemsNewRoute,
   AuthenticatedPropertiesPropertyIdRoute:
