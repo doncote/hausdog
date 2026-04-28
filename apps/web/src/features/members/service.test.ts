@@ -181,6 +181,71 @@ describe('PropertyMemberService', () => {
     })
   })
 
+  describe('getMembership', () => {
+    it('returns null when no active membership found', async () => {
+      vi.mocked(deps.db.propertyMember.findFirst).mockResolvedValue(null)
+
+      const result = await service.getMembership('prop-1', 'user-2')
+
+      expect(deps.db.propertyMember.findFirst).toHaveBeenCalledWith({
+        where: { propertyId: 'prop-1', userId: 'user-2', status: 'active' },
+      })
+      expect(result).toBeNull()
+    })
+
+    it('returns domain member when active membership exists', async () => {
+      vi.mocked(deps.db.propertyMember.findFirst).mockResolvedValue(makeMember())
+
+      const result = await service.getMembership('prop-1', 'user-2')
+
+      expect(result).toMatchObject({ id: 'member-1', status: 'active' })
+    })
+  })
+
+  describe('findPendingForEmail', () => {
+    it('queries with lowercased email and pending status', async () => {
+      vi.mocked(deps.db.propertyMember.findMany).mockResolvedValue([])
+
+      await service.findPendingForEmail('Jane@Example.com')
+
+      expect(deps.db.propertyMember.findMany).toHaveBeenCalledWith({
+        where: { email: 'jane@example.com', status: 'pending' },
+      })
+    })
+
+    it('returns mapped members', async () => {
+      const record = makeMember({ status: 'pending' })
+      vi.mocked(deps.db.propertyMember.findMany).mockResolvedValue([record])
+
+      const result = await service.findPendingForEmail('jane@example.com')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ id: 'member-1', status: 'pending' })
+    })
+  })
+
+  describe('updateRole', () => {
+    it('updates member role', async () => {
+      const record = makeMember({ role: 'editor' })
+      vi.mocked(deps.db.propertyMember.update).mockResolvedValue(record)
+
+      await service.updateRole('member-1', { role: 'editor' })
+
+      expect(deps.db.propertyMember.update).toHaveBeenCalledWith({
+        where: { id: 'member-1' },
+        data: { role: 'editor' },
+      })
+    })
+
+    it('returns updated member', async () => {
+      vi.mocked(deps.db.propertyMember.update).mockResolvedValue(makeMember({ role: 'editor' }))
+
+      const result = await service.updateRole('member-1', { role: 'editor' })
+
+      expect(result).toMatchObject({ id: 'member-1', role: 'editor' })
+    })
+  })
+
   describe('remove', () => {
     it('deletes the member record', async () => {
       vi.mocked(deps.db.propertyMember.delete).mockResolvedValue(makeMember())
