@@ -96,6 +96,156 @@ describe('MaintenanceService', () => {
     })
   })
 
+  describe('findAllForItem', () => {
+    it('queries by itemId excluding dismissed tasks', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([])
+
+      await service.findAllForItem('item-1')
+
+      const call = mockDb.maintenanceTask.findMany.mock.calls[0][0]
+      expect(call.where.itemId).toBe('item-1')
+      expect(call.where.status).toEqual({ not: 'dismissed' })
+    })
+
+    it('returns mapped tasks with relations', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([makePrismaTaskWithRelations()])
+
+      const result = await service.findAllForItem('item-1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]?.name).toBe('Change HVAC Filter')
+      expect(result[0]?.item?.name).toBe('HVAC System')
+    })
+  })
+
+  describe('findPaginatedForProperty', () => {
+    it('returns paginated result with correct metadata', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([makePrismaTaskWithRelations()])
+      mockDb.maintenanceTask.count.mockResolvedValue(20)
+
+      const result = await service.findPaginatedForProperty('prop-1', { page: 2, limit: 5 })
+
+      expect(result.total).toBe(20)
+      expect(result.page).toBe(2)
+      expect(result.limit).toBe(5)
+      expect(result.data).toHaveLength(1)
+    })
+
+    it('applies skip based on page and limit', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([])
+      mockDb.maintenanceTask.count.mockResolvedValue(0)
+
+      await service.findPaginatedForProperty('prop-1', { page: 3, limit: 10 })
+
+      const call = mockDb.maintenanceTask.findMany.mock.calls[0][0]
+      expect(call.skip).toBe(20)
+      expect(call.take).toBe(10)
+    })
+
+    it('excludes dismissed tasks', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([])
+      mockDb.maintenanceTask.count.mockResolvedValue(0)
+
+      await service.findPaginatedForProperty('prop-1', { page: 1, limit: 10 })
+
+      const call = mockDb.maintenanceTask.findMany.mock.calls[0][0]
+      expect(call.where.status).toEqual({ not: 'dismissed' })
+    })
+  })
+
+  describe('findPaginatedForItem', () => {
+    it('scopes query to itemId', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([])
+      mockDb.maintenanceTask.count.mockResolvedValue(0)
+
+      await service.findPaginatedForItem('item-1', { page: 1, limit: 10 })
+
+      const call = mockDb.maintenanceTask.findMany.mock.calls[0][0]
+      expect(call.where.itemId).toBe('item-1')
+      expect(call.where.status).toEqual({ not: 'dismissed' })
+    })
+
+    it('returns paginated result with correct metadata', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findMany.mockResolvedValue([makePrismaTaskWithRelations()])
+      mockDb.maintenanceTask.count.mockResolvedValue(7)
+
+      const result = await service.findPaginatedForItem('item-1', { page: 1, limit: 10 })
+
+      expect(result.total).toBe(7)
+      expect(result.data).toHaveLength(1)
+    })
+  })
+
+  describe('findById', () => {
+    it('returns null when not found', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findUnique.mockResolvedValue(null)
+
+      const result = await service.findById('nonexistent')
+
+      expect(result).toBeNull()
+    })
+
+    it('returns domain task with relations when found', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.findUnique.mockResolvedValue(makePrismaTaskWithRelations())
+
+      const result = await service.findById('task-1')
+
+      expect(result?.id).toBe('task-1')
+      expect(result?.property?.name).toBe('My Home')
+      expect(result?.item?.name).toBe('HVAC System')
+    })
+  })
+
+  describe('update', () => {
+    it('updates task with provided fields', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.update.mockResolvedValue(
+        makePrismaTask({ name: 'Replace Filter', intervalMonths: 6 }),
+      )
+
+      const result = await service.update('task-1', 'user-1', {
+        name: 'Replace Filter',
+        intervalMonths: 6,
+      })
+
+      expect(mockDb.maintenanceTask.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'task-1' } }),
+      )
+      expect(result.name).toBe('Replace Filter')
+      expect(result.intervalMonths).toBe(6)
+    })
+
+    it('sets updatedById to userId', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.update.mockResolvedValue(makePrismaTask())
+
+      await service.update('task-1', 'user-42', { name: 'Test' })
+
+      const call = mockDb.maintenanceTask.update.mock.calls[0][0]
+      expect(call.data.updatedById).toBe('user-42')
+    })
+
+    it('only includes defined fields in update data', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.maintenanceTask.update.mockResolvedValue(makePrismaTask())
+
+      await service.update('task-1', 'user-1', { intervalMonths: 12 })
+
+      const call = mockDb.maintenanceTask.update.mock.calls[0][0]
+      expect(call.data.intervalMonths).toBe(12)
+      expect(call.data.name).toBeUndefined()
+    })
+  })
+
   describe('findUpcoming', () => {
     it('queries only active tasks for given propertyIds', async () => {
       const { service, mockDb } = makeService()

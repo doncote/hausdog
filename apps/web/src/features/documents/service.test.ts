@@ -203,6 +203,79 @@ describe('DocumentService', () => {
     })
   })
 
+  describe('findPendingReview', () => {
+    it('queries with ready_for_review status', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.findMany.mockResolvedValue([])
+
+      await service.findPendingReview('prop-1')
+
+      const call = mockDb.document.findMany.mock.calls[0][0]
+      expect(call.where).toEqual({ propertyId: 'prop-1', status: 'ready_for_review' })
+    })
+
+    it('returns mapped documents with relations', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.findMany.mockResolvedValue([
+        makePrismaDocumentWithRelations({ status: 'ready_for_review' }),
+      ])
+
+      const result = await service.findPendingReview('prop-1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]?.property?.name).toBe('My Home')
+    })
+  })
+
+  describe('findByStatus', () => {
+    it('queries with propertyId and status', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.findMany.mockResolvedValue([])
+
+      await service.findByStatus('prop-1', 'confirmed')
+
+      const call = mockDb.document.findMany.mock.calls[0][0]
+      expect(call.where).toEqual({ propertyId: 'prop-1', status: 'confirmed' })
+    })
+
+    it('returns mapped documents', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.findMany.mockResolvedValue([
+        makePrismaDocumentWithRelations({ status: 'confirmed' }),
+      ])
+
+      const result = await service.findByStatus('prop-1', 'confirmed')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]?.id).toBe('doc-1')
+    })
+  })
+
+  describe('update', () => {
+    it('updates document with provided fields', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.update.mockResolvedValue(makePrismaDocument({ status: 'confirmed' }))
+
+      const result = await service.update('doc-1', { status: 'confirmed' })
+
+      expect(mockDb.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'doc-1' } }),
+      )
+      expect(result.status).toBe('confirmed')
+    })
+
+    it('only includes defined fields in update data', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.document.update.mockResolvedValue(makePrismaDocument())
+
+      await service.update('doc-1', { extractedText: 'parsed text' })
+
+      const call = mockDb.document.update.mock.calls[0][0]
+      expect(call.data.extractedText).toBe('parsed text')
+      expect(call.data.status).toBeUndefined()
+    })
+  })
+
   describe('updateStatus', () => {
     it('updates only the status field', async () => {
       const { service, mockDb } = makeService()
