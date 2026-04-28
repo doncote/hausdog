@@ -8,6 +8,7 @@ import { itemsRouter } from './routes/items'
 import { maintenanceRouter } from './routes/maintenance'
 import { propertiesRouter } from './routes/properties'
 import { spacesRouter } from './routes/spaces'
+import { workRouter } from './routes/work'
 
 // Create the API app with typed context
 export const api = new OpenAPIHono<{ Variables: AuthContext }>()
@@ -51,6 +52,7 @@ api.use('/documents/*', apiKeyAuth)
 api.use('/maintenance/*', apiKeyAuth)
 api.use('/categories/*', apiKeyAuth)
 api.use('/auth/*', apiKeyAuth)
+api.use('/companies/*', apiKeyAuth)
 
 // Mount routers
 api.route('/', propertiesRouter)
@@ -61,5 +63,6 @@ api.route('/', maintenanceRouter)
 api.route('/', documentsRouter)
 api.route('/', categoriesRouter)
 api.route('/', authRouter)
+api.route('/', workRouter)
 
 export type ApiApp = typeof api
