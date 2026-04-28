@@ -3,6 +3,7 @@ import { Box, Camera, ChevronRight, Filter, Home, Loader2, Plus, Search } from '
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Pagination } from '@/components/ui/pagination'
 import {
   Select,
   SelectContent,
@@ -15,6 +16,8 @@ import { useItemsForProperty } from '@/features/items'
 import { useSpacesForProperty } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
+const PAGE_SIZE = 24
+
 export const Route = createFileRoute('/_authenticated/inventory')({
   component: InventoryPage,
 })
@@ -26,12 +29,13 @@ function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [spaceFilter, setSpaceFilter] = useState<string>('all')
+  const [page, setPage] = useState(1)
 
   const { data: items, isPending: itemsLoading } = useItemsForProperty(currentProperty?.id)
   const { data: spaces } = useSpacesForProperty(currentProperty?.id)
   const { data: categories } = useCategories(user?.id)
 
-  // Filter items
+  // Filter items across the full set
   const filteredItems =
     items?.filter((item) => {
       const matchesSearch =
@@ -48,6 +52,18 @@ function InventoryPage() {
 
       return matchesSearch && matchesCategory && matchesSpace
     }) || []
+
+  const totalFiltered = filteredItems.length
+  const pages = Math.ceil(totalFiltered / PAGE_SIZE)
+  const safePage = Math.min(page, Math.max(1, pages))
+  const pagedItems = filteredItems.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  function handleFilterChange(setter: (v: string) => void) {
+    return (value: string) => {
+      setter(value)
+      setPage(1)
+    }
+  }
 
   if (!isLoaded) {
     return (
@@ -114,12 +130,12 @@ function InventoryPage() {
           <Input
             placeholder="Search items..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
             className="pl-10"
           />
         </div>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={handleFilterChange(setCategoryFilter)}>
           <SelectTrigger className="w-[160px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Category" />
@@ -135,7 +151,7 @@ function InventoryPage() {
         </Select>
 
         {spaces && spaces.length > 0 && (
-          <Select value={spaceFilter} onValueChange={setSpaceFilter}>
+          <Select value={spaceFilter} onValueChange={handleFilterChange(setSpaceFilter)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Space" />
             </SelectTrigger>
@@ -182,6 +198,7 @@ function InventoryPage() {
                 setSearchQuery('')
                 setCategoryFilter('all')
                 setSpaceFilter('all')
+                setPage(1)
               }}
             >
               Clear filters
@@ -207,34 +224,44 @@ function InventoryPage() {
           )}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => (
-            <Link
-              key={item.id}
-              to="/items/$itemId"
-              params={{ itemId: item.id }}
-              className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow block"
-            >
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-secondary p-2.5">
-                  <Box className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.category}
-                    {item.space && ` · ${item.space.name}`}
-                  </p>
-                  {(item.manufacturer || item.model) && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {[item.manufacturer, item.model].filter(Boolean).join(' ')}
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pagedItems.map((item) => (
+              <Link
+                key={item.id}
+                to="/items/$itemId"
+                params={{ itemId: item.id }}
+                className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow block"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-secondary p-2.5">
+                    <Box className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.category}
+                      {item.space && ` · ${item.space.name}`}
                     </p>
-                  )}
+                    {(item.manufacturer || item.model) && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {[item.manufacturer, item.model].filter(Boolean).join(' ')}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+          <Pagination
+            page={safePage}
+            pages={pages}
+            total={totalFiltered}
+            limit={PAGE_SIZE}
+            onPageChange={setPage}
+            className="mt-6"
+          />
+        </>
       )}
     </div>
   )

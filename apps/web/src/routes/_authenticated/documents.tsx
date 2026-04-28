@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/pagination'
 import {
   Dialog,
   DialogContent,
@@ -82,6 +83,7 @@ function DocumentsPage() {
 
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithRelations | null>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -129,7 +131,9 @@ function DocumentsPage() {
     }
   }
 
-  // Filter documents
+  const DOC_PAGE_SIZE = 20
+
+  // Filter documents across the full set
   const filteredDocuments =
     documents?.filter((doc) => {
       const matchesSearch =
@@ -141,6 +145,14 @@ function DocumentsPage() {
 
       return matchesSearch && matchesStatus
     }) || []
+
+  const totalDocs = filteredDocuments.length
+  const docPages = Math.ceil(totalDocs / DOC_PAGE_SIZE)
+  const safeDocPage = Math.min(page, Math.max(1, docPages))
+  const pagedDocuments = filteredDocuments.slice(
+    (safeDocPage - 1) * DOC_PAGE_SIZE,
+    safeDocPage * DOC_PAGE_SIZE,
+  )
 
   const handleViewDocument = async (doc: DocumentWithRelations) => {
     setSelectedDocument(doc)
@@ -287,12 +299,12 @@ function DocumentsPage() {
           <Input
             placeholder="Search documents..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
             className="pl-10"
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
           <SelectTrigger className="w-[180px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Status" />
@@ -331,6 +343,7 @@ function DocumentsPage() {
               onClick={() => {
                 setSearchQuery('')
                 setStatusFilter('all')
+                setPage(1)
               }}
             >
               Clear filters
@@ -345,8 +358,9 @@ function DocumentsPage() {
           )}
         </div>
       ) : (
+        <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredDocuments.map((doc) => (
+          {pagedDocuments.map((doc) => (
             <div
               key={doc.id}
               className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow"
@@ -409,6 +423,15 @@ function DocumentsPage() {
             </div>
           ))}
         </div>
+        <Pagination
+          page={safeDocPage}
+          pages={docPages}
+          total={totalDocs}
+          limit={DOC_PAGE_SIZE}
+          onPageChange={setPage}
+          className="mt-6"
+        />
+        </>
       )}
 
       {/* Document Preview Dialog */}

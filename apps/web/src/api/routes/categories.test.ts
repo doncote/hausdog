@@ -26,7 +26,6 @@ import { categoriesRouter } from './categories'
 
 const USER_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
 const CAT_ID = '550e8400-e29b-41d4-a716-446655440000'
-const MISSING_ID = '12345678-1234-4234-8234-123456789012'
 
 function makeApp() {
   const app = new OpenAPIHono<{ Variables: AuthContext }>()
