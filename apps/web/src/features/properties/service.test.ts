@@ -50,12 +50,20 @@ function makePrismaProperty(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function makePrismaPropertyWithCounts(overrides: Record<string, unknown> = {}) {
+  return {
+    ...makePrismaProperty(overrides),
+    _count: { items: 5, spaces: 2 },
+  }
+}
+
 function makeService(dbOverrides: Record<string, unknown> = {}) {
   const mockDb = {
     property: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -183,14 +191,172 @@ describe('PropertyService', () => {
     })
   })
 
-  describe('delete', () => {
-    it('calls db delete with correct id', async () => {
+  describe('findAllForUserWithCounts', () => {
+    it('returns properties with item and space counts', async () => {
       const { service, mockDb } = makeService()
+      mockDb.property.findMany.mockResolvedValue([makePrismaPropertyWithCounts()])
+
+      const result = await service.findAllForUserWithCounts('user-1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]?._count).toEqual({ items: 5, spaces: 2 })
+      expect(result[0]?.name).toBe('My Home')
+    })
+
+    it('returns empty array when no properties', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findMany.mockResolvedValue([])
+
+      const result = await service.findAllForUserWithCounts('user-1')
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('findPaginatedForUser', () => {
+    it('returns paginated result with correct metadata', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findMany.mockResolvedValue([makePrismaPropertyWithCounts()])
+      mockDb.property.count.mockResolvedValue(30)
+
+      const result = await service.findPaginatedForUser('user-1', { page: 2, limit: 10 })
+
+      expect(result.data).toHaveLength(1)
+      expect(result.total).toBe(30)
+      expect(result.page).toBe(2)
+      expect(result.limit).toBe(10)
+    })
+
+    it('applies skip based on page and limit', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findMany.mockResolvedValue([])
+      mockDb.property.count.mockResolvedValue(0)
+
+      await service.findPaginatedForUser('user-1', { page: 3, limit: 5 })
+
+      const call = mockDb.property.findMany.mock.calls[0][0]
+      expect(call.skip).toBe(10)
+      expect(call.take).toBe(5)
+    })
+  })
+
+  describe('canWrite', () => {
+    it('returns true when property record is found', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue({ id: 'prop-1' })
+
+      const result = await service.canWrite('prop-1', 'user-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('returns false when no record found', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(null)
+
+      const result = await service.canWrite('prop-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('isOwner', () => {
+    it('returns true when property belongs to user', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue({ id: 'prop-1' })
+
+      const result = await service.isOwner('prop-1', 'user-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('returns false when user does not own property', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(null)
+
+      const result = await service.isOwner('prop-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+
+    it('queries with both id and userId', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(null)
+
+      await service.isOwner('prop-1', 'user-1')
+
+      expect(mockDb.property.findFirst).toHaveBeenCalledWith({
+        where: { id: 'prop-1', userId: 'user-1' },
+        select: { id: true },
+      })
+    })
+  })
+
+  describe('update', () => {
+    it('updates and returns domain property when user can write', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue({ id: 'prop-1' }) // canWrite check
+      mockDb.property.update.mockResolvedValue(makePrismaProperty({ name: 'Updated Home' }))
+
+      const result = await service.update('prop-1', 'user-1', { name: 'Updated Home' })
+
+      expect(mockDb.property.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'prop-1' } }),
+      )
+      expect(result.name).toBe('Updated Home')
+    })
+
+    it('throws Access denied when user cannot write', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(null) // canWrite returns false
+
+      await expect(service.update('prop-1', 'user-2', { name: 'Hacked' })).rejects.toThrow(
+        'Access denied',
+      )
+      expect(mockDb.property.update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('findByIngestToken', () => {
+    it('returns null when token not found', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findUnique.mockResolvedValue(null)
+
+      const result = await service.findByIngestToken('unknown-token')
+
+      expect(result).toBeNull()
+      expect(mockDb.property.findUnique).toHaveBeenCalledWith({
+        where: { ingestToken: 'unknown-token' },
+      })
+    })
+
+    it('returns domain property when token matches', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findUnique.mockResolvedValue(makePrismaProperty())
+
+      const result = await service.findByIngestToken('my-home-abc123')
+
+      expect(result).not.toBeNull()
+      expect(result?.ingestToken).toBe('my-home-abc123')
+    })
+  })
+
+  describe('delete', () => {
+    it('calls db delete when user is owner', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue({ id: 'prop-1' }) // isOwner check
       mockDb.property.delete.mockResolvedValue(undefined)
 
       await service.delete('prop-1', 'user-1')
 
       expect(mockDb.property.delete).toHaveBeenCalledWith({ where: { id: 'prop-1' } })
+    })
+
+    it('throws when user is not the owner', async () => {
+      const { service, mockDb } = makeService()
+      mockDb.property.findFirst.mockResolvedValue(null) // isOwner returns false
+
+      await expect(service.delete('prop-1', 'user-2')).rejects.toThrow('Access denied')
+      expect(mockDb.property.delete).not.toHaveBeenCalled()
     })
   })
 })
