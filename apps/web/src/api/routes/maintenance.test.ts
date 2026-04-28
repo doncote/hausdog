@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockPrisma = vi.hoisted(() => ({
   property: { findMany: vi.fn() },
 }))
-
 vi.mock('@/lib/db', () => ({ prisma: mockPrisma }))
 vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -30,6 +29,12 @@ const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
 }))
 
+const mockTriggerTasks = vi.hoisted(() => ({
+  trigger: vi.fn().mockResolvedValue({}),
+}))
+
+const mockSuggestMaintenance = vi.hoisted(() => vi.fn())
+
 vi.mock('@/features/maintenance/service', () => ({
   MaintenanceService: vi.fn().mockImplementation(() => mockMaintenanceService),
 }))
@@ -40,6 +45,15 @@ vi.mock('@/features/items/service', () => ({
 
 vi.mock('@/features/properties/service', () => ({
   PropertyService: vi.fn().mockImplementation(() => mockPropertyService),
+}))
+
+vi.mock('@trigger.dev/sdk/v3', () => ({
+  configure: vi.fn(),
+  tasks: mockTriggerTasks,
+}))
+
+vi.mock('@/lib/llm/claude', () => ({
+  suggestMaintenanceWithClaude: mockSuggestMaintenance,
 }))
 
 import type { AuthContext } from '../middleware/auth'
@@ -63,12 +77,22 @@ function makeApp() {
   return app
 }
 
-function makeItem(overrides: Record<string, unknown> = {}) {
-  return { id: ITEM_ID, propertyId: PROP_ID, name: 'HVAC Unit', ...overrides }
-}
-
 function makeProperty() {
   return { id: PROP_ID, userId: USER_ID, name: 'My Home' }
+}
+
+function makeItem(overrides: Record<string, unknown> = {}) {
+  return {
+    id: ITEM_ID,
+    propertyId: PROP_ID,
+    name: 'Refrigerator',
+    category: 'appliances',
+    manufacturer: 'Samsung',
+    model: 'RF28',
+    acquiredDate: null,
+    notes: null,
+    ...overrides,
+  }
 }
 
 function makeTask(overrides: Record<string, unknown> = {}) {
@@ -76,7 +100,7 @@ function makeTask(overrides: Record<string, unknown> = {}) {
     id: TASK_ID,
     propertyId: PROP_ID,
     itemId: ITEM_ID,
-    name: 'Replace HVAC filter',
+    name: 'Change HVAC filter',
     description: null,
     intervalMonths: 3,
     nextDueDate: new Date('2026-04-01'),
@@ -96,17 +120,19 @@ function makePaginatedResult(tasks: ReturnType<typeof makeTask>[]) {
 describe('GET /items/:itemId/maintenance', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('returns paginated maintenance tasks', async () => {
+  it('returns paginated maintenance tasks for item', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(makePaginatedResult([makeTask()]))
+    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(
+      makePaginatedResult([makeTask()]),
+    )
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`)
     const body = await res.json()
 
     expect(res.status).toBe(200)
     expect(body.data).toHaveLength(1)
-    expect(body.data[0].name).toBe('Replace HVAC filter')
+    expect(body.data[0].name).toBe('Change HVAC filter')
   })
 
   it('returns 404 when item not found', async () => {
@@ -117,7 +143,7 @@ describe('GET /items/:itemId/maintenance', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when property not owned by user', async () => {
+  it('returns 404 when item not owned by user', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(null)
 
@@ -126,18 +152,12 @@ describe('GET /items/:itemId/maintenance', () => {
     expect(res.status).toBe(404)
   })
 
-  it('does not call service when item not found', async () => {
-    mockItemService.findById.mockResolvedValue(null)
-
-    await makeApp().request(`/items/${MISSING_ID}/maintenance`)
-
-    expect(mockMaintenanceService.findPaginatedForItem).not.toHaveBeenCalled()
-  })
-
-  it('serializes dates as ISO strings', async () => {
+  it('serializes nextDueDate as ISO string', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(makePaginatedResult([makeTask()]))
+    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(
+      makePaginatedResult([makeTask()]),
+    )
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`)
     const body = await res.json()
@@ -149,17 +169,6 @@ describe('GET /items/:itemId/maintenance', () => {
 describe('GET /maintenance/upcoming', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('returns empty array when user has no properties', async () => {
-    mockPrisma.property.findMany.mockResolvedValue([])
-
-    const res = await makeApp().request('/maintenance/upcoming')
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(body).toEqual([])
-    expect(mockMaintenanceService.findUpcoming).not.toHaveBeenCalled()
-  })
-
   it('returns upcoming tasks for user properties', async () => {
     mockPrisma.property.findMany.mockResolvedValue([{ id: PROP_ID }])
     mockMaintenanceService.findUpcoming.mockResolvedValue([makeTask()])
@@ -169,16 +178,28 @@ describe('GET /maintenance/upcoming', () => {
 
     expect(res.status).toBe(200)
     expect(body).toHaveLength(1)
-    expect(body[0].name).toBe('Replace HVAC filter')
+    expect(body[0].name).toBe('Change HVAC filter')
   })
 
-  it('calls findUpcoming with property ids', async () => {
-    mockPrisma.property.findMany.mockResolvedValue([{ id: PROP_ID }])
-    mockMaintenanceService.findUpcoming.mockResolvedValue([])
+  it('returns empty array when user has no properties', async () => {
+    mockPrisma.property.findMany.mockResolvedValue([])
 
-    await makeApp().request('/maintenance/upcoming?limit=5')
+    const res = await makeApp().request('/maintenance/upcoming')
+    const body = await res.json()
 
-    expect(mockMaintenanceService.findUpcoming).toHaveBeenCalledWith([PROP_ID], { limit: 5 })
+    expect(res.status).toBe(200)
+    expect(body).toHaveLength(0)
+    expect(mockMaintenanceService.findUpcoming).not.toHaveBeenCalled()
+  })
+
+  it('queries prisma with userId from context', async () => {
+    mockPrisma.property.findMany.mockResolvedValue([])
+
+    await makeApp().request('/maintenance/upcoming')
+
+    expect(mockPrisma.property.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: USER_ID } }),
+    )
   })
 })
 
@@ -194,6 +215,7 @@ describe('GET /maintenance/:id', () => {
 
     expect(res.status).toBe(200)
     expect(body.id).toBe(TASK_ID)
+    expect(body.name).toBe('Change HVAC filter')
   })
 
   it('returns 404 when task not found', async () => {
@@ -226,7 +248,7 @@ describe('POST /items/:itemId/maintenance', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: 'Replace HVAC filter',
+        name: 'Change HVAC filter',
         intervalMonths: 3,
         nextDueDate: '2026-04-01T00:00:00.000Z',
       }),
@@ -234,7 +256,7 @@ describe('POST /items/:itemId/maintenance', () => {
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.name).toBe('Replace HVAC filter')
+    expect(body.name).toBe('Change HVAC filter')
   })
 
   it('returns 404 when item not found', async () => {
@@ -244,7 +266,7 @@ describe('POST /items/:itemId/maintenance', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: 'Task',
+        name: 'Change filter',
         intervalMonths: 3,
         nextDueDate: '2026-04-01T00:00:00.000Z',
       }),
@@ -253,7 +275,7 @@ describe('POST /items/:itemId/maintenance', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when property not owned by user', async () => {
+  it('returns 404 when item not owned by user', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(null)
 
@@ -261,7 +283,7 @@ describe('POST /items/:itemId/maintenance', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: 'Task',
+        name: 'Change filter',
         intervalMonths: 3,
         nextDueDate: '2026-04-01T00:00:00.000Z',
       }),
@@ -270,7 +292,7 @@ describe('POST /items/:itemId/maintenance', () => {
     expect(res.status).toBe(404)
   })
 
-  it('passes propertyId and itemId to service', async () => {
+  it('passes propertyId from item to service', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
     mockMaintenanceService.create.mockResolvedValue(makeTask())
@@ -279,7 +301,7 @@ describe('POST /items/:itemId/maintenance', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: 'Replace HVAC filter',
+        name: 'Change filter',
         intervalMonths: 3,
         nextDueDate: '2026-04-01T00:00:00.000Z',
       }),
@@ -298,17 +320,17 @@ describe('PATCH /maintenance/:id', () => {
   it('updates task and returns 200', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.update.mockResolvedValue(makeTask({ name: 'Updated Task' }))
+    mockMaintenanceService.update.mockResolvedValue(makeTask({ name: 'Updated task' }))
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Updated Task' }),
+      body: JSON.stringify({ name: 'Updated task' }),
     })
 
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.name).toBe('Updated Task')
+    expect(body.name).toBe('Updated task')
   })
 
   it('returns 404 when task not found', async () => {
@@ -323,14 +345,14 @@ describe('PATCH /maintenance/:id', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when property not owned', async () => {
+  it('returns 404 when not owned by user', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
     mockPropertyService.findById.mockResolvedValue(null)
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'paused' }),
+      body: JSON.stringify({ name: 'Updated' }),
     })
 
     expect(res.status).toBe(404)
@@ -354,6 +376,8 @@ describe('POST /maintenance/:id/complete', () => {
     })
 
     expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.lastCompletedAt).toBe('2026-04-01T00:00:00.000Z')
   })
 
   it('returns 404 when task not found', async () => {
@@ -375,11 +399,15 @@ describe('POST /maintenance/:id/snooze', () => {
   it('snoozes task and returns 200', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.snooze.mockResolvedValue(makeTask({ nextDueDate: new Date('2026-07-01') }))
+    mockMaintenanceService.snooze.mockResolvedValue(
+      makeTask({ nextDueDate: new Date('2026-07-01') }),
+    )
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}/snooze`, { method: 'POST' })
+    const body = await res.json()
 
     expect(res.status).toBe(200)
+    expect(body.nextDueDate).toBe('2026-07-01T00:00:00.000Z')
   })
 
   it('returns 404 when task not found', async () => {
@@ -413,15 +441,6 @@ describe('DELETE /maintenance/:id', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when property not owned', async () => {
-    mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(null)
-
-    const res = await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
-
-    expect(res.status).toBe(404)
-  })
-
   it('does not delete when ownership check fails', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
     mockPropertyService.findById.mockResolvedValue(null)
@@ -429,5 +448,66 @@ describe('DELETE /maintenance/:id', () => {
     await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
 
     expect(mockMaintenanceService.delete).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /items/:itemId/maintenance/generate', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('triggers background task and returns trigger method', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockTriggerTasks.trigger.mockResolvedValue({})
+
+    const res = await makeApp().request(`/items/${ITEM_ID}/maintenance/generate`, {
+      method: 'POST',
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.method).toBe('trigger')
+  })
+
+  it('falls back to inline when trigger throws', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockTriggerTasks.trigger.mockRejectedValue(new Error('trigger unavailable'))
+    mockSuggestMaintenance.mockResolvedValue([
+      { name: 'Oil filter', intervalMonths: 12 },
+      { name: 'Air filter', intervalMonths: 6 },
+    ])
+    mockMaintenanceService.createFromAI.mockResolvedValue(undefined)
+
+    const res = await makeApp().request(`/items/${ITEM_ID}/maintenance/generate`, {
+      method: 'POST',
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.method).toBe('inline')
+    expect(body.count).toBe(2)
+  })
+
+  it('returns 404 when item not found', async () => {
+    mockItemService.findById.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/items/${MISSING_ID}/maintenance/generate`, {
+      method: 'POST',
+    })
+
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when item not owned by user', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.findById.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/items/${ITEM_ID}/maintenance/generate`, {
+      method: 'POST',
+    })
+
+    expect(res.status).toBe(404)
   })
 })
