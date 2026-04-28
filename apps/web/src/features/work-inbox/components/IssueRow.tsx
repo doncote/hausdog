@@ -15,7 +15,7 @@ const TYPE_ICONS: Record<string, string> = {
   chore: '○',
 }
 
-function relativeTime(dateStr: string): string {
+export function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const minutes = Math.floor(diff / 60_000)
   if (minutes < 60) return `${minutes}m ago`
