@@ -17,7 +17,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   })),
 }))
 
-import { resolveWithClaude, suggestMaintenanceWithClaude } from './claude'
+import { chatWithClaude, resolveWithClaude, suggestMaintenanceWithClaude } from './claude'
 import type { GeminiExtractionResult } from './gemini'
 
 const ITEM_ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
@@ -183,5 +183,78 @@ describe('suggestMaintenanceWithClaude', () => {
     await expect(suggestMaintenanceWithClaude(item)).rejects.toThrow(
       'No text response from Claude',
     )
+  })
+})
+
+// ─── chatWithClaude ────────────────────────────────────────────────────────
+
+describe('chatWithClaude', () => {
+  const property = {
+    name: 'My Home',
+    address: '123 Main St',
+    yearBuilt: 2005,
+    propertyType: 'single_family',
+  }
+
+  const messages = [
+    { role: 'user' as const, content: 'When should I replace my HVAC filter?' },
+  ]
+
+  const relevantItems = [
+    {
+      id: 'item-1',
+      name: 'HVAC System',
+      category: 'hvac',
+      manufacturer: 'Carrier',
+      model: 'XYZ',
+      serialNumber: null,
+      acquiredDate: new Date('2020-01-01'),
+      notes: null,
+    },
+  ]
+
+  it('returns text response from Claude', async () => {
+    mockCreate.mockResolvedValue(makeTextResponse('You should replace it every 3 months.'))
+
+    const result = await chatWithClaude(messages, property, relevantItems)
+
+    expect(result).toBe('You should replace it every 3 months.')
+  })
+
+  it('calls the API with user messages', async () => {
+    mockCreate.mockResolvedValue(makeTextResponse('Response text'))
+
+    await chatWithClaude(messages, property, relevantItems)
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [{ role: 'user', content: 'When should I replace my HVAC filter?' }],
+      }),
+    )
+  })
+
+  it('includes property name in system prompt', async () => {
+    mockCreate.mockResolvedValue(makeTextResponse('ok'))
+
+    await chatWithClaude(messages, property, relevantItems)
+
+    const call = mockCreate.mock.calls[0][0]
+    expect(call.system).toContain('My Home')
+  })
+
+  it('throws when Claude returns no text content', async () => {
+    mockCreate.mockResolvedValue({ content: [] })
+
+    await expect(chatWithClaude(messages, property, relevantItems)).rejects.toThrow(
+      'No text response from Claude',
+    )
+  })
+
+  it('works with no relevant items', async () => {
+    mockCreate.mockResolvedValue(makeTextResponse('General advice here.'))
+
+    const result = await chatWithClaude(messages, property, [])
+
+    expect(result).toBe('General advice here.')
   })
 })
