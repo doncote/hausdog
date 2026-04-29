@@ -6,12 +6,15 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockStorageRemove = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }))
+const mockStorageUpload = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }))
+
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     storage: {
       from: vi.fn(() => ({
-        upload: vi.fn().mockResolvedValue({ error: null }),
-        remove: vi.fn().mockResolvedValue({ error: null }),
+        upload: mockStorageUpload,
+        remove: mockStorageRemove,
       })),
     },
   })),
@@ -252,5 +255,53 @@ describe('DELETE /documents/:id', () => {
     await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
 
     expect(mockDocumentService.delete).not.toHaveBeenCalled()
+  })
+
+  it('removes file from storage when storagePath is set', async () => {
+    process.env.SUPABASE_URL = 'https://test.supabase.co'
+    process.env.SUPABASE_KEY = 'test-key'
+    mockDocumentService.findById.mockResolvedValue(makeDocument())
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockDocumentService.delete.mockResolvedValue(undefined)
+    mockStorageRemove.mockResolvedValue({ error: null })
+
+    const res = await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(204)
+    expect(mockStorageRemove).toHaveBeenCalledWith([`${PROP_ID}/${USER_ID}/file.pdf`])
+    delete process.env.SUPABASE_URL
+    delete process.env.SUPABASE_KEY
+  })
+
+  it('still deletes db record when storage removal fails', async () => {
+    process.env.SUPABASE_URL = 'https://test.supabase.co'
+    process.env.SUPABASE_KEY = 'test-key'
+    mockDocumentService.findById.mockResolvedValue(makeDocument())
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockDocumentService.delete.mockResolvedValue(undefined)
+    mockStorageRemove.mockResolvedValue({ error: { message: 'Storage error' } })
+
+    const res = await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(204)
+    expect(mockDocumentService.delete).toHaveBeenCalledWith(DOC_ID)
+    delete process.env.SUPABASE_URL
+    delete process.env.SUPABASE_KEY
+  })
+
+  it('skips storage removal when document has no storagePath', async () => {
+    process.env.SUPABASE_URL = 'https://test.supabase.co'
+    process.env.SUPABASE_KEY = 'test-key'
+    mockDocumentService.findById.mockResolvedValue(makeDocument({ storagePath: null }))
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockDocumentService.delete.mockResolvedValue(undefined)
+    mockStorageRemove.mockClear()
+
+    const res = await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(204)
+    expect(mockStorageRemove).not.toHaveBeenCalled()
+    delete process.env.SUPABASE_URL
+    delete process.env.SUPABASE_KEY
   })
 })
