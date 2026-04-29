@@ -230,7 +230,7 @@ export const reprocessDocument = createServerFn({ method: 'POST' })
     }
   })
 
-function inferDocumentType(contentType: string, fileName: string): DocumentTypeValue {
+export function inferDocumentType(contentType: string, fileName: string): DocumentTypeValue {
   const lowerFileName = fileName.toLowerCase()
 
   if (contentType === 'application/pdf') {
