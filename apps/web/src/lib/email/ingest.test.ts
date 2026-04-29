@@ -1,8 +1,19 @@
 import crypto from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/lib/env', () => ({
+  getServerEnv: () => ({ RESEND_API_KEY: 'test-resend-key' }),
+}))
+
+vi.mock('@/lib/console-logger', () => ({
+  consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
+
 import {
   extractIngestToken,
   extractTextFromHtml,
+  fetchEmailAttachments,
+  fetchEmailContent,
   hasSubstantialContent,
   verifyWebhookSignature,
 } from './ingest'
@@ -107,6 +118,106 @@ describe('extractTextFromHtml', () => {
   it('collapses multiple whitespace into single spaces', () => {
     const result = extractTextFromHtml('<p>Hello</p>   <p>World</p>')
     expect(result).not.toMatch(/\s{2,}/)
+  })
+})
+
+// ─── fetchEmailContent ─────────────────────────────────────────────────────
+
+describe('fetchEmailContent', () => {
+  const mockFetch = vi.fn()
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('returns parsed email content on success', async () => {
+    const emailData = { id: 'email-123', subject: 'Test', text: 'Hello' }
+    mockFetch.mockResolvedValue({ ok: true, json: async () => emailData })
+
+    const result = await fetchEmailContent('email-123')
+
+    expect(result).toEqual(emailData)
+  })
+
+  it('calls the Resend API with the correct URL and auth header', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) })
+
+    await fetchEmailContent('email-abc')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.resend.com/emails/email-abc',
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer test-resend-key' },
+      }),
+    )
+  })
+
+  it('throws when API response is not ok', async () => {
+    mockFetch.mockResolvedValue({ ok: false, statusText: 'Not Found' })
+
+    await expect(fetchEmailContent('bad-id')).rejects.toThrow('Failed to fetch email: Not Found')
+  })
+})
+
+// ─── fetchEmailAttachments ─────────────────────────────────────────────────
+
+describe('fetchEmailAttachments', () => {
+  const mockFetch = vi.fn()
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const attachmentList = [
+    { id: 'att-1', filename: 'receipt.pdf', content_type: 'application/pdf', size: 1024 },
+  ]
+
+  it('returns attachments with decoded content', async () => {
+    const base64Content = Buffer.from('PDF content here').toString('base64')
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: attachmentList }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { content: base64Content } }) })
+
+    const result = await fetchEmailAttachments('email-123')
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('receipt.pdf')
+    expect(result[0].content).toBeInstanceOf(Buffer)
+    expect(result[0].content.toString()).toBe('PDF content here')
+  })
+
+  it('throws when attachment list fetch fails', async () => {
+    mockFetch.mockResolvedValue({ ok: false, statusText: 'Server Error' })
+
+    await expect(fetchEmailAttachments('email-123')).rejects.toThrow(
+      'Failed to list attachments: Server Error',
+    )
+  })
+
+  it('skips attachments whose content fetch fails', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: attachmentList }) })
+      .mockResolvedValueOnce({ ok: false, statusText: 'Not Found' })
+
+    const result = await fetchEmailAttachments('email-123')
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('returns empty array when no attachments', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ data: [] }) })
+
+    const result = await fetchEmailAttachments('email-123')
+
+    expect(result).toEqual([])
   })
 })
 
