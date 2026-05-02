@@ -29,10 +29,10 @@ export const maintenanceForItemQueryOptions = (itemId: string) =>
     queryFn: () => fetchMaintenanceTasksForItem({ data: { itemId } }),
   })
 
-export const upcomingMaintenanceQueryOptions = (userId: string) =>
+export const upcomingMaintenanceQueryOptions = () =>
   queryOptions({
     queryKey: maintenanceKeys.upcoming(),
-    queryFn: () => fetchUpcomingMaintenanceTasks({ data: { userId } }),
+    queryFn: () => fetchUpcomingMaintenanceTasks({ data: {} }),
   })
 
 export const maintenanceTaskQueryOptions = (id: string) =>
@@ -55,9 +55,6 @@ export function useMaintenanceForItem(itemId: string | undefined) {
   })
 }
 
-export function useUpcomingMaintenance(userId: string | undefined) {
-  return useQuery({
-    ...upcomingMaintenanceQueryOptions(userId ?? ''),
-    enabled: !!userId,
-  })
+export function useUpcomingMaintenance() {
+  return useQuery(upcomingMaintenanceQueryOptions())
 }

@@ -40,7 +40,7 @@ export const Route = createFileRoute('/_authenticated/maintenance')({
 
 function MaintenancePage() {
   const { user } = Route.useRouteContext()
-  const { data: tasks, isPending } = useUpcomingMaintenance(user?.id)
+  const { data: tasks, isPending } = useUpcomingMaintenance()
   const completeMutation = useCompleteMaintenanceTask()
   const snoozeMutation = useSnoozeMaintenanceTask()
   const updateMutation = useUpdateMaintenanceTask()

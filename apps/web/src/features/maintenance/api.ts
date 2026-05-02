@@ -3,6 +3,7 @@ import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { MaintenanceService } from './service'
 import type {
   CompleteMaintenanceTaskInput,
@@ -17,6 +18,10 @@ const getPropertyService = () => new PropertyService({ db: prisma, logger })
 export const fetchMaintenanceTasksForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getMaintenanceService()
     return service.findAllForProperty(data.propertyId)
   })
@@ -24,23 +29,27 @@ export const fetchMaintenanceTasksForProperty = createServerFn({ method: 'GET' }
 export const fetchMaintenanceTasksForItem = createServerFn({ method: 'GET' })
   .inputValidator((d: { itemId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const item = await prisma.item.findUnique({
+      where: { id: data.itemId },
+      select: { propertyId: true },
+    })
+    if (!item) throw new Error('Item not found')
+    const property = await getPropertyService().findById(item.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getMaintenanceService()
     return service.findAllForItem(data.itemId)
   })
 
 export const fetchUpcomingMaintenanceTasks = createServerFn({ method: 'GET' })
-  .inputValidator((d: { userId: string }) => d)
-  .handler(async ({ data }) => {
-    const properties = await prisma.property.findMany({
-      where: { userId: data.userId },
-      select: { id: true },
-    })
+  .inputValidator((d: Record<string, never>) => d)
+  .handler(async () => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const properties = await getPropertyService().findAllForUser(user.id)
     const propertyIds = properties.map((p) => p.id)
-
-    if (propertyIds.length === 0) {
-      return []
-    }
-
+    if (propertyIds.length === 0) return []
     const service = getMaintenanceService()
     return service.findUpcoming(propertyIds)
   })
@@ -48,8 +57,14 @@ export const fetchUpcomingMaintenanceTasks = createServerFn({ method: 'GET' })
 export const fetchMaintenanceTask = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
-    return service.findById(data.id)
+    const task = await service.findById(data.id)
+    if (!task) return null
+    const property = await getPropertyService().findById(task.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return task
   })
 
 export const createMaintenanceTask = createServerFn({ method: 'POST' })

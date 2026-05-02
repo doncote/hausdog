@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { EventService } from './service'
 import type { CreateEventInput, UpdateEventInput } from './types'
 
@@ -11,6 +12,15 @@ const getPropertyService = () => new PropertyService({ db: prisma, logger })
 export const fetchEventsForItem = createServerFn({ method: 'GET' })
   .inputValidator((d: { itemId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const item = await prisma.item.findUnique({
+      where: { id: data.itemId },
+      select: { propertyId: true },
+    })
+    if (!item) throw new Error('Item not found')
+    const property = await getPropertyService().findById(item.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getEventService()
     return service.findAllForItem(data.itemId)
   })
@@ -18,8 +28,19 @@ export const fetchEventsForItem = createServerFn({ method: 'GET' })
 export const fetchEvent = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getEventService()
-    return service.findById(data.id)
+    const event = await service.findById(data.id)
+    if (!event) return null
+    const item = await prisma.item.findUnique({
+      where: { id: event.itemId },
+      select: { propertyId: true },
+    })
+    if (!item) throw new Error('Item not found')
+    const property = await getPropertyService().findById(item.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return event
   })
 
 export const createEvent = createServerFn({ method: 'POST' })
