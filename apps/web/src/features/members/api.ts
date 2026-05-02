@@ -1,9 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
+import { createClient } from '@supabase/supabase-js'
 import type { z } from 'zod'
 import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { sendPropertyInviteEmail } from '@/lib/email/transactional'
+import { getBaseUrl } from '@/lib/env'
 import { PropertyMemberService } from './service'
 import { InviteMemberSchema, UpdateMemberRoleSchema } from './types'
 
@@ -47,6 +50,37 @@ export const inviteMember = createServerFn({ method: 'POST' })
         entityName: member.email,
       })
       .catch(() => {})
+
+    // Send invite email fire-and-forget — never block the response
+    Promise.all([
+      prisma.property.findUnique({
+        where: { id: data.propertyId },
+        select: { name: true },
+      }),
+      (async () => {
+        const url = process.env.SUPABASE_URL
+        const key = process.env.SUPABASE_SERVICE_KEY
+        if (!url || !key) return null
+        const admin = createClient(url, key, { auth: { persistSession: false } })
+        const { data: userData } = await admin.auth.admin.getUserById(data.userId)
+        return userData.user?.email ?? null
+      })(),
+    ])
+      .then(([property, inviterEmail]) => {
+        if (!inviterEmail) return
+        return sendPropertyInviteEmail({
+          to: input.email,
+          inviterEmail,
+          propertyName: property?.name ?? 'a property',
+          role: input.role,
+          acceptUrl: `${getBaseUrl()}/dashboard`,
+        })
+      })
+      .catch((err: unknown) => {
+        logger.warn('Failed to send invite email', {
+          error: err instanceof Error ? err.message : 'unknown',
+        })
+      })
 
     return member
   })
