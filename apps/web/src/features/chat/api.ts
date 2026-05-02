@@ -4,6 +4,7 @@ import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { ChatService } from './service'
 import type { CreateConversationInput, CreateMessageInput } from './types'
 
@@ -15,18 +16,37 @@ const eventService = new EventService({ db: prisma, logger })
 export const fetchConversationsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await propertyService.findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     return chat.findConversationsForProperty(data.propertyId)
   })
 
 export const fetchConversation = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
-    return chat.findConversationById(data.id)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const conversation = await chat.findConversationById(data.id)
+    if (!conversation) return null
+    const property = await propertyService.findById(conversation.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return conversation
   })
 
 export const fetchMessagesForConversation = createServerFn({ method: 'GET' })
   .inputValidator((d: { conversationId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: data.conversationId },
+      select: { propertyId: true },
+    })
+    if (!conversation) throw new Error('Conversation not found')
+    const property = await propertyService.findById(conversation.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     return chat.getMessagesForConversation(data.conversationId)
   })
 

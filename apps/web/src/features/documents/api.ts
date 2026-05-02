@@ -3,6 +3,7 @@ import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { EventService } from '../events/service'
 import type { EventTypeValue } from '../events/types'
 import { EVENT_TYPE_VALUES } from '../events/types'
@@ -44,6 +45,10 @@ const getActivityService = () => new ActivityService(prisma)
 export const fetchDocumentsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getDocumentService()
     return service.findAllForProperty(data.propertyId)
   })
@@ -51,6 +56,10 @@ export const fetchDocumentsForProperty = createServerFn({ method: 'GET' })
 export const fetchPendingReviewDocuments = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getDocumentService()
     return service.findPendingReview(data.propertyId)
   })
@@ -58,6 +67,10 @@ export const fetchPendingReviewDocuments = createServerFn({ method: 'GET' })
 export const fetchDocumentsByStatus = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string; status: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getDocumentService()
     return service.findByStatus(data.propertyId, data.status)
   })
@@ -65,8 +78,14 @@ export const fetchDocumentsByStatus = createServerFn({ method: 'GET' })
 export const fetchDocument = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getDocumentService()
-    return service.findById(data.id)
+    const doc = await service.findById(data.id)
+    if (!doc) return null
+    const property = await getPropertyService().findById(doc.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return doc
   })
 
 export const createDocument = createServerFn({ method: 'POST' })

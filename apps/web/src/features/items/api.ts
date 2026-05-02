@@ -3,6 +3,7 @@ import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { parsePaginationParams } from '@/lib/pagination'
 import { ItemService } from './service'
 import type { CreateItemInput, UpdateItemInput } from './types'
@@ -14,6 +15,10 @@ const getPropertyService = () => new PropertyService({ db: prisma, logger })
 export const fetchItemsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
     return service.findAllForProperty(data.propertyId)
   })
@@ -21,6 +26,10 @@ export const fetchItemsForProperty = createServerFn({ method: 'GET' })
 export const fetchItemsForPropertyPaginated = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string; page?: number; limit?: number }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
     const pagination = parsePaginationParams({ page: data.page, limit: data.limit })
     return service.findPaginatedForProperty(data.propertyId, pagination)
@@ -29,6 +38,10 @@ export const fetchItemsForPropertyPaginated = createServerFn({ method: 'GET' })
 export const fetchRootItemsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
     return service.findRootItemsForProperty(data.propertyId)
   })
@@ -36,6 +49,15 @@ export const fetchRootItemsForProperty = createServerFn({ method: 'GET' })
 export const fetchItemsForSpace = createServerFn({ method: 'GET' })
   .inputValidator((d: { spaceId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const space = await prisma.space.findUnique({
+      where: { id: data.spaceId },
+      select: { propertyId: true },
+    })
+    if (!space) throw new Error('Space not found')
+    const property = await getPropertyService().findById(space.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
     return service.findAllForSpace(data.spaceId)
   })
@@ -43,8 +65,14 @@ export const fetchItemsForSpace = createServerFn({ method: 'GET' })
 export const fetchItem = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getItemService()
-    return service.findById(data.id)
+    const item = await service.findById(data.id)
+    if (!item) return null
+    const property = await getPropertyService().findById(item.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return item
   })
 
 export const createItem = createServerFn({ method: 'POST' })

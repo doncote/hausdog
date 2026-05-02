@@ -3,6 +3,7 @@ import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { SpaceService } from './service'
 import type { CreateSpaceInput, UpdateSpaceInput } from './types'
 
@@ -13,6 +14,10 @@ const getPropertyService = () => new PropertyService({ db: prisma, logger })
 export const fetchSpacesForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
     const service = getSpaceService()
     return service.findAllForProperty(data.propertyId)
   })
@@ -20,8 +25,14 @@ export const fetchSpacesForProperty = createServerFn({ method: 'GET' })
 export const fetchSpace = createServerFn({ method: 'GET' })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getSpaceService()
-    return service.findById(data.id)
+    const space = await service.findById(data.id)
+    if (!space) return null
+    const property = await getPropertyService().findById(space.propertyId, user.id)
+    if (!property) throw new Error('Property not found or access denied')
+    return space
   })
 
 export const createSpace = createServerFn({ method: 'POST' })
