@@ -1,0 +1,244 @@
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockPrisma = vi.hoisted(() => ({
+  propertyMember: { findUnique: vi.fn() },
+}))
+vi.mock('@/lib/db', () => ({ prisma: mockPrisma }))
+vi.mock('@/lib/console-logger', () => ({
+  consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
+
+const mockMemberService = vi.hoisted(() => ({
+  findAllForProperty: vi.fn(),
+  invite: vi.fn(),
+  updateRole: vi.fn(),
+  remove: vi.fn(),
+}))
+
+const mockPropertyService = vi.hoisted(() => ({
+  findById: vi.fn(),
+  isOwner: vi.fn(),
+}))
+
+vi.mock('@/features/members/service', () => ({
+  PropertyMemberService: vi.fn().mockImplementation(() => mockMemberService),
+}))
+
+vi.mock('@/features/properties/service', () => ({
+  PropertyService: vi.fn().mockImplementation(() => mockPropertyService),
+}))
+
+import type { AuthContext } from '../middleware/auth'
+import { membersRouter } from './members'
+
+const USER_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+const PROP_ID = '550e8400-e29b-41d4-a716-446655440000'
+const MEMBER_ID = '550e8400-e29b-41d4-a716-446655440001'
+const MISSING_ID = '12345678-1234-4234-8234-123456789012'
+
+function makeApp() {
+  const app = new OpenAPIHono<{ Variables: AuthContext }>()
+  app.use('*', async (c, next) => {
+    c.set('userId', USER_ID)
+    c.set('apiKeyId', '550e8400-e29b-41d4-a716-446655440099')
+    c.set('apiKeyName', 'test')
+    await next()
+  })
+  app.route('/', membersRouter)
+  return app
+}
+
+function makeMember(overrides: Record<string, unknown> = {}) {
+  return {
+    id: MEMBER_ID,
+    propertyId: PROP_ID,
+    userId: null,
+    email: 'alice@example.com',
+    role: 'viewer',
+    status: 'pending',
+    invitedById: USER_ID,
+    createdAt: new Date('2026-01-01'),
+    updatedAt: new Date('2026-01-01'),
+    ...overrides,
+  }
+}
+
+function makeProperty() {
+  return { id: PROP_ID, userId: USER_ID, name: 'My Home' }
+}
+
+describe('GET /properties/:propertyId/members', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns member list for accessible property', async () => {
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockMemberService.findAllForProperty.mockResolvedValue([makeMember()])
+
+    const res = await makeApp().request(`/properties/${PROP_ID}/members`)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toHaveLength(1)
+    expect(body[0].email).toBe('alice@example.com')
+    expect(body[0].createdAt).toBe('2026-01-01T00:00:00.000Z')
+  })
+
+  it('returns 404 when property not found or inaccessible', async () => {
+    mockPropertyService.findById.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/properties/${MISSING_ID}/members`)
+
+    expect(res.status).toBe(404)
+  })
+
+  it('queries service with correct propertyId', async () => {
+    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockMemberService.findAllForProperty.mockResolvedValue([])
+
+    await makeApp().request(`/properties/${PROP_ID}/members`)
+
+    expect(mockMemberService.findAllForProperty).toHaveBeenCalledWith(PROP_ID)
+  })
+})
+
+describe('POST /properties/:propertyId/members', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('invites member and returns 201', async () => {
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.invite.mockResolvedValue(makeMember())
+
+    const res = await makeApp().request(`/properties/${PROP_ID}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', role: 'viewer' }),
+    })
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.email).toBe('alice@example.com')
+    expect(body.role).toBe('viewer')
+  })
+
+  it('returns 404 when caller is not owner', async () => {
+    mockPropertyService.isOwner.mockResolvedValue(false)
+
+    const res = await makeApp().request(`/properties/${PROP_ID}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', role: 'viewer' }),
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.invite).not.toHaveBeenCalled()
+  })
+
+  it('passes email, role, and caller userId to service', async () => {
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.invite.mockResolvedValue(makeMember({ role: 'editor' }))
+
+    await makeApp().request(`/properties/${PROP_ID}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', role: 'editor' }),
+    })
+
+    expect(mockMemberService.invite).toHaveBeenCalledWith(
+      PROP_ID,
+      USER_ID,
+      { email: 'alice@example.com', role: 'editor' },
+    )
+  })
+
+  it('rejects invalid role values', async () => {
+    const res = await makeApp().request(`/properties/${PROP_ID}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', role: 'owner' }),
+    })
+
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /members/:memberId', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('updates role and returns 200', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember())
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.updateRole.mockResolvedValue(makeMember({ role: 'editor' }))
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'editor' }),
+    })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.role).toBe('editor')
+  })
+
+  it('returns 404 when member not found', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MISSING_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'editor' }),
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.updateRole).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when caller is not owner', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember())
+    mockPropertyService.isOwner.mockResolvedValue(false)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'editor' }),
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.updateRole).not.toHaveBeenCalled()
+  })
+})
+
+describe('DELETE /members/:memberId', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('removes member and returns 204', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember())
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.remove.mockResolvedValue(undefined)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(204)
+    expect(mockMemberService.remove).toHaveBeenCalledWith(MEMBER_ID)
+  })
+
+  it('returns 404 when member not found', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MISSING_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when caller is not owner', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember())
+    mockPropertyService.isOwner.mockResolvedValue(false)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}`, { method: 'DELETE' })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+})
