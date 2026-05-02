@@ -28,6 +28,7 @@ const mockItemService = vi.hoisted(() => ({
 const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
   canWrite: vi.fn(),
+  findAllForUser: vi.fn(),
 }))
 
 const mockTriggerTasks = vi.hoisted(() => ({
@@ -166,8 +167,8 @@ describe('GET /items/:itemId/maintenance', () => {
 describe('GET /maintenance/upcoming', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('returns upcoming tasks for user properties', async () => {
-    mockPrisma.property.findMany.mockResolvedValue([{ id: PROP_ID }])
+  it('returns upcoming tasks for owned and shared properties', async () => {
+    mockPropertyService.findAllForUser.mockResolvedValue([{ id: PROP_ID }])
     mockMaintenanceService.findUpcoming.mockResolvedValue([makeTask()])
 
     const res = await makeApp().request('/maintenance/upcoming')
@@ -178,8 +179,8 @@ describe('GET /maintenance/upcoming', () => {
     expect(body[0].name).toBe('Change HVAC filter')
   })
 
-  it('returns empty array when user has no properties', async () => {
-    mockPrisma.property.findMany.mockResolvedValue([])
+  it('returns empty array when user has no accessible properties', async () => {
+    mockPropertyService.findAllForUser.mockResolvedValue([])
 
     const res = await makeApp().request('/maintenance/upcoming')
     const body = await res.json()
@@ -189,14 +190,12 @@ describe('GET /maintenance/upcoming', () => {
     expect(mockMaintenanceService.findUpcoming).not.toHaveBeenCalled()
   })
 
-  it('queries prisma with userId from context', async () => {
-    mockPrisma.property.findMany.mockResolvedValue([])
+  it('calls findAllForUser with userId from context', async () => {
+    mockPropertyService.findAllForUser.mockResolvedValue([])
 
     await makeApp().request('/maintenance/upcoming')
 
-    expect(mockPrisma.property.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: USER_ID } }),
-    )
+    expect(mockPropertyService.findAllForUser).toHaveBeenCalledWith(USER_ID)
   })
 })
 

@@ -402,10 +402,7 @@ maintenanceRouter.openapi(listUpcomingMaintenance, async (c) => {
   const userId = c.get('userId')
   const { limit } = c.req.valid('query')
 
-  const properties = await prisma.property.findMany({
-    where: { userId },
-    select: { id: true },
-  })
+  const properties = await propertyService.findAllForUser(userId)
   const propertyIds = properties.map((p) => p.id)
 
   if (propertyIds.length === 0) {
