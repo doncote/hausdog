@@ -14,8 +14,16 @@ const mockService = vi.hoisted(() => ({
   delete: vi.fn(),
 }))
 
+const mockActivityService = vi.hoisted(() => ({
+  findRecent: vi.fn(),
+}))
+
 vi.mock('@/features/properties/service', () => ({
   PropertyService: vi.fn().mockImplementation(() => mockService),
+}))
+
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
 }))
 
 import type { AuthContext } from '../middleware/auth'
@@ -247,5 +255,64 @@ describe('DELETE /properties/:id', () => {
     await makeApp().request(`/properties/${MISSING_ID}`, { method: 'DELETE' })
 
     expect(mockService.delete).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /properties/:id/activity', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  function makeActivity(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'act-001',
+      propertyId: PROP_ID,
+      userId: USER_ID,
+      action: 'created',
+      entityType: 'item',
+      entityId: 'item-001',
+      entityName: 'Water Heater',
+      metadata: null,
+      createdAt: new Date('2026-01-15'),
+      ...overrides,
+    }
+  }
+
+  it('returns activity list for accessible property', async () => {
+    mockService.findById.mockResolvedValue(makeProperty())
+    mockActivityService.findRecent.mockResolvedValue([makeActivity()])
+
+    const res = await makeApp().request(`/properties/${PROP_ID}/activity`)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toHaveLength(1)
+    expect(body[0].action).toBe('created')
+    expect(body[0].createdAt).toBe('2026-01-15T00:00:00.000Z')
+  })
+
+  it('returns 404 when property not accessible', async () => {
+    mockService.findById.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/properties/${MISSING_ID}/activity`)
+
+    expect(res.status).toBe(404)
+    expect(mockActivityService.findRecent).not.toHaveBeenCalled()
+  })
+
+  it('passes limit query param to service', async () => {
+    mockService.findById.mockResolvedValue(makeProperty())
+    mockActivityService.findRecent.mockResolvedValue([])
+
+    await makeApp().request(`/properties/${PROP_ID}/activity?limit=10`)
+
+    expect(mockActivityService.findRecent).toHaveBeenCalledWith(PROP_ID, 10)
+  })
+
+  it('uses default limit of 50 when not specified', async () => {
+    mockService.findById.mockResolvedValue(makeProperty())
+    mockActivityService.findRecent.mockResolvedValue([])
+
+    await makeApp().request(`/properties/${PROP_ID}/activity`)
+
+    expect(mockActivityService.findRecent).toHaveBeenCalledWith(PROP_ID, 50)
   })
 })

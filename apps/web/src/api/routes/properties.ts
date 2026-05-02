@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { CreatePropertySchema, UpdatePropertySchema } from '@/features/properties/types'
 import { consoleLogger as logger } from '@/lib/console-logger'
@@ -7,6 +8,7 @@ import { parsePaginationParams } from '@/lib/pagination'
 import type { AuthContext } from '../middleware/auth'
 
 const propertyService = new PropertyService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Response schemas
 const PropertySchema = z.object({
@@ -38,6 +40,18 @@ const PropertyWithCountsSchema = PropertySchema.extend({
 const ErrorSchema = z.object({
   error: z.string(),
   message: z.string(),
+})
+
+const ActivityEventSchema = z.object({
+  id: z.string().uuid(),
+  propertyId: z.string().uuid(),
+  userId: z.string().uuid(),
+  action: z.string(),
+  entityType: z.string(),
+  entityId: z.string(),
+  entityName: z.string().nullable(),
+  metadata: z.record(z.unknown()).nullable(),
+  createdAt: z.string().datetime(),
 })
 
 const PaginationQuerySchema = z.object({
@@ -214,6 +228,40 @@ const deleteProperty = createRoute({
   },
 })
 
+const listPropertyActivity = createRoute({
+  method: 'get',
+  path: '/properties/{id}/activity',
+  tags: ['Properties'],
+  summary: 'List recent activity for a property',
+  description: 'Returns recent activity events for a property the user has access to',
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+    }),
+    query: z.object({
+      limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of activity events',
+      content: {
+        'application/json': {
+          schema: z.array(ActivityEventSchema),
+        },
+      },
+    },
+    404: {
+      description: 'Property not found',
+      content: {
+        'application/json': {
+          schema: ErrorSchema,
+        },
+      },
+    },
+  },
+})
+
 // Create router
 export const propertiesRouter = new OpenAPIHono<{ Variables: AuthContext }>()
 
@@ -299,4 +347,24 @@ propertiesRouter.openapi(deleteProperty, async (c) => {
 
   await propertyService.delete(id, userId)
   return c.body(null, 204)
+})
+
+propertiesRouter.openapi(listPropertyActivity, async (c) => {
+  const userId = c.get('userId')
+  const { id } = c.req.valid('param')
+  const { limit } = c.req.valid('query')
+
+  const property = await propertyService.findById(id, userId)
+  if (!property) {
+    return c.json({ error: 'not_found', message: 'Property not found' }, 404)
+  }
+
+  const events = await activityService.findRecent(id, limit)
+  return c.json(
+    events.map((e) => ({
+      ...e,
+      createdAt: e.createdAt.toISOString(),
+    })),
+    200,
+  )
 })
