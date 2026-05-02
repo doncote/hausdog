@@ -339,6 +339,23 @@ describe('POST /members/:memberId/accept', () => {
     expect(mockMemberService.accept).toHaveBeenCalledWith(MEMBER_ID, USER_ID, 'alice@example.com')
   })
 
+  it('records accepted activity', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'alice@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+    mockMemberService.accept.mockResolvedValue(makeMember({ status: 'active', userId: USER_ID }))
+
+    await makeApp().request(`/members/${MEMBER_ID}/accept`, { method: 'POST' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith({
+      propertyId: PROP_ID,
+      userId: USER_ID,
+      action: 'accepted',
+      entityType: 'member',
+      entityId: MEMBER_ID,
+      entityName: 'alice@example.com',
+    })
+  })
+
   it('returns 404 when invite not found or not pending', async () => {
     mockPrisma.propertyMember.findFirst.mockResolvedValue(null)
 
@@ -381,6 +398,23 @@ describe('POST /members/:memberId/decline', () => {
 
     expect(res.status).toBe(200)
     expect(mockMemberService.decline).toHaveBeenCalledWith(MEMBER_ID)
+  })
+
+  it('records declined activity', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'alice@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+    mockMemberService.decline.mockResolvedValue(makeMember({ status: 'declined' }))
+
+    await makeApp().request(`/members/${MEMBER_ID}/decline`, { method: 'POST' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith({
+      propertyId: PROP_ID,
+      userId: USER_ID,
+      action: 'declined',
+      entityType: 'member',
+      entityId: MEMBER_ID,
+      entityName: 'alice@example.com',
+    })
   })
 
   it('returns 404 when invite not found or not pending', async () => {
