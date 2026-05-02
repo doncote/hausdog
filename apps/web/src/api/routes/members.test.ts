@@ -171,6 +171,27 @@ describe('POST /properties/:propertyId/members', () => {
 
     expect(res.status).toBe(400)
   })
+
+  it('records invited activity', async () => {
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.invite.mockResolvedValue(makeMember())
+
+    await makeApp().request(`/properties/${PROP_ID}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', role: 'viewer' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'invited',
+        entityType: 'member',
+        entityId: MEMBER_ID,
+      }),
+    )
+  })
 })
 
 describe('PATCH /members/:memberId', () => {
@@ -251,6 +272,24 @@ describe('DELETE /members/:memberId', () => {
 
     expect(res.status).toBe(404)
     expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+
+  it('records removed activity', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember())
+    mockPropertyService.isOwner.mockResolvedValue(true)
+    mockMemberService.remove.mockResolvedValue(undefined)
+
+    await makeApp().request(`/members/${MEMBER_ID}`, { method: 'DELETE' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'removed',
+        entityType: 'member',
+        entityId: MEMBER_ID,
+      }),
+    )
   })
 })
 

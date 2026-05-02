@@ -256,6 +256,18 @@ membersRouter.openapi(inviteMember, async (c) => {
   }
 
   const member = await memberService.invite(propertyId, userId, { email, role })
+
+  activityService
+    .record({
+      propertyId,
+      userId,
+      action: 'invited',
+      entityType: 'member',
+      entityId: member.id,
+      entityName: member.email,
+    })
+    .catch(() => {})
+
   return c.json(serializeMember(member), 201)
 })
 
@@ -293,6 +305,18 @@ membersRouter.openapi(removeMember, async (c) => {
   }
 
   await memberService.remove(memberId)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'removed',
+      entityType: 'member',
+      entityId: memberId,
+      entityName: existing.email,
+    })
+    .catch(() => {})
+
   return c.body(null, 204)
 })
 
