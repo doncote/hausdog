@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
@@ -38,6 +39,7 @@ interface ResolveData {
 
 const getDocumentService = () => new DocumentService({ db: prisma, logger })
 const getPropertyService = () => new PropertyService({ db: prisma, logger })
+const getActivityService = () => new ActivityService(prisma)
 
 export const fetchDocumentsForProperty = createServerFn({ method: 'GET' })
   .inputValidator((d: { propertyId: string }) => d)
@@ -105,6 +107,18 @@ export const deleteDocument = createServerFn({ method: 'POST' })
     const property = await getPropertyService().findById(existing.propertyId, data.userId)
     if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
+
+    getActivityService()
+      .record({
+        propertyId: existing.propertyId,
+        userId: data.userId,
+        action: 'deleted',
+        entityType: 'document',
+        entityId: data.id,
+        entityName: existing.fileName,
+      })
+      .catch(() => {})
+
     return { success: true }
   })
 

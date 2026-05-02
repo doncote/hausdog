@@ -2,12 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
 import { auth, configure, tasks } from '@trigger.dev/sdk/v3'
 import { v4 as uuidv4 } from 'uuid'
+import { ActivityService } from '@/features/activity/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { getServerEnv } from '@/lib/env'
 import type { processDocumentTask } from '../../../trigger/process-document'
 import { DocumentService } from './service'
 import { DocumentType, type DocumentTypeValue } from './types'
+
+const getActivityService = () => new ActivityService(prisma)
 
 // Configure Trigger.dev with our API key
 function configureTrigger() {
@@ -102,6 +105,17 @@ export const uploadDocument = createServerFn({ method: 'POST' })
     })
 
     logger.info('Document created', { documentId: document.id })
+
+    getActivityService()
+      .record({
+        propertyId: data.propertyId,
+        userId: data.userId,
+        action: 'created',
+        entityType: 'document',
+        entityId: document.id,
+        entityName: data.fileName,
+      })
+      .catch(() => {})
 
     // Trigger background processing
     let runId: string | undefined

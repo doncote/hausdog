@@ -6,6 +6,14 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockActivityService = vi.hoisted(() => ({
+  record: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
+}))
+
 const mockStorageRemove = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }))
 const mockStorageUpload = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }))
 
@@ -215,6 +223,9 @@ describe('POST /properties/:propertyId/documents/upload', () => {
 
     expect(res.status).toBe(404)
   })
+
+  // multipart/form-data parsing is not reliably testable via Hono's test request in Bun/undici
+  it.todo('records created activity after successful upload')
 })
 
 describe('DELETE /documents/:id', () => {
@@ -303,5 +314,23 @@ describe('DELETE /documents/:id', () => {
     expect(mockStorageRemove).not.toHaveBeenCalled()
     delete process.env.SUPABASE_URL
     delete process.env.SUPABASE_KEY
+  })
+
+  it('records deleted activity', async () => {
+    mockDocumentService.findById.mockResolvedValue(makeDocument())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockDocumentService.delete.mockResolvedValue(undefined)
+
+    await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'deleted',
+        entityType: 'document',
+        entityId: DOC_ID,
+      }),
+    )
   })
 })

@@ -2,6 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { createClient } from '@supabase/supabase-js'
 import { configure, tasks } from '@trigger.dev/sdk/v3'
 import { v4 as uuidv4 } from 'uuid'
+import { ActivityService } from '@/features/activity/service'
 import { DocumentService } from '@/features/documents/service'
 import type { DocumentTypeValue } from '@/features/documents/types'
 import { PropertyService } from '@/features/properties/service'
@@ -12,6 +13,7 @@ import type { AuthContext } from '../middleware/auth'
 
 const documentService = new DocumentService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Configure Trigger.dev if available
 const triggerKey = process.env.TRIGGER_SECRET_KEY || process.env.TRIGGER_API_KEY
@@ -410,6 +412,17 @@ documentsRouter.openapi(uploadDocument, async (c) => {
     // Don't fail the upload - document is stored, can be processed later
   }
 
+  activityService
+    .record({
+      propertyId,
+      userId,
+      action: 'created',
+      entityType: 'document',
+      entityId: document.id,
+      entityName: document.fileName,
+    })
+    .catch(() => {})
+
   return c.json(
     {
       id: document.id,
@@ -455,5 +468,17 @@ documentsRouter.openapi(deleteDocument, async (c) => {
   }
 
   await documentService.delete(id)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'deleted',
+      entityType: 'document',
+      entityId: id,
+      entityName: existing.fileName,
+    })
+    .catch(() => {})
+
   return c.body(null, 204)
 })
