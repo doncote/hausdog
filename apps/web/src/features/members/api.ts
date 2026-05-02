@@ -1,5 +1,5 @@
-import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
+import { createServerFn } from '@tanstack/react-start'
 import type { z } from 'zod'
 import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
@@ -93,7 +93,20 @@ export const acceptInvite = createServerFn({ method: 'POST' })
       where: { id: data.memberId, status: 'pending' },
     })
     if (!pending) throw new Error('Invitation not found or already resolved')
-    return memberService.accept(data.memberId, data.userId, data.userEmail)
+    const member = await memberService.accept(data.memberId, data.userId, data.userEmail)
+
+    getActivityService()
+      .record({
+        propertyId: pending.propertyId,
+        userId: data.userId,
+        action: 'accepted',
+        entityType: 'member',
+        entityId: member.id,
+        entityName: member.email,
+      })
+      .catch(() => {})
+
+    return member
   })
 
 export const declineInvite = createServerFn({ method: 'POST' })
@@ -103,7 +116,20 @@ export const declineInvite = createServerFn({ method: 'POST' })
       where: { id: data.memberId, status: 'pending' },
     })
     if (!pending) throw new Error('Invitation not found or already resolved')
-    return getMemberService().decline(data.memberId)
+    const member = await getMemberService().decline(data.memberId)
+
+    getActivityService()
+      .record({
+        propertyId: pending.propertyId,
+        userId: data.userId,
+        action: 'declined',
+        entityType: 'member',
+        entityId: member.id,
+        entityName: member.email,
+      })
+      .catch(() => {})
+
+    return member
   })
 
 export const updateMemberRole = createServerFn({ method: 'POST' })

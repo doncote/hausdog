@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { ActivityService } from '@/features/activity/service'
 import { PropertyMemberService } from '@/features/members/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
@@ -8,6 +9,7 @@ import type { AuthContext } from '../middleware/auth'
 
 const memberService = new PropertyMemberService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Schemas
 const MemberSchema = z.object({
@@ -348,6 +350,18 @@ membersRouter.openapi(acceptInvite, async (c) => {
   }
 
   const member = await memberService.accept(memberId, userId, userEmail)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'accepted',
+      entityType: 'member',
+      entityId: member.id,
+      entityName: member.email,
+    })
+    .catch(() => {})
+
   return c.json(serializeMember(member), 200)
 })
 
@@ -368,5 +382,17 @@ membersRouter.openapi(declineInvite, async (c) => {
   }
 
   const member = await memberService.decline(memberId)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'declined',
+      entityType: 'member',
+      entityId: member.id,
+      entityName: member.email,
+    })
+    .catch(() => {})
+
   return c.json(serializeMember(member), 200)
 })

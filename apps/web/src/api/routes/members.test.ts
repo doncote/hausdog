@@ -12,6 +12,11 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockActivityService = vi.hoisted(() => ({ record: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
+}))
+
 const mockMemberService = vi.hoisted(() => ({
   findAllForProperty: vi.fn(),
   findPendingForEmail: vi.fn(),
