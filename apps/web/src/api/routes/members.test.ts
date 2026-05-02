@@ -242,3 +242,49 @@ describe('DELETE /members/:memberId', () => {
     expect(mockMemberService.remove).not.toHaveBeenCalled()
   })
 })
+
+describe('POST /members/:memberId/leave', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('removes self and returns 204', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember({ userId: USER_ID }))
+    mockPropertyService.isOwner.mockResolvedValue(false)
+    mockMemberService.remove.mockResolvedValue(undefined)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/leave`, { method: 'POST' })
+
+    expect(res.status).toBe(204)
+    expect(mockMemberService.remove).toHaveBeenCalledWith(MEMBER_ID)
+  })
+
+  it('returns 404 when member not found', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MISSING_ID}/leave`, { method: 'POST' })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when userId does not match member', async () => {
+    const OTHER_USER = '00000000-0000-4000-8000-000000000001'
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember({ userId: OTHER_USER }))
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/leave`, { method: 'POST' })
+
+    expect(res.status).toBe(403)
+    expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when caller is the property owner', async () => {
+    mockPrisma.propertyMember.findUnique.mockResolvedValue(makeMember({ userId: USER_ID }))
+    mockPropertyService.isOwner.mockResolvedValue(true)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/leave`, { method: 'POST' })
+
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.message).toContain('transfer ownership')
+    expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+})

@@ -121,6 +121,27 @@ const removeMember = createRoute({
   },
 })
 
+const leaveMember = createRoute({
+  method: 'post',
+  path: '/members/{memberId}/leave',
+  tags: ['Members'],
+  summary: 'Leave a property (member removes themselves)',
+  request: {
+    params: z.object({ memberId: z.string().uuid() }),
+  },
+  responses: {
+    204: { description: 'Left property successfully' },
+    403: {
+      description: 'Forbidden',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+    404: {
+      description: 'Member not found',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+  },
+})
+
 // Helpers
 function serializeMember(m: {
   id: string
@@ -201,6 +222,31 @@ membersRouter.openapi(removeMember, async (c) => {
   const isOwner = await propertyService.isOwner(existing.propertyId, userId)
   if (!isOwner) {
     return c.json({ error: 'not_found', message: 'Member not found' }, 404)
+  }
+
+  await memberService.remove(memberId)
+  return c.body(null, 204)
+})
+
+membersRouter.openapi(leaveMember, async (c) => {
+  const userId = c.get('userId')
+  const { memberId } = c.req.valid('param')
+
+  const existing = await prisma.propertyMember.findUnique({ where: { id: memberId } })
+  if (!existing) {
+    return c.json({ error: 'not_found', message: 'Member not found' }, 404)
+  }
+
+  if (existing.userId !== userId) {
+    return c.json({ error: 'forbidden', message: 'You can only remove yourself' }, 403)
+  }
+
+  const isOwner = await propertyService.isOwner(existing.propertyId, userId)
+  if (isOwner) {
+    return c.json(
+      { error: 'forbidden', message: 'Owners cannot leave; transfer ownership first' },
+      403,
+    )
   }
 
   await memberService.remove(memberId)
