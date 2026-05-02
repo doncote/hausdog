@@ -57,7 +57,10 @@ describe('GET /categories', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns list of categories', async () => {
-    const cats = [makeCategory(), makeCategory({ id: '550e8400-e29b-41d4-a716-446655440001', slug: 'tools', name: 'Tools' })]
+    const cats = [
+      makeCategory(),
+      makeCategory({ id: '550e8400-e29b-41d4-a716-446655440001', slug: 'tools', name: 'Tools' }),
+    ]
     mockService.findAllForUser.mockResolvedValue(cats)
 
     const res = await makeApp().request('/categories')
@@ -196,7 +199,9 @@ describe('DELETE /categories/:id', () => {
     mockService.isCategoryInUse.mockResolvedValue(false)
     mockService.delete.mockResolvedValue(undefined)
 
-    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(res.status).toBe(204)
     expect(mockService.delete).toHaveBeenCalledWith(CAT_ID)
@@ -205,7 +210,9 @@ describe('DELETE /categories/:id', () => {
   it('returns 404 when category not found', async () => {
     mockService.findById.mockResolvedValue(null)
 
-    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(res.status).toBe(404)
   })
@@ -213,7 +220,9 @@ describe('DELETE /categories/:id', () => {
   it('returns 403 for system categories', async () => {
     mockService.findById.mockResolvedValue(makeCategory({ isSystem: true }))
 
-    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(res.status).toBe(403)
   })
@@ -221,7 +230,9 @@ describe('DELETE /categories/:id', () => {
   it('returns 403 when category belongs to another user', async () => {
     mockService.findById.mockResolvedValue(makeCategory({ userId: 'other-user' }))
 
-    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(res.status).toBe(403)
   })
@@ -230,7 +241,9 @@ describe('DELETE /categories/:id', () => {
     mockService.findById.mockResolvedValue(makeCategory())
     mockService.isCategoryInUse.mockResolvedValue(true)
 
-    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    const res = await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(res.status).toBe(409)
     const body = await res.json()
@@ -241,7 +254,9 @@ describe('DELETE /categories/:id', () => {
     mockService.findById.mockResolvedValue(makeCategory())
     mockService.isCategoryInUse.mockResolvedValue(true)
 
-    await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', { method: 'DELETE' })
+    await makeApp().request('/categories/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'DELETE',
+    })
 
     expect(mockService.delete).not.toHaveBeenCalled()
   })

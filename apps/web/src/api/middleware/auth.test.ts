@@ -14,8 +14,8 @@ vi.mock('@/features/api-keys/service', () => ({
   })),
 }))
 
-import { apiKeyAuth } from './auth'
 import type { AuthContext } from './auth'
+import { apiKeyAuth } from './auth'
 
 function makeApp() {
   const app = new Hono<{ Variables: AuthContext }>()

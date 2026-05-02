@@ -130,7 +130,10 @@ function InventoryPage() {
           <Input
             placeholder="Search items..."
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setPage(1)
+            }}
             className="pl-10"
           />
         </div>

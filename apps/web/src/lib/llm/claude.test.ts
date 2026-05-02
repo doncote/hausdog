@@ -180,9 +180,7 @@ describe('suggestMaintenanceWithClaude', () => {
   it('throws when Claude returns no text content', async () => {
     mockCreate.mockResolvedValue({ content: [] })
 
-    await expect(suggestMaintenanceWithClaude(item)).rejects.toThrow(
-      'No text response from Claude',
-    )
+    await expect(suggestMaintenanceWithClaude(item)).rejects.toThrow('No text response from Claude')
   })
 })
 
@@ -196,9 +194,7 @@ describe('chatWithClaude', () => {
     propertyType: 'single_family',
   }
 
-  const messages = [
-    { role: 'user' as const, content: 'When should I replace my HVAC filter?' },
-  ]
+  const messages = [{ role: 'user' as const, content: 'When should I replace my HVAC filter?' }]
 
   const relevantItems = [
     {

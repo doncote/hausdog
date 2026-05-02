@@ -214,7 +214,6 @@ describe('POST /properties/:propertyId/documents/upload', () => {
 
     expect(res.status).toBe(404)
   })
-
 })
 
 describe('DELETE /documents/:id', () => {

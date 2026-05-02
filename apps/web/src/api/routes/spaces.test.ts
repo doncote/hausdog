@@ -180,7 +180,10 @@ describe('POST /properties/:propertyId/spaces', () => {
       body: JSON.stringify({ name: 'Garage' }),
     })
 
-    expect(mockSpaceService.create).toHaveBeenCalledWith(USER_ID, { propertyId: PROP_ID, name: 'Garage' })
+    expect(mockSpaceService.create).toHaveBeenCalledWith(USER_ID, {
+      propertyId: PROP_ID,
+      name: 'Garage',
+    })
   })
 })
 

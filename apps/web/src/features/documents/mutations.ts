@@ -31,8 +31,12 @@ export function useUpdateDocument() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string; input: UpdateDocumentInput }) =>
-      updateDocument({ data: { id: input.id, userId: input.userId, input: input.input } }),
+    mutationFn: (input: {
+      id: string
+      userId: string
+      propertyId: string
+      input: UpdateDocumentInput
+    }) => updateDocument({ data: { id: input.id, userId: input.userId, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),

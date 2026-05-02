@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { getServerEnv } from '@/lib/env'
-import { createLatticeClient } from '../services/lattice-client'
 import type { AuthContext } from '../middleware/auth'
+import { createLatticeClient } from '../services/lattice-client'
 
 const LatticeIssueSchema = z.object({
   id: z.string(),
@@ -85,7 +85,10 @@ workRouter.openapi(listWorkIssues, async (c) => {
 
   const env = getServerEnv()
   if (!env.LATTICE_API_URL || !env.LATTICE_API_KEY) {
-    return c.json({ error: 'not_configured', message: 'Lattice integration is not configured' }, 503)
+    return c.json(
+      { error: 'not_configured', message: 'Lattice integration is not configured' },
+      503,
+    )
   }
 
   const query = c.req.valid('query')

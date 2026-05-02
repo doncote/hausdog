@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { fetchWorkIssues, type FetchWorkIssuesInput } from './api'
+import { type FetchWorkIssuesInput, fetchWorkIssues } from './api'
 
 export const workIssuesQueryOptions = (filters: FetchWorkIssuesInput) =>
   queryOptions({

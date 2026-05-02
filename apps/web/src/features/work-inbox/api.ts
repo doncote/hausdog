@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { IssueStatus, IssuePriority } from '@/lib/lattice-client'
+import type { IssuePriority, IssueStatus } from '@/lib/lattice-client'
 import { getLatticeEpicChildren, listLatticeIssues } from '@/lib/lattice-client'
 
 export interface FetchWorkIssuesInput {

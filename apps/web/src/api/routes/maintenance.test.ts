@@ -123,9 +123,7 @@ describe('GET /items/:itemId/maintenance', () => {
   it('returns paginated maintenance tasks for item', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(
-      makePaginatedResult([makeTask()]),
-    )
+    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(makePaginatedResult([makeTask()]))
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`)
     const body = await res.json()
@@ -155,9 +153,7 @@ describe('GET /items/:itemId/maintenance', () => {
   it('serializes nextDueDate as ISO string', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(
-      makePaginatedResult([makeTask()]),
-    )
+    mockMaintenanceService.findPaginatedForItem.mockResolvedValue(makePaginatedResult([makeTask()]))
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`)
     const body = await res.json()

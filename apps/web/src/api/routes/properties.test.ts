@@ -170,7 +170,10 @@ describe('POST /properties', () => {
       body: JSON.stringify({ name: 'New Place', city: 'Chicago' }),
     })
 
-    expect(mockService.create).toHaveBeenCalledWith(USER_ID, expect.objectContaining({ name: 'New Place', city: 'Chicago' }))
+    expect(mockService.create).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ name: 'New Place', city: 'Chicago' }),
+    )
   })
 })
 

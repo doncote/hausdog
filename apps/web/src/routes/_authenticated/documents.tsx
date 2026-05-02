@@ -15,7 +15,6 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Pagination } from '@/components/ui/pagination'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Pagination } from '@/components/ui/pagination'
 import {
   Select,
   SelectContent,
@@ -299,12 +299,21 @@ function DocumentsPage() {
           <Input
             placeholder="Search documents..."
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setPage(1)
+            }}
             className="pl-10"
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v)
+            setPage(1)
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Status" />
@@ -359,78 +368,78 @@ function DocumentsPage() {
         </div>
       ) : (
         <>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pagedDocuments.map((doc) => (
-            <div
-              key={doc.id}
-              className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start gap-3 mb-3">
-                <div className="rounded-lg bg-secondary p-2.5">
-                  {doc.contentType.startsWith('image/') ? (
-                    <Image className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.fileName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {doc.type} · {(doc.sizeBytes / 1024).toFixed(0)} KB
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                {isProcessing(doc.id) ? (
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  getStatusBadge(doc.status)
-                )}
-                <div className="flex gap-2">
-                  {(doc.status === DocumentStatus.PENDING ||
-                    doc.status === DocumentStatus.PROCESSING) &&
-                    !isProcessing(doc.id) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleReprocess(doc)}
-                        className="gap-1"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        Process
-                      </Button>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pagedDocuments.map((doc) => (
+              <div
+                key={doc.id}
+                className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="rounded-lg bg-secondary p-2.5">
+                    {doc.contentType.startsWith('image/') ? (
+                      <Image className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-muted-foreground" />
                     )}
-                  <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
-                    View
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setDocumentToDelete(doc)
-                      setShowDeleteDialog(true)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{doc.fileName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {doc.type} · {(doc.sizeBytes / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  {isProcessing(doc.id) ? (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    getStatusBadge(doc.status)
+                  )}
+                  <div className="flex gap-2">
+                    {(doc.status === DocumentStatus.PENDING ||
+                      doc.status === DocumentStatus.PROCESSING) &&
+                      !isProcessing(doc.id) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReprocess(doc)}
+                          className="gap-1"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Process
+                        </Button>
+                      )}
+                    <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setDocumentToDelete(doc)
+                        setShowDeleteDialog(true)
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <Pagination
-          page={safeDocPage}
-          pages={docPages}
-          total={totalDocs}
-          limit={DOC_PAGE_SIZE}
-          onPageChange={setPage}
-          className="mt-6"
-        />
+            ))}
+          </div>
+          <Pagination
+            page={safeDocPage}
+            pages={docPages}
+            total={totalDocs}
+            limit={DOC_PAGE_SIZE}
+            onPageChange={setPage}
+            className="mt-6"
+          />
         </>
       )}
 

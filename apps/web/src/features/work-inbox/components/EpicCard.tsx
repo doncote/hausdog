@@ -90,7 +90,10 @@ function ProgressBar({ issues }: { issues: LatticeIssue[] }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full bg-primary rounded-full transition-all"
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="text-xs text-muted-foreground whitespace-nowrap">
         {closed} / {total} closed

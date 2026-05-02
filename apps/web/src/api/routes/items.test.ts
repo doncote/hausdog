@@ -195,7 +195,9 @@ describe('GET /items/:id/children', () => {
   it('returns children of item', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
     mockPropertyService.findById.mockResolvedValue(makeProperty())
-    mockItemService.findChildrenForItem.mockResolvedValue([makeItem({ id: CHILD_ID, name: 'Ice Maker' })])
+    mockItemService.findChildrenForItem.mockResolvedValue([
+      makeItem({ id: CHILD_ID, name: 'Ice Maker' }),
+    ])
 
     const res = await makeApp().request(`/items/${ITEM_ID}/children`)
     const body = await res.json()
@@ -263,10 +265,13 @@ describe('POST /properties/:propertyId/items', () => {
       body: JSON.stringify({ name: 'Dishwasher', category: 'appliances' }),
     })
 
-    expect(mockItemService.create).toHaveBeenCalledWith(USER_ID, expect.objectContaining({
-      propertyId: PROP_ID,
-      name: 'Dishwasher',
-    }))
+    expect(mockItemService.create).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        name: 'Dishwasher',
+      }),
+    )
   })
 })
 

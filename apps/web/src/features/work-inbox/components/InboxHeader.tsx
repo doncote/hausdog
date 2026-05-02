@@ -29,8 +29,7 @@ export function InboxHeader({
   onStatusToggle,
   onClearFilters,
 }: InboxHeaderProps) {
-  const hasActiveFilters =
-    assigneeFilter !== 'all' || statusFilter.length > 0
+  const hasActiveFilters = assigneeFilter !== 'all' || statusFilter.length > 0
 
   return (
     <div className="flex flex-col gap-4 mb-6">

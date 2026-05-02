@@ -1,4 +1,4 @@
-export type { IssueStatus, IssuePriority, IssueType, LatticeIssue } from '@/lib/lattice-client'
+export type { IssuePriority, IssueStatus, IssueType, LatticeIssue } from '@/lib/lattice-client'
 
 export interface WorkFilters {
   assignee?: string

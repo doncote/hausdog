@@ -55,8 +55,8 @@ export function WorkInbox({ filters, onFiltersChange }: WorkInboxProps) {
 
       {isPending && (
         <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full rounded-lg" />
+          {Array.from({ length: 6 }, (_, i) => `skeleton-${i}`).map((key) => (
+            <Skeleton key={key} className="h-10 w-full rounded-lg" />
           ))}
         </div>
       )}
@@ -69,9 +69,7 @@ export function WorkInbox({ filters, onFiltersChange }: WorkInboxProps) {
         </div>
       )}
 
-      {!isPending && !isError && issues.length === 0 && (
-        <EmptyState />
-      )}
+      {!isPending && !isError && issues.length === 0 && <EmptyState />}
 
       {!isPending && !isError && issues.length > 0 && (
         <div className="space-y-4">

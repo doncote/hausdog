@@ -63,9 +63,7 @@ describe('lookupPropertyWithGemini', () => {
     it('throws when API response is not ok', async () => {
       mockFetch.mockResolvedValue(makeErrorHttpResponse(500, 'Internal Server Error'))
 
-      await expect(lookupPropertyWithGemini('123 Main St')).rejects.toThrow(
-        'Gemini API error: 500',
-      )
+      await expect(lookupPropertyWithGemini('123 Main St')).rejects.toThrow('Gemini API error: 500')
     })
   })
 
@@ -108,7 +106,7 @@ describe('lookupPropertyWithGemini', () => {
     })
 
     it('parses JSON wrapped in markdown json code block', async () => {
-      const markdown = '```json\n' + JSON.stringify(validResult) + '\n```'
+      const markdown = `\`\`\`json\n${JSON.stringify(validResult)}\n\`\`\``
       mockFetch.mockResolvedValue(makeOkResponse(markdown))
 
       const response = await lookupPropertyWithGemini('123 Main St')
@@ -118,7 +116,7 @@ describe('lookupPropertyWithGemini', () => {
     })
 
     it('parses JSON wrapped in plain code block (no language)', async () => {
-      const markdown = '```\n' + JSON.stringify(validResult) + '\n```'
+      const markdown = `\`\`\`\n${JSON.stringify(validResult)}\n\`\`\``
       mockFetch.mockResolvedValue(makeOkResponse(markdown))
 
       const response = await lookupPropertyWithGemini('123 Main St')
@@ -153,10 +151,7 @@ describe('lookupPropertyWithGemini', () => {
     })
 
     it('ignores chunks without web data', async () => {
-      const chunks = [
-        { web: { uri: 'https://zillow.com/prop', title: 'Zillow' } },
-        {},
-      ]
+      const chunks = [{ web: { uri: 'https://zillow.com/prop', title: 'Zillow' } }, {}]
       mockFetch.mockResolvedValue(makeOkResponse(JSON.stringify(validResult), chunks))
 
       const response = await lookupPropertyWithGemini('123 Main St')

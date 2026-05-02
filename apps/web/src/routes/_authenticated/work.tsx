@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { WorkInbox } from '@/features/work-inbox'
 import type { WorkFilters } from '@/features/work-inbox'
+import { WorkInbox } from '@/features/work-inbox'
 
 export const Route = createFileRoute('/_authenticated/work')({
   validateSearch: (search: Record<string, unknown>): WorkFilters => ({

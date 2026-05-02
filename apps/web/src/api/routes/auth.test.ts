@@ -70,7 +70,10 @@ describe('GET /auth/keys', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns list of API keys', async () => {
-    mockService.findAllForUser.mockResolvedValue([makeApiKey(), makeApiKey({ id: KEY_ID_2, name: 'ci' })])
+    mockService.findAllForUser.mockResolvedValue([
+      makeApiKey(),
+      makeApiKey({ id: KEY_ID_2, name: 'ci' }),
+    ])
 
     const res = await makeApp().request('/auth/keys')
     const body = await res.json()
