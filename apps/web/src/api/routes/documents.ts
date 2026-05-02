@@ -316,8 +316,8 @@ documentsRouter.openapi(uploadDocument, async (c) => {
   const { propertyId } = c.req.valid('param')
   const { itemId } = c.req.valid('query')
 
-  const property = await propertyService.findById(propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
@@ -430,9 +430,8 @@ documentsRouter.openapi(deleteDocument, async (c) => {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 
-  // Verify ownership through property
-  const property = await propertyService.findById(existing.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(existing.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Document not found' }, 404)
   }
 

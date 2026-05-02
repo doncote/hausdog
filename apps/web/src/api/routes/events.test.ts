@@ -20,6 +20,7 @@ const mockItemService = vi.hoisted(() => ({
 
 const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
+  canWrite: vi.fn(),
 }))
 
 vi.mock('@/features/events/service', () => ({
@@ -177,7 +178,7 @@ describe('POST /items/:itemId/events', () => {
 
   it('creates event and returns 201', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockEventService.create.mockResolvedValue(makeEvent())
 
     const res = await makeApp().request(`/items/${ITEM_ID}/events`, {
@@ -205,7 +206,7 @@ describe('POST /items/:itemId/events', () => {
 
   it('returns 404 when property not owned by user', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/items/${ITEM_ID}/events`, {
       method: 'POST',
@@ -223,7 +224,7 @@ describe('PATCH /events/:id', () => {
   it('updates event and returns 200', async () => {
     mockEventService.findById.mockResolvedValue(makeEvent())
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockEventService.update.mockResolvedValue(makeEvent({ description: 'Updated checkup' }))
 
     const res = await makeApp().request(`/events/${EVENT_ID}`, {
@@ -252,7 +253,7 @@ describe('PATCH /events/:id', () => {
   it('returns 404 when property not owned by user', async () => {
     mockEventService.findById.mockResolvedValue(makeEvent())
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/events/${EVENT_ID}`, {
       method: 'PATCH',
@@ -270,7 +271,7 @@ describe('DELETE /events/:id', () => {
   it('deletes event and returns 204', async () => {
     mockEventService.findById.mockResolvedValue(makeEvent())
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockEventService.delete.mockResolvedValue(undefined)
 
     const res = await makeApp().request(`/events/${EVENT_ID}`, { method: 'DELETE' })
@@ -290,7 +291,7 @@ describe('DELETE /events/:id', () => {
   it('returns 404 when property not owned by user', async () => {
     mockEventService.findById.mockResolvedValue(makeEvent())
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/events/${EVENT_ID}`, { method: 'DELETE' })
 
@@ -300,7 +301,7 @@ describe('DELETE /events/:id', () => {
   it('does not delete when ownership check fails', async () => {
     mockEventService.findById.mockResolvedValue(makeEvent())
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     await makeApp().request(`/events/${EVENT_ID}`, { method: 'DELETE' })
 

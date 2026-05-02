@@ -275,8 +275,8 @@ spacesRouter.openapi(createSpace, async (c) => {
   const { propertyId } = c.req.valid('param')
   const { name } = c.req.valid('json')
 
-  const property = await propertyService.findById(propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Property not found' }, 404)
   }
 
@@ -302,9 +302,8 @@ spacesRouter.openapi(updateSpace, async (c) => {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
-  // Verify ownership through property
-  const property = await propertyService.findById(existing.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(existing.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
@@ -329,9 +328,8 @@ spacesRouter.openapi(deleteSpace, async (c) => {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 
-  // Verify ownership through property
-  const property = await propertyService.findById(existing.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(existing.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Space not found' }, 404)
   }
 

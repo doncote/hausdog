@@ -34,6 +34,7 @@ const mockDocumentService = vi.hoisted(() => ({
 
 const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
+  canWrite: vi.fn(),
 }))
 
 vi.mock('@/features/documents/service', () => ({
@@ -202,7 +203,7 @@ describe('POST /properties/:propertyId/documents/upload', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns 404 when property not found', async () => {
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const formData = new FormData()
     formData.append('file', new Blob(['pdf content'], { type: 'application/pdf' }), 'receipt.pdf')
@@ -221,7 +222,7 @@ describe('DELETE /documents/:id', () => {
 
   it('deletes document and returns 204', async () => {
     mockDocumentService.findById.mockResolvedValue(makeDocument())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockDocumentService.delete.mockResolvedValue(undefined)
 
     const res = await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
@@ -240,7 +241,7 @@ describe('DELETE /documents/:id', () => {
 
   it('returns 404 when property not owned by user', async () => {
     mockDocumentService.findById.mockResolvedValue(makeDocument())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
 
@@ -249,7 +250,7 @@ describe('DELETE /documents/:id', () => {
 
   it('does not delete when ownership check fails', async () => {
     mockDocumentService.findById.mockResolvedValue(makeDocument())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     await makeApp().request(`/documents/${DOC_ID}`, { method: 'DELETE' })
 
@@ -260,7 +261,7 @@ describe('DELETE /documents/:id', () => {
     process.env.SUPABASE_URL = 'https://test.supabase.co'
     process.env.SUPABASE_KEY = 'test-key'
     mockDocumentService.findById.mockResolvedValue(makeDocument())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockDocumentService.delete.mockResolvedValue(undefined)
     mockStorageRemove.mockResolvedValue({ error: null })
 
@@ -276,7 +277,7 @@ describe('DELETE /documents/:id', () => {
     process.env.SUPABASE_URL = 'https://test.supabase.co'
     process.env.SUPABASE_KEY = 'test-key'
     mockDocumentService.findById.mockResolvedValue(makeDocument())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockDocumentService.delete.mockResolvedValue(undefined)
     mockStorageRemove.mockResolvedValue({ error: { message: 'Storage error' } })
 
@@ -292,7 +293,7 @@ describe('DELETE /documents/:id', () => {
     process.env.SUPABASE_URL = 'https://test.supabase.co'
     process.env.SUPABASE_KEY = 'test-key'
     mockDocumentService.findById.mockResolvedValue(makeDocument({ storagePath: null }))
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockDocumentService.delete.mockResolvedValue(undefined)
     mockStorageRemove.mockClear()
 

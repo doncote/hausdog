@@ -27,6 +27,7 @@ const mockItemService = vi.hoisted(() => ({
 
 const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
+  canWrite: vi.fn(),
 }))
 
 const mockTriggerTasks = vi.hoisted(() => ({
@@ -237,7 +238,7 @@ describe('POST /items/:itemId/maintenance', () => {
 
   it('creates task and returns 201', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.create.mockResolvedValue(makeTask())
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`, {
@@ -273,7 +274,7 @@ describe('POST /items/:itemId/maintenance', () => {
 
   it('returns 404 when item not owned by user', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance`, {
       method: 'POST',
@@ -290,7 +291,7 @@ describe('POST /items/:itemId/maintenance', () => {
 
   it('passes propertyId from item to service', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.create.mockResolvedValue(makeTask())
 
     await makeApp().request(`/items/${ITEM_ID}/maintenance`, {
@@ -315,7 +316,7 @@ describe('PATCH /maintenance/:id', () => {
 
   it('updates task and returns 200', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.update.mockResolvedValue(makeTask({ name: 'Updated task' }))
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}`, {
@@ -343,7 +344,7 @@ describe('PATCH /maintenance/:id', () => {
 
   it('returns 404 when not owned by user', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}`, {
       method: 'PATCH',
@@ -360,7 +361,7 @@ describe('POST /maintenance/:id/complete', () => {
 
   it('completes task and returns 200', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.complete.mockResolvedValue(
       makeTask({ lastCompletedAt: new Date('2026-04-01') }),
     )
@@ -394,7 +395,7 @@ describe('POST /maintenance/:id/snooze', () => {
 
   it('snoozes task and returns 200', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.snooze.mockResolvedValue(
       makeTask({ nextDueDate: new Date('2026-07-01') }),
     )
@@ -420,7 +421,7 @@ describe('DELETE /maintenance/:id', () => {
 
   it('deletes task and returns 204', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockMaintenanceService.delete.mockResolvedValue(undefined)
 
     const res = await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
@@ -439,7 +440,7 @@ describe('DELETE /maintenance/:id', () => {
 
   it('does not delete when ownership check fails', async () => {
     mockMaintenanceService.findById.mockResolvedValue(makeTask())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
 
@@ -452,7 +453,7 @@ describe('POST /items/:itemId/maintenance/generate', () => {
 
   it('triggers background task and returns trigger method', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockTriggerTasks.trigger.mockResolvedValue({})
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance/generate`, {
@@ -467,7 +468,7 @@ describe('POST /items/:itemId/maintenance/generate', () => {
 
   it('falls back to inline when trigger throws', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockTriggerTasks.trigger.mockRejectedValue(new Error('trigger unavailable'))
     mockSuggestMaintenance.mockResolvedValue([
       { name: 'Oil filter', intervalMonths: 12 },
@@ -498,7 +499,7 @@ describe('POST /items/:itemId/maintenance/generate', () => {
 
   it('returns 404 when item not owned by user', async () => {
     mockItemService.findById.mockResolvedValue(makeItem())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/items/${ITEM_ID}/maintenance/generate`, {
       method: 'POST',

@@ -16,6 +16,7 @@ const mockSpaceService = vi.hoisted(() => ({
 
 const mockPropertyService = vi.hoisted(() => ({
   findById: vi.fn(),
+  canWrite: vi.fn(),
 }))
 
 vi.mock('@/features/spaces/service', () => ({
@@ -144,7 +145,7 @@ describe('POST /properties/:propertyId/spaces', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('creates space and returns 201', async () => {
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockSpaceService.create.mockResolvedValue(makeSpace())
 
     const res = await makeApp().request(`/properties/${PROP_ID}/spaces`, {
@@ -159,7 +160,7 @@ describe('POST /properties/:propertyId/spaces', () => {
   })
 
   it('returns 404 when property not found', async () => {
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/properties/${MISSING_ID}/spaces`, {
       method: 'POST',
@@ -171,7 +172,7 @@ describe('POST /properties/:propertyId/spaces', () => {
   })
 
   it('calls space service with propertyId and name', async () => {
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockSpaceService.create.mockResolvedValue(makeSpace())
 
     await makeApp().request(`/properties/${PROP_ID}/spaces`, {
@@ -192,7 +193,7 @@ describe('PATCH /spaces/:id', () => {
 
   it('updates space and returns 200', async () => {
     mockSpaceService.findById.mockResolvedValue(makeSpace())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockSpaceService.update.mockResolvedValue(makeSpace({ name: 'Living Room' }))
 
     const res = await makeApp().request(`/spaces/${SPACE_ID}`, {
@@ -220,7 +221,7 @@ describe('PATCH /spaces/:id', () => {
 
   it('returns 404 when property not owned by user', async () => {
     mockSpaceService.findById.mockResolvedValue(makeSpace())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/spaces/${SPACE_ID}`, {
       method: 'PATCH',
@@ -237,7 +238,7 @@ describe('DELETE /spaces/:id', () => {
 
   it('deletes space and returns 204', async () => {
     mockSpaceService.findById.mockResolvedValue(makeSpace())
-    mockPropertyService.findById.mockResolvedValue(makeProperty())
+    mockPropertyService.canWrite.mockResolvedValue(true)
     mockSpaceService.delete.mockResolvedValue(undefined)
 
     const res = await makeApp().request(`/spaces/${SPACE_ID}`, { method: 'DELETE' })
@@ -256,7 +257,7 @@ describe('DELETE /spaces/:id', () => {
 
   it('returns 404 when property not owned by user', async () => {
     mockSpaceService.findById.mockResolvedValue(makeSpace())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     const res = await makeApp().request(`/spaces/${SPACE_ID}`, { method: 'DELETE' })
 
@@ -265,7 +266,7 @@ describe('DELETE /spaces/:id', () => {
 
   it('does not delete when property not owned', async () => {
     mockSpaceService.findById.mockResolvedValue(makeSpace())
-    mockPropertyService.findById.mockResolvedValue(null)
+    mockPropertyService.canWrite.mockResolvedValue(false)
 
     await makeApp().request(`/spaces/${SPACE_ID}`, { method: 'DELETE' })
 

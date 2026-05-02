@@ -355,12 +355,21 @@ function serializeTask(task: any) {
   }
 }
 
-// Helper to verify ownership of a maintenance task
+// Helper to verify read access to a maintenance task
 async function verifyTaskOwnership(taskId: string, userId: string) {
   const task = await maintenanceService.findById(taskId)
   if (!task) return null
   const property = await propertyService.findById(task.propertyId, userId)
   if (!property) return null
+  return task
+}
+
+// Helper to verify write access to a maintenance task (editors and owners only)
+async function verifyTaskWriteAccess(taskId: string, userId: string) {
+  const task = await maintenanceService.findById(taskId)
+  if (!task) return null
+  const canWrite = await propertyService.canWrite(task.propertyId, userId)
+  if (!canWrite) return null
   return task
 }
 
@@ -429,8 +438,8 @@ maintenanceRouter.openapi(createMaintenanceTask, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  const property = await propertyService.findById(item.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(item.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
@@ -451,7 +460,7 @@ maintenanceRouter.openapi(updateMaintenanceTask, async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
 
-  const existing = await verifyTaskOwnership(id, userId)
+  const existing = await verifyTaskWriteAccess(id, userId)
   if (!existing) {
     return c.json({ error: 'not_found', message: 'Maintenance task not found' }, 404)
   }
@@ -472,7 +481,7 @@ maintenanceRouter.openapi(completeMaintenanceTask, async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
 
-  const existing = await verifyTaskOwnership(id, userId)
+  const existing = await verifyTaskWriteAccess(id, userId)
   if (!existing) {
     return c.json({ error: 'not_found', message: 'Maintenance task not found' }, 404)
   }
@@ -491,7 +500,7 @@ maintenanceRouter.openapi(snoozeMaintenanceTask, async (c) => {
   const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
-  const existing = await verifyTaskOwnership(id, userId)
+  const existing = await verifyTaskWriteAccess(id, userId)
   if (!existing) {
     return c.json({ error: 'not_found', message: 'Maintenance task not found' }, 404)
   }
@@ -504,7 +513,7 @@ maintenanceRouter.openapi(deleteMaintenanceTask, async (c) => {
   const userId = c.get('userId')
   const { id } = c.req.valid('param')
 
-  const existing = await verifyTaskOwnership(id, userId)
+  const existing = await verifyTaskWriteAccess(id, userId)
   if (!existing) {
     return c.json({ error: 'not_found', message: 'Maintenance task not found' }, 404)
   }
@@ -522,8 +531,8 @@ maintenanceRouter.openapi(generateMaintenanceSuggestions, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  const property = await propertyService.findById(item.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(item.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 

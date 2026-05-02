@@ -297,9 +297,8 @@ eventsRouter.openapi(createEvent, async (c) => {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
-  // Verify ownership through property
-  const property = await propertyService.findById(item.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(item.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Item not found' }, 404)
   }
 
@@ -322,13 +321,12 @@ eventsRouter.openapi(updateEvent, async (c) => {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
-  // Verify ownership through item -> property chain
   const item = await itemService.findById(existing.itemId)
   if (!item) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
-  const property = await propertyService.findById(item.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(item.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
@@ -352,13 +350,12 @@ eventsRouter.openapi(deleteEvent, async (c) => {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
-  // Verify ownership through item -> property chain
   const item = await itemService.findById(existing.itemId)
   if (!item) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
-  const property = await propertyService.findById(item.propertyId, userId)
-  if (!property) {
+  const canWrite = await propertyService.canWrite(item.propertyId, userId)
+  if (!canWrite) {
     return c.json({ error: 'not_found', message: 'Event not found' }, 404)
   }
 
