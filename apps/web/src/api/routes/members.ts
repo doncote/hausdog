@@ -3,6 +3,7 @@ import { PropertyMemberService } from '@/features/members/service'
 import { PropertyService } from '@/features/properties/service'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db'
+import { getUserEmail } from '@/lib/supabase-admin'
 import type { AuthContext } from '../middleware/auth'
 
 const memberService = new PropertyMemberService({ db: prisma, logger })
@@ -142,6 +143,71 @@ const leaveMember = createRoute({
   },
 })
 
+const listInvites = createRoute({
+  method: 'get',
+  path: '/members/invites',
+  tags: ['Members'],
+  summary: 'List pending property invitations for the current user',
+  responses: {
+    200: {
+      description: 'List of pending invitations',
+      content: { 'application/json': { schema: z.array(MemberSchema) } },
+    },
+    503: {
+      description: 'Email lookup unavailable',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+  },
+})
+
+const acceptInvite = createRoute({
+  method: 'post',
+  path: '/members/{memberId}/accept',
+  tags: ['Members'],
+  summary: 'Accept a pending property invitation',
+  request: {
+    params: z.object({ memberId: z.string().uuid() }),
+  },
+  responses: {
+    200: {
+      description: 'Invitation accepted',
+      content: { 'application/json': { schema: MemberSchema } },
+    },
+    403: {
+      description: 'Invitation does not belong to current user',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+    404: {
+      description: 'Invitation not found or already resolved',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+  },
+})
+
+const declineInvite = createRoute({
+  method: 'post',
+  path: '/members/{memberId}/decline',
+  tags: ['Members'],
+  summary: 'Decline a pending property invitation',
+  request: {
+    params: z.object({ memberId: z.string().uuid() }),
+  },
+  responses: {
+    200: {
+      description: 'Invitation declined',
+      content: { 'application/json': { schema: MemberSchema } },
+    },
+    403: {
+      description: 'Invitation does not belong to current user',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+    404: {
+      description: 'Invitation not found or already resolved',
+      content: { 'application/json': { schema: ErrorSchema } },
+    },
+  },
+})
+
 // Helpers
 function serializeMember(m: {
   id: string
@@ -251,4 +317,56 @@ membersRouter.openapi(leaveMember, async (c) => {
 
   await memberService.remove(memberId)
   return c.body(null, 204)
+})
+
+membersRouter.openapi(listInvites, async (c) => {
+  const userId = c.get('userId')
+
+  const userEmail = await getUserEmail(userId)
+  if (!userEmail) {
+    return c.json({ error: 'service_unavailable', message: 'Email lookup unavailable' }, 503)
+  }
+
+  const invites = await memberService.findPendingForEmail(userEmail)
+  return c.json(invites.map(serializeMember), 200)
+})
+
+membersRouter.openapi(acceptInvite, async (c) => {
+  const userId = c.get('userId')
+  const { memberId } = c.req.valid('param')
+
+  const existing = await prisma.propertyMember.findFirst({
+    where: { id: memberId, status: 'pending' },
+  })
+  if (!existing) {
+    return c.json({ error: 'not_found', message: 'Invitation not found or already resolved' }, 404)
+  }
+
+  const userEmail = await getUserEmail(userId)
+  if (!userEmail || existing.email !== userEmail.toLowerCase()) {
+    return c.json({ error: 'forbidden', message: 'This invitation is not for you' }, 403)
+  }
+
+  const member = await memberService.accept(memberId, userId, userEmail)
+  return c.json(serializeMember(member), 200)
+})
+
+membersRouter.openapi(declineInvite, async (c) => {
+  const userId = c.get('userId')
+  const { memberId } = c.req.valid('param')
+
+  const existing = await prisma.propertyMember.findFirst({
+    where: { id: memberId, status: 'pending' },
+  })
+  if (!existing) {
+    return c.json({ error: 'not_found', message: 'Invitation not found or already resolved' }, 404)
+  }
+
+  const userEmail = await getUserEmail(userId)
+  if (!userEmail || existing.email !== userEmail.toLowerCase()) {
+    return c.json({ error: 'forbidden', message: 'This invitation is not for you' }, 403)
+  }
+
+  const member = await memberService.decline(memberId)
+  return c.json(serializeMember(member), 200)
 })

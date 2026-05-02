@@ -2,16 +2,22 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockPrisma = vi.hoisted(() => ({
-  propertyMember: { findUnique: vi.fn() },
+  propertyMember: { findUnique: vi.fn(), findFirst: vi.fn() },
 }))
 vi.mock('@/lib/db', () => ({ prisma: mockPrisma }))
+
+const mockGetUserEmail = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/supabase-admin', () => ({ getUserEmail: mockGetUserEmail }))
 vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
 const mockMemberService = vi.hoisted(() => ({
   findAllForProperty: vi.fn(),
+  findPendingForEmail: vi.fn(),
   invite: vi.fn(),
+  accept: vi.fn(),
+  decline: vi.fn(),
   updateRole: vi.fn(),
   remove: vi.fn(),
 }))
@@ -286,5 +292,108 @@ describe('POST /members/:memberId/leave', () => {
     const body = await res.json()
     expect(body.message).toContain('transfer ownership')
     expect(mockMemberService.remove).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /members/invites', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns pending invites for current user', async () => {
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+    mockMemberService.findPendingForEmail.mockResolvedValue([makeMember()])
+
+    const res = await makeApp().request('/members/invites')
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toHaveLength(1)
+    expect(mockMemberService.findPendingForEmail).toHaveBeenCalledWith('alice@example.com')
+  })
+
+  it('returns 503 when email lookup fails', async () => {
+    mockGetUserEmail.mockResolvedValue(null)
+
+    const res = await makeApp().request('/members/invites')
+
+    expect(res.status).toBe(503)
+    expect(mockMemberService.findPendingForEmail).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /members/:memberId/accept', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('accepts invite and returns updated member', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'alice@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+    mockMemberService.accept.mockResolvedValue(makeMember({ status: 'active', userId: USER_ID }))
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/accept`, { method: 'POST' })
+
+    expect(res.status).toBe(200)
+    expect(mockMemberService.accept).toHaveBeenCalledWith(MEMBER_ID, USER_ID, 'alice@example.com')
+  })
+
+  it('returns 404 when invite not found or not pending', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MISSING_ID}/accept`, { method: 'POST' })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.accept).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when invite email does not match user email', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'other@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/accept`, { method: 'POST' })
+
+    expect(res.status).toBe(403)
+    expect(mockMemberService.accept).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when email lookup fails', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'alice@example.com' }))
+    mockGetUserEmail.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/accept`, { method: 'POST' })
+
+    expect(res.status).toBe(403)
+    expect(mockMemberService.accept).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /members/:memberId/decline', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('declines invite and returns updated member', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'alice@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+    mockMemberService.decline.mockResolvedValue(makeMember({ status: 'declined' }))
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/decline`, { method: 'POST' })
+
+    expect(res.status).toBe(200)
+    expect(mockMemberService.decline).toHaveBeenCalledWith(MEMBER_ID)
+  })
+
+  it('returns 404 when invite not found or not pending', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(null)
+
+    const res = await makeApp().request(`/members/${MISSING_ID}/decline`, { method: 'POST' })
+
+    expect(res.status).toBe(404)
+    expect(mockMemberService.decline).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when invite email does not match user email', async () => {
+    mockPrisma.propertyMember.findFirst.mockResolvedValue(makeMember({ email: 'other@example.com' }))
+    mockGetUserEmail.mockResolvedValue('alice@example.com')
+
+    const res = await makeApp().request(`/members/${MEMBER_ID}/decline`, { method: 'POST' })
+
+    expect(res.status).toBe(403)
+    expect(mockMemberService.decline).not.toHaveBeenCalled()
   })
 })
