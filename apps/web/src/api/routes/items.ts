@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { ActivityService } from '@/features/activity/service'
 import { ItemService } from '@/features/items/service'
 import { PropertyService } from '@/features/properties/service'
 import { SpaceService } from '@/features/spaces/service'
@@ -10,6 +11,7 @@ import type { AuthContext } from '../middleware/auth'
 const itemService = new ItemService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
 const spaceService = new SpaceService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Response schemas
 const ItemSchema = z.object({
@@ -397,6 +399,17 @@ itemsRouter.openapi(createItem, async (c) => {
     warrantyExpires: body.warrantyExpires != null ? new Date(body.warrantyExpires) : undefined,
   })
 
+  activityService
+    .record({
+      propertyId,
+      userId,
+      action: 'created',
+      entityType: 'item',
+      entityId: item.id,
+      entityName: item.name,
+    })
+    .catch(() => {})
+
   return c.json(serializeItem(item), 201)
 })
 
@@ -440,6 +453,17 @@ itemsRouter.openapi(updateItem, async (c) => {
     notes: body.notes ?? undefined,
   })
 
+  activityService
+    .record({
+      propertyId: item.propertyId,
+      userId,
+      action: 'updated',
+      entityType: 'item',
+      entityId: item.id,
+      entityName: item.name,
+    })
+    .catch(() => {})
+
   return c.json(serializeItem(item), 200)
 })
 
@@ -458,5 +482,17 @@ itemsRouter.openapi(deleteItem, async (c) => {
   }
 
   await itemService.delete(id)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'deleted',
+      entityType: 'item',
+      entityId: id,
+      entityName: existing.name,
+    })
+    .catch(() => {})
+
   return c.body(null, 204)
 })

@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { ActivityService } from '@/features/activity/service'
 import { PropertyService } from '@/features/properties/service'
 import { SpaceService } from '@/features/spaces/service'
 import { UpdateSpaceSchema } from '@/features/spaces/types'
@@ -9,6 +10,7 @@ import type { AuthContext } from '../middleware/auth'
 
 const spaceService = new SpaceService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Response schemas
 const SpaceSchema = z.object({
@@ -282,6 +284,17 @@ spacesRouter.openapi(createSpace, async (c) => {
 
   const space = await spaceService.create(userId, { propertyId, name })
 
+  activityService
+    .record({
+      propertyId,
+      userId,
+      action: 'created',
+      entityType: 'space',
+      entityId: space.id,
+      entityName: space.name,
+    })
+    .catch(() => {})
+
   return c.json(
     {
       ...space,
@@ -309,6 +322,17 @@ spacesRouter.openapi(updateSpace, async (c) => {
 
   const space = await spaceService.update(id, userId, input)
 
+  activityService
+    .record({
+      propertyId: space.propertyId,
+      userId,
+      action: 'updated',
+      entityType: 'space',
+      entityId: space.id,
+      entityName: space.name,
+    })
+    .catch(() => {})
+
   return c.json(
     {
       ...space,
@@ -334,5 +358,17 @@ spacesRouter.openapi(deleteSpace, async (c) => {
   }
 
   await spaceService.delete(id)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'deleted',
+      entityType: 'space',
+      entityId: id,
+      entityName: existing.name,
+    })
+    .catch(() => {})
+
   return c.body(null, 204)
 })

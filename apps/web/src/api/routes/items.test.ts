@@ -6,6 +6,14 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockActivityService = vi.hoisted(() => ({
+  record: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
+}))
+
 const mockItemService = vi.hoisted(() => ({
   findPaginatedForProperty: vi.fn(),
   findPaginatedForSpace: vi.fn(),
@@ -274,6 +282,27 @@ describe('POST /properties/:propertyId/items', () => {
       }),
     )
   })
+
+  it('records created activity', async () => {
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockItemService.create.mockResolvedValue(makeItem())
+
+    await makeApp().request(`/properties/${PROP_ID}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Refrigerator', category: 'appliances' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'created',
+        entityType: 'item',
+        entityId: ITEM_ID,
+      }),
+    )
+  })
 })
 
 describe('PATCH /items/:id', () => {
@@ -319,6 +348,28 @@ describe('PATCH /items/:id', () => {
 
     expect(res.status).toBe(404)
   })
+
+  it('records updated activity', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockItemService.update.mockResolvedValue(makeItem({ name: 'Updated Fridge' }))
+
+    await makeApp().request(`/items/${ITEM_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Updated Fridge' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'updated',
+        entityType: 'item',
+        entityId: ITEM_ID,
+      }),
+    )
+  })
 })
 
 describe('DELETE /items/:id', () => {
@@ -359,5 +410,23 @@ describe('DELETE /items/:id', () => {
     await makeApp().request(`/items/${ITEM_ID}`, { method: 'DELETE' })
 
     expect(mockItemService.delete).not.toHaveBeenCalled()
+  })
+
+  it('records deleted activity', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockItemService.delete.mockResolvedValue(undefined)
+
+    await makeApp().request(`/items/${ITEM_ID}`, { method: 'DELETE' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'deleted',
+        entityType: 'item',
+        entityId: ITEM_ID,
+      }),
+    )
   })
 })

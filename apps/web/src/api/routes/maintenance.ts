@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { ActivityService } from '@/features/activity/service'
 import { ItemService } from '@/features/items/service'
 import { MaintenanceService } from '@/features/maintenance/service'
 import { PropertyService } from '@/features/properties/service'
@@ -10,6 +11,7 @@ import type { AuthContext } from '../middleware/auth'
 const maintenanceService = new MaintenanceService({ db: prisma, logger })
 const itemService = new ItemService({ db: prisma, logger })
 const propertyService = new PropertyService({ db: prisma, logger })
+const activityService = new ActivityService(prisma)
 
 // Response schemas
 const MaintenanceTaskSchema = z.object({
@@ -449,6 +451,17 @@ maintenanceRouter.openapi(createMaintenanceTask, async (c) => {
     nextDueDate: new Date(body.nextDueDate),
   })
 
+  activityService
+    .record({
+      propertyId: item.propertyId,
+      userId,
+      action: 'created',
+      entityType: 'maintenance_task',
+      entityId: task.id,
+      entityName: task.name,
+    })
+    .catch(() => {})
+
   return c.json(serializeTask(task), 201)
 })
 
@@ -490,6 +503,17 @@ maintenanceRouter.openapi(completeMaintenanceTask, async (c) => {
     description: body.description,
   })
 
+  activityService
+    .record({
+      propertyId: task.propertyId,
+      userId,
+      action: 'completed',
+      entityType: 'maintenance_task',
+      entityId: task.id,
+      entityName: task.name,
+    })
+    .catch(() => {})
+
   return c.json(serializeTask(task), 200)
 })
 
@@ -516,6 +540,18 @@ maintenanceRouter.openapi(deleteMaintenanceTask, async (c) => {
   }
 
   await maintenanceService.delete(id)
+
+  activityService
+    .record({
+      propertyId: existing.propertyId,
+      userId,
+      action: 'deleted',
+      entityType: 'maintenance_task',
+      entityId: id,
+      entityName: existing.name,
+    })
+    .catch(() => {})
+
   return c.body(null, 204)
 })
 

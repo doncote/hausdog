@@ -9,6 +9,14 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockActivityService = vi.hoisted(() => ({
+  record: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
+}))
+
 const mockMaintenanceService = vi.hoisted(() => ({
   findPaginatedForItem: vi.fn(),
   findUpcoming: vi.fn(),
@@ -308,6 +316,32 @@ describe('POST /items/:itemId/maintenance', () => {
       expect.objectContaining({ propertyId: PROP_ID, itemId: ITEM_ID }),
     )
   })
+
+  it('records created activity', async () => {
+    mockItemService.findById.mockResolvedValue(makeItem())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockMaintenanceService.create.mockResolvedValue(makeTask())
+
+    await makeApp().request(`/items/${ITEM_ID}/maintenance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Change HVAC filter',
+        intervalMonths: 3,
+        nextDueDate: '2026-04-01T00:00:00.000Z',
+      }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'created',
+        entityType: 'maintenance_task',
+        entityId: TASK_ID,
+      }),
+    )
+  })
 })
 
 describe('PATCH /maintenance/:id', () => {
@@ -387,6 +421,30 @@ describe('POST /maintenance/:id/complete', () => {
 
     expect(res.status).toBe(404)
   })
+
+  it('records completed activity', async () => {
+    mockMaintenanceService.findById.mockResolvedValue(makeTask())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockMaintenanceService.complete.mockResolvedValue(
+      makeTask({ lastCompletedAt: new Date('2026-04-01') }),
+    )
+
+    await makeApp().request(`/maintenance/${TASK_ID}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: '2026-04-01T00:00:00.000Z' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'completed',
+        entityType: 'maintenance_task',
+        entityId: TASK_ID,
+      }),
+    )
+  })
 })
 
 describe('POST /maintenance/:id/snooze', () => {
@@ -444,6 +502,24 @@ describe('DELETE /maintenance/:id', () => {
     await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
 
     expect(mockMaintenanceService.delete).not.toHaveBeenCalled()
+  })
+
+  it('records deleted activity', async () => {
+    mockMaintenanceService.findById.mockResolvedValue(makeTask())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockMaintenanceService.delete.mockResolvedValue(undefined)
+
+    await makeApp().request(`/maintenance/${TASK_ID}`, { method: 'DELETE' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'deleted',
+        entityType: 'maintenance_task',
+        entityId: TASK_ID,
+      }),
+    )
   })
 })
 

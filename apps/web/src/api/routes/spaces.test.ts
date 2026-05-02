@@ -6,6 +6,14 @@ vi.mock('@/lib/console-logger', () => ({
   consoleLogger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockActivityService = vi.hoisted(() => ({
+  record: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/features/activity/service', () => ({
+  ActivityService: vi.fn().mockImplementation(() => mockActivityService),
+}))
+
 const mockSpaceService = vi.hoisted(() => ({
   findPaginatedForProperty: vi.fn(),
   findById: vi.fn(),
@@ -186,6 +194,27 @@ describe('POST /properties/:propertyId/spaces', () => {
       name: 'Garage',
     })
   })
+
+  it('records created activity', async () => {
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockSpaceService.create.mockResolvedValue(makeSpace())
+
+    await makeApp().request(`/properties/${PROP_ID}/spaces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Kitchen' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'created',
+        entityType: 'space',
+        entityId: SPACE_ID,
+      }),
+    )
+  })
 })
 
 describe('PATCH /spaces/:id', () => {
@@ -231,6 +260,28 @@ describe('PATCH /spaces/:id', () => {
 
     expect(res.status).toBe(404)
   })
+
+  it('records updated activity', async () => {
+    mockSpaceService.findById.mockResolvedValue(makeSpace())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockSpaceService.update.mockResolvedValue(makeSpace({ name: 'Living Room' }))
+
+    await makeApp().request(`/spaces/${SPACE_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Living Room' }),
+    })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'updated',
+        entityType: 'space',
+        entityId: SPACE_ID,
+      }),
+    )
+  })
 })
 
 describe('DELETE /spaces/:id', () => {
@@ -271,5 +322,23 @@ describe('DELETE /spaces/:id', () => {
     await makeApp().request(`/spaces/${SPACE_ID}`, { method: 'DELETE' })
 
     expect(mockSpaceService.delete).not.toHaveBeenCalled()
+  })
+
+  it('records deleted activity', async () => {
+    mockSpaceService.findById.mockResolvedValue(makeSpace())
+    mockPropertyService.canWrite.mockResolvedValue(true)
+    mockSpaceService.delete.mockResolvedValue(undefined)
+
+    await makeApp().request(`/spaces/${SPACE_ID}`, { method: 'DELETE' })
+
+    expect(mockActivityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        propertyId: PROP_ID,
+        userId: USER_ID,
+        action: 'deleted',
+        entityType: 'space',
+        entityId: SPACE_ID,
+      }),
+    )
   })
 })
