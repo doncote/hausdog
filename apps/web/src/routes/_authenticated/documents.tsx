@@ -40,6 +40,7 @@ import {
   useDeleteDocument,
   useDocumentsForProperty,
 } from '@/features/documents'
+import { useProperty } from '@/features/properties'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 interface ProcessingRun {
@@ -80,6 +81,8 @@ export const Route = createFileRoute('/_authenticated/documents')({
 function DocumentsPage() {
   const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
+  const { data: property } = useProperty(currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
 
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -277,17 +280,21 @@ function DocumentsPage() {
           <p className="text-muted-foreground mt-1">Documents for {currentProperty.name}</p>
         </div>
         <div className="flex gap-2">
-          <Link to="/review">
-            <Button variant="outline" className="gap-2">
-              Review Pending
-            </Button>
-          </Link>
-          <Link to="/capture">
-            <Button className="gap-2">
-              <Camera className="h-4 w-4" />
-              Capture
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link to="/review">
+              <Button variant="outline" className="gap-2">
+                Review Pending
+              </Button>
+            </Link>
+          )}
+          {canEdit && (
+            <Link to="/capture">
+              <Button className="gap-2">
+                <Camera className="h-4 w-4" />
+                Capture
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -356,14 +363,14 @@ function DocumentsPage() {
             >
               Clear filters
             </Button>
-          ) : (
+          ) : canEdit ? (
             <Link to="/capture">
               <Button className="gap-2">
                 <Camera className="h-4 w-4" />
                 Capture Document
               </Button>
             </Link>
-          )}
+          ) : null}
         </div>
       ) : (
         <>
@@ -399,8 +406,9 @@ function DocumentsPage() {
                     getStatusBadge(doc.status)
                   )}
                   <div className="flex gap-2">
-                    {(doc.status === DocumentStatus.PENDING ||
-                      doc.status === DocumentStatus.PROCESSING) &&
+                    {canEdit &&
+                      (doc.status === DocumentStatus.PENDING ||
+                        doc.status === DocumentStatus.PROCESSING) &&
                       !isProcessing(doc.id) && (
                         <Button
                           variant="ghost"
@@ -415,17 +423,19 @@ function DocumentsPage() {
                     <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
                       View
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => {
-                        setDocumentToDelete(doc)
-                        setShowDeleteDialog(true)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setDocumentToDelete(doc)
+                          setShowDeleteDialog(true)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -32,7 +32,7 @@ import {
   useUpcomingMaintenance,
   useUpdateMaintenanceTask,
 } from '@/features/maintenance'
-import { useProperties } from '@/features/properties'
+import { useProperties, useProperty } from '@/features/properties'
 
 export const Route = createFileRoute('/_authenticated/maintenance')({
   component: MaintenancePage,
@@ -303,58 +303,92 @@ function TaskGroup({
         </h2>
       </div>
       <div className="space-y-2">
-        {tasks.map((task) => {
-          const dueDate = new Date(task.nextDueDate)
-          const now = new Date()
-          const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-          return (
-            <div
-              key={task.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border ${isOverdue ? 'border-destructive/30 bg-destructive/5' : ''}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{task.name}</p>
-                  {task.source === 'ai_suggested' && (
-                    <span className="text-xs bg-secondary px-1.5 py-0.5 rounded shrink-0">AI</span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {task.item?.name ?? task.property?.name ?? 'Property'} &middot; Every{' '}
-                  {task.intervalMonths} mo &middot;{' '}
-                  {isOverdue ? (
-                    <span className="text-destructive font-medium">
-                      {Math.abs(diffDays)}d overdue
-                    </span>
-                  ) : (
-                    dueDate.toLocaleDateString()
-                  )}
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => onComplete(task)}>
-                Complete
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onSnooze(task)}>Snooze</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onPauseToggle(task)}>
-                    {task.status === 'paused' ? 'Resume' : 'Pause'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => onDelete(task)}>
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        })}
+        {tasks.map((task) => (
+          <TaskRow
+            key={task.id}
+            task={task}
+            isOverdue={isOverdue}
+            onComplete={onComplete}
+            onSnooze={onSnooze}
+            onPauseToggle={onPauseToggle}
+            onDelete={onDelete}
+          />
+        ))}
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TaskRow — fetches property role to conditionally show write actions
+// ---------------------------------------------------------------------------
+
+function TaskRow({
+  task,
+  isOverdue,
+  onComplete,
+  onSnooze,
+  onPauseToggle,
+  onDelete,
+}: {
+  task: MaintenanceTaskWithRelations
+  isOverdue?: boolean
+  onComplete: (task: MaintenanceTaskWithRelations) => void
+  onSnooze: (task: MaintenanceTaskWithRelations) => void
+  onPauseToggle: (task: MaintenanceTaskWithRelations) => void
+  onDelete: (task: MaintenanceTaskWithRelations) => void
+}) {
+  const { data: property } = useProperty(task.propertyId)
+  const canEdit = property?.viewerRole !== 'viewer'
+
+  const dueDate = new Date(task.nextDueDate)
+  const now = new Date()
+  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg border ${isOverdue ? 'border-destructive/30 bg-destructive/5' : ''}`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium truncate">{task.name}</p>
+          {task.source === 'ai_suggested' && (
+            <span className="text-xs bg-secondary px-1.5 py-0.5 rounded shrink-0">AI</span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {task.item?.name ?? task.property?.name ?? 'Property'} &middot; Every{' '}
+          {task.intervalMonths} mo &middot;{' '}
+          {isOverdue ? (
+            <span className="text-destructive font-medium">{Math.abs(diffDays)}d overdue</span>
+          ) : (
+            dueDate.toLocaleDateString()
+          )}
+        </p>
+      </div>
+      {canEdit && (
+        <>
+          <Button variant="outline" size="sm" onClick={() => onComplete(task)}>
+            Complete
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onSnooze(task)}>Snooze</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPauseToggle(task)}>
+                {task.status === 'paused' ? 'Resume' : 'Pause'}
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(task)}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      )}
     </div>
   )
 }
