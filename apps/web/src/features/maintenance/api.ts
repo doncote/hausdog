@@ -72,8 +72,8 @@ export const createMaintenanceTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
-    const property = await getPropertyService().findById(data.input.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await getPropertyService().canWrite(data.input.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     const service = getMaintenanceService()
     const task = await service.create(user.id, data.input)
 
@@ -99,8 +99,8 @@ export const updateMaintenanceTask = createServerFn({ method: 'POST' })
     const service = getMaintenanceService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Maintenance task not found')
-    const property = await getPropertyService().findById(existing.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await getPropertyService().canWrite(existing.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     return service.update(data.id, user.id, data.input)
   })
 
@@ -110,6 +110,10 @@ export const completeMaintenanceTask = createServerFn({ method: 'POST' })
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Maintenance task not found')
+    if (!(await getPropertyService().canWrite(existing.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     const task = await service.complete(data.id, user.id, data.input)
 
     getActivityService()
@@ -132,6 +136,10 @@ export const snoozeMaintenanceTask = createServerFn({ method: 'POST' })
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
+    const existing = await service.findById(data.id)
+    if (!existing) throw new Error('Maintenance task not found')
+    if (!(await getPropertyService().canWrite(existing.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     return service.snooze(data.id, user.id)
   })
 
@@ -143,8 +151,8 @@ export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
     const service = getMaintenanceService()
     const task = await service.findById(data.id)
     if (!task) throw new Error('Maintenance task not found')
-    const property = await getPropertyService().findById(task.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await getPropertyService().canWrite(task.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
     if (task) {
@@ -168,6 +176,13 @@ export const triggerMaintenanceSuggestions = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
+    const itemRef = await prisma.item.findUnique({
+      where: { id: data.itemId },
+      select: { propertyId: true },
+    })
+    if (!itemRef) throw new Error('Item not found')
+    if (!(await getPropertyService().canWrite(itemRef.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     try {
       const { tasks } = await import('@trigger.dev/sdk/v3')
       await tasks.trigger('suggest-maintenance', {

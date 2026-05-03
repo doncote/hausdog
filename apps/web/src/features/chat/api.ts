@@ -55,8 +55,8 @@ export const createConversation = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
-    const property = await propertyService.findById(data.input.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await propertyService.canWrite(data.input.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     return chat.createConversation(user.id, data.input)
   })
 
@@ -70,8 +70,8 @@ export const updateConversationTitle = createServerFn({ method: 'POST' })
       select: { propertyId: true },
     })
     if (!existing) throw new Error('Conversation not found')
-    const property = await propertyService.findById(existing.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await propertyService.canWrite(existing.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     return chat.updateConversationTitle(data.id, data.title)
   })
 
@@ -85,8 +85,8 @@ export const deleteConversation = createServerFn({ method: 'POST' })
       select: { propertyId: true },
     })
     if (!existing) throw new Error('Conversation not found')
-    const property = await propertyService.findById(existing.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await propertyService.canWrite(existing.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     await chat.deleteConversation(data.id)
     return { success: true }
   })
@@ -101,8 +101,8 @@ export const createMessage = createServerFn({ method: 'POST' })
       select: { propertyId: true },
     })
     if (!conversation) throw new Error('Conversation not found')
-    const property = await propertyService.findById(conversation.propertyId, user.id)
-    if (!property) throw new Error('Property not found or access denied')
+    if (!(await propertyService.canWrite(conversation.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     return chat.createMessage(data.input)
   })
 
@@ -128,6 +128,8 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
+    if (!(await propertyService.canWrite(data.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
@@ -217,6 +219,8 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
+    if (!(await propertyService.canWrite(data.propertyId, user.id)))
+      throw new Error('Property not found or access denied')
     const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
