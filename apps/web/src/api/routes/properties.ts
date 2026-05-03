@@ -50,7 +50,7 @@ const ActivityEventSchema = z.object({
   entityType: z.string(),
   entityId: z.string(),
   entityName: z.string().nullable(),
-  metadata: z.record(z.unknown()).nullable(),
+  metadata: z.unknown(),
   createdAt: z.string().datetime(),
 })
 
@@ -363,6 +363,7 @@ propertiesRouter.openapi(listPropertyActivity, async (c) => {
   return c.json(
     events.map((e) => ({
       ...e,
+      metadata: e.metadata as unknown,
       createdAt: e.createdAt.toISOString(),
     })),
     200,

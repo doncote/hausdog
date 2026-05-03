@@ -224,6 +224,8 @@ function serializeMember(m: {
 }) {
   return {
     ...m,
+    role: m.role as 'owner' | 'editor' | 'viewer',
+    status: m.status as 'pending' | 'active' | 'declined',
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
   }
