@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DocumentType, type DocumentTypeValue, uploadDocument } from '@/features/documents'
+import { useProperty } from '@/features/properties'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 interface UploadedDoc {
@@ -77,6 +78,8 @@ export const Route = createFileRoute('/_authenticated/capture')({
 function CapturePage() {
   const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
+  const { data: property } = useProperty(currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -218,6 +221,29 @@ function CapturePage() {
           <Link to="/properties/new">
             <Button>Add Your First Property</Button>
           </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!canEdit) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-10">
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
+        <div className="rounded-xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="mx-auto w-fit rounded-full bg-muted p-4 mb-4">
+            <Camera className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Read-only access</h3>
+          <p className="text-muted-foreground">
+            You need editor or owner access to upload documents to this property.
+          </p>
         </div>
       </div>
     )

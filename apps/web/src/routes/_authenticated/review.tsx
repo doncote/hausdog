@@ -33,6 +33,7 @@ import {
   usePendingReviewDocuments,
   useUpdateDocumentStatus,
 } from '@/features/documents'
+import { useProperty } from '@/features/properties'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
 export const Route = createFileRoute('/_authenticated/review')({
@@ -77,6 +78,8 @@ function getResolveData(doc: DocumentWithRelations) {
 function ReviewPage() {
   const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
+  const { data: property } = useProperty(currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
   const navigate = useNavigate()
 
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithRelations | null>(null)
@@ -232,12 +235,14 @@ function ReviewPage() {
           <Button variant="ghost" size="icon" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Link to="/capture">
-            <Button variant="outline" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Capture More
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link to="/capture">
+              <Button variant="outline" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Capture More
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -254,12 +259,14 @@ function ReviewPage() {
           <p className="text-muted-foreground mb-6">
             No documents pending review for this property
           </p>
-          <Link to="/capture">
-            <Button className="gap-2">
-              <FileText className="h-4 w-4" />
-              Capture Documents
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link to="/capture">
+              <Button className="gap-2">
+                <FileText className="h-4 w-4" />
+                Capture Documents
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -388,27 +395,31 @@ function ReviewPage() {
                   <Button variant="outline" size="sm" onClick={() => handleViewDocument(doc)}>
                     View
                   </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleConfirm(doc)}
-                    disabled={confirmDocument.isPending}
-                    className="flex-1 gap-1"
-                  >
-                    <Check className="h-3 w-3" />
-                    Confirm & Create
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setDocumentToDelete(doc)
-                      setShowDeleteDialog(true)
-                    }}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canEdit && (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleConfirm(doc)}
+                        disabled={confirmDocument.isPending}
+                        className="flex-1 gap-1"
+                      >
+                        <Check className="h-3 w-3" />
+                        Confirm & Create
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDocumentToDelete(doc)
+                          setShowDeleteDialog(true)
+                        }}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             )
@@ -600,25 +611,27 @@ function ReviewPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => selectedDocument && handleDiscard(selectedDocument)}
-              disabled={updateStatus.isPending}
-              className="gap-2"
-            >
-              <X className="h-4 w-4" />
-              Discard
-            </Button>
-            <Button
-              onClick={() => selectedDocument && handleConfirm(selectedDocument)}
-              disabled={updateStatus.isPending}
-              className="gap-2"
-            >
-              <Check className="h-4 w-4" />
-              Confirm & Create Item
-            </Button>
-          </DialogFooter>
+          {canEdit && (
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => selectedDocument && handleDiscard(selectedDocument)}
+                disabled={updateStatus.isPending}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Discard
+              </Button>
+              <Button
+                onClick={() => selectedDocument && handleConfirm(selectedDocument)}
+                disabled={updateStatus.isPending}
+                className="gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Confirm & Create Item
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 
