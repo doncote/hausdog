@@ -7,7 +7,7 @@ export function useCreateItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { userId: string; input: CreateItemInput }) => createItem({ data: input }),
+    mutationFn: (input: { input: CreateItemInput }) => createItem({ data: { input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: itemKeys.listByProperty(variables.input.propertyId),
@@ -25,10 +25,9 @@ export function useUpdateItem() {
   return useMutation({
     mutationFn: (input: {
       id: string
-      userId: string
       propertyId: string
       input: UpdateItemInput
-    }) => updateItem({ data: { id: input.id, userId: input.userId, input: input.input } }),
+    }) => updateItem({ data: { id: input.id, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: itemKeys.listByProperty(variables.propertyId) })
       queryClient.invalidateQueries({ queryKey: itemKeys.rootByProperty(variables.propertyId) })
@@ -41,8 +40,8 @@ export function useDeleteItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
-      deleteItem({ data: { id: input.id, userId: input.userId } }),
+    mutationFn: (input: { id: string; propertyId: string }) =>
+      deleteItem({ data: { id: input.id } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: itemKeys.listByProperty(variables.propertyId) })
       queryClient.invalidateQueries({ queryKey: itemKeys.rootByProperty(variables.propertyId) })

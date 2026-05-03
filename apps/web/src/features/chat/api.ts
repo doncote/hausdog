@@ -51,49 +51,57 @@ export const fetchMessagesForConversation = createServerFn({ method: 'GET' })
   })
 
 export const createConversation = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateConversationInput }) => d)
+  .inputValidator((d: { input: CreateConversationInput }) => d)
   .handler(async ({ data }) => {
-    const property = await propertyService.findById(data.input.propertyId, data.userId)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await propertyService.findById(data.input.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
-    return chat.createConversation(data.userId, data.input)
+    return chat.createConversation(user.id, data.input)
   })
 
 export const updateConversationTitle = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; title: string }) => d)
+  .inputValidator((d: { id: string; title: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const existing = await prisma.conversation.findUnique({
       where: { id: data.id },
       select: { propertyId: true },
     })
     if (!existing) throw new Error('Conversation not found')
-    const property = await propertyService.findById(existing.propertyId, data.userId)
+    const property = await propertyService.findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     return chat.updateConversationTitle(data.id, data.title)
   })
 
 export const deleteConversation = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const existing = await prisma.conversation.findUnique({
       where: { id: data.id },
       select: { propertyId: true },
     })
     if (!existing) throw new Error('Conversation not found')
-    const property = await propertyService.findById(existing.propertyId, data.userId)
+    const property = await propertyService.findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     await chat.deleteConversation(data.id)
     return { success: true }
   })
 
 export const createMessage = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateMessageInput }) => d)
+  .inputValidator((d: { input: CreateMessageInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const conversation = await prisma.conversation.findUnique({
       where: { id: data.input.conversationId },
       select: { propertyId: true },
     })
     if (!conversation) throw new Error('Conversation not found')
-    const property = await propertyService.findById(conversation.propertyId, data.userId)
+    const property = await propertyService.findById(conversation.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     return chat.createMessage(data.input)
   })
@@ -101,7 +109,6 @@ export const createMessage = createServerFn({ method: 'POST' })
 interface SendMessageInput {
   conversationId: string
   propertyId: string
-  userId: string
   message: string
 }
 
@@ -109,7 +116,6 @@ interface SendItemMessageInput {
   conversationId: string
   propertyId: string
   itemId: string
-  userId: string
   message: string
 }
 
@@ -120,6 +126,8 @@ interface SendItemMessageInput {
 export const sendChatMessage = createServerFn({ method: 'POST' })
   .inputValidator((d: SendMessageInput) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
@@ -130,7 +138,7 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
     })
 
     // Get property context
-    const property = await propertyService.findById(data.propertyId, data.userId)
+    const property = await propertyService.findById(data.propertyId, user.id)
     if (!property) {
       throw new Error('Property not found')
     }
@@ -207,6 +215,8 @@ export const sendChatMessage = createServerFn({ method: 'POST' })
 export const sendItemChatMessage = createServerFn({ method: 'POST' })
   .inputValidator((d: SendItemMessageInput) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const { chatWithClaude } = await import('@/lib/llm')
 
     // Save user message
@@ -217,7 +227,7 @@ export const sendItemChatMessage = createServerFn({ method: 'POST' })
     })
 
     // Get property context
-    const property = await propertyService.findById(data.propertyId, data.userId)
+    const property = await propertyService.findById(data.propertyId, user.id)
     if (!property) {
       throw new Error('Property not found')
     }

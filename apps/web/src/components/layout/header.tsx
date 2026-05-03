@@ -32,7 +32,7 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const { currentProperty, selectProperty, isLoaded } = useCurrentProperty()
-  const { data: properties } = useProperties(user.id)
+  const { data: properties } = useProperties()
 
   const handleSignOut = async () => {
     await signOut()

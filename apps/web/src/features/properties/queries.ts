@@ -4,33 +4,30 @@ import { fetchProperties, fetchProperty } from './api'
 export const propertyKeys = {
   all: ['properties'] as const,
   lists: () => [...propertyKeys.all, 'list'] as const,
-  list: (userId: string) => [...propertyKeys.lists(), userId] as const,
+  list: () => [...propertyKeys.lists()] as const,
   details: () => [...propertyKeys.all, 'detail'] as const,
   detail: (id: string) => [...propertyKeys.details(), id] as const,
 }
 
-export const propertiesQueryOptions = (userId: string) =>
+export const propertiesQueryOptions = () =>
   queryOptions({
-    queryKey: propertyKeys.list(userId),
-    queryFn: () => fetchProperties({ data: userId }),
+    queryKey: propertyKeys.list(),
+    queryFn: () => fetchProperties({ data: {} }),
   })
 
-export const propertyQueryOptions = (id: string, userId: string) =>
+export const propertyQueryOptions = (id: string) =>
   queryOptions({
     queryKey: propertyKeys.detail(id),
-    queryFn: () => fetchProperty({ data: { id, userId } }),
+    queryFn: () => fetchProperty({ data: { id } }),
   })
 
-export function useProperties(userId: string | undefined) {
-  return useQuery({
-    ...propertiesQueryOptions(userId ?? ''),
-    enabled: !!userId,
-  })
+export function useProperties() {
+  return useQuery(propertiesQueryOptions())
 }
 
-export function useProperty(id: string, userId: string | undefined) {
+export function useProperty(id: string) {
   return useQuery({
-    ...propertyQueryOptions(id, userId ?? ''),
-    enabled: !!userId && !!id,
+    ...propertyQueryOptions(id),
+    enabled: !!id,
   })
 }

@@ -14,8 +14,8 @@ export function useCreateDocument() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { userId: string; input: CreateDocumentInput }) =>
-      createDocument({ data: input }),
+    mutationFn: (input: { input: CreateDocumentInput }) =>
+      createDocument({ data: { input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.input.propertyId),
@@ -33,10 +33,9 @@ export function useUpdateDocument() {
   return useMutation({
     mutationFn: (input: {
       id: string
-      userId: string
       propertyId: string
       input: UpdateDocumentInput
-    }) => updateDocument({ data: { id: input.id, userId: input.userId, input: input.input } }),
+    }) => updateDocument({ data: { id: input.id, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),
@@ -55,8 +54,8 @@ export function useUpdateDocumentStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string; status: string }) =>
-      updateDocumentStatus({ data: { id: input.id, userId: input.userId, status: input.status } }),
+    mutationFn: (input: { id: string; propertyId: string; status: string }) =>
+      updateDocumentStatus({ data: { id: input.id, status: input.status } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),
@@ -75,8 +74,8 @@ export function useDeleteDocument() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
-      deleteDocument({ data: { id: input.id, userId: input.userId } }),
+    mutationFn: (input: { id: string; propertyId: string }) =>
+      deleteDocument({ data: { id: input.id } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.listByProperty(variables.propertyId),
@@ -97,7 +96,6 @@ export function useConfirmDocument() {
   return useMutation({
     mutationFn: (input: {
       documentId: string
-      userId: string
       propertyId: string
       overrides?: {
         itemName?: string
@@ -107,7 +105,14 @@ export function useConfirmDocument() {
         serialNumber?: string
         spaceId?: string
       }
-    }) => confirmDocumentAndCreateItem({ data: input }),
+    }) =>
+      confirmDocumentAndCreateItem({
+        data: {
+          documentId: input.documentId,
+          propertyId: input.propertyId,
+          overrides: input.overrides,
+        },
+      }),
     onSuccess: (_, variables) => {
       // Invalidate document queries
       queryClient.invalidateQueries({

@@ -23,9 +23,8 @@ export const Route = createFileRoute('/_authenticated/properties/$propertyId/ite
 
 function PropertyItemsPage() {
   const { propertyId } = Route.useParams()
-  const { user } = Route.useRouteContext()
 
-  const { data: property } = useProperty(propertyId, user?.id)
+  const { data: property } = useProperty(propertyId)
   const [page, setPage] = useState(1)
   const { data: pagedResult, isPending: itemsPending } = useItemsForPropertyPaginated(
     propertyId,

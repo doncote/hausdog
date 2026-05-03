@@ -113,7 +113,6 @@ function ReviewPage() {
     try {
       const result = await confirmDocument.mutateAsync({
         documentId: doc.id,
-        userId: user.id,
         propertyId: doc.propertyId,
       })
 
@@ -147,7 +146,6 @@ function ReviewPage() {
     try {
       await updateStatus.mutateAsync({
         id: doc.id,
-        userId: user!.id,
         propertyId: doc.propertyId,
         status: DocumentStatus.DISCARDED,
       })
@@ -166,7 +164,6 @@ function ReviewPage() {
     try {
       await deleteDocument.mutateAsync({
         id: documentToDelete.id,
-        userId: user!.id,
         propertyId: documentToDelete.propertyId,
       })
       toast.success('Document deleted')

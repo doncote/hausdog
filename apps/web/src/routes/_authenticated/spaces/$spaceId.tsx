@@ -55,7 +55,6 @@ function SpaceDetailPage() {
     try {
       await updateSpace.mutateAsync({
         id: space.id,
-        userId: user.id,
         propertyId: space.propertyId,
         input: {
           name: name.trim(),
@@ -74,7 +73,6 @@ function SpaceDetailPage() {
     try {
       await deleteSpace.mutateAsync({
         id: space.id,
-        userId: user!.id,
         propertyId: space.propertyId,
       })
       toast.success('Space deleted')

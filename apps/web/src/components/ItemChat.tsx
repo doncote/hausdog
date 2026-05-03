@@ -27,10 +27,9 @@ interface ItemChatProps {
   itemId: string
   itemName: string
   propertyId: string
-  userId: string
 }
 
-export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps) {
+export function ItemChat({ itemId, itemName, propertyId }: ItemChatProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedConversationId, setSelectedConversationId] = useState<string>('')
   const [inputMessage, setInputMessage] = useState('')
@@ -64,7 +63,6 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
   const handleNewConversation = async () => {
     try {
       const conversation = await createConversation.mutateAsync({
-        userId,
         input: { propertyId, title: `${itemName}: New chat` },
       })
       setSelectedConversationId(conversation.id)
@@ -85,7 +83,6 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
         conversationId: selectedConversationId,
         propertyId,
         itemId,
-        userId,
         message: messageContent,
       })
     } catch (error) {
@@ -100,7 +97,6 @@ export function ItemChat({ itemId, itemName, propertyId, userId }: ItemChatProps
     try {
       await deleteConversation.mutateAsync({
         id: conversationToDelete.id,
-        userId,
         propertyId: conversationToDelete.propertyId,
       })
       if (selectedConversationId === conversationToDelete.id) {

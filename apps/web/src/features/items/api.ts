@@ -76,19 +76,21 @@ export const fetchItem = createServerFn({ method: 'GET' })
   })
 
 export const createItem = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateItemInput }) => d)
+  .inputValidator((d: { input: CreateItemInput }) => d)
   .handler(async ({ data }) => {
-    const property = await getPropertyService().findById(data.input.propertyId, data.userId)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.input.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     const service = getItemService()
-    const item = await service.create(data.userId, data.input)
+    const item = await service.create(user.id, data.input)
 
     // Trigger AI maintenance suggestions in background
     try {
       const { tasks } = await import('@trigger.dev/sdk/v3')
       await tasks.trigger('suggest-maintenance', {
         itemId: item.id,
-        userId: data.userId,
+        userId: user.id,
       })
       logger.info('Triggered maintenance suggestions', { itemId: item.id })
     } catch (err) {
@@ -98,7 +100,7 @@ export const createItem = createServerFn({ method: 'POST' })
     getActivityService()
       .record({
         propertyId: item.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'created',
         entityType: 'item',
         entityId: item.id,
@@ -110,19 +112,21 @@ export const createItem = createServerFn({ method: 'POST' })
   })
 
 export const updateItem = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdateItemInput }) => d)
+  .inputValidator((d: { id: string; input: UpdateItemInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getItemService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Item not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
-    const item = await service.update(data.id, data.userId, data.input)
+    const item = await service.update(data.id, user.id, data.input)
 
     getActivityService()
       .record({
         propertyId: item.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'updated',
         entityType: 'item',
         entityId: item.id,
@@ -134,12 +138,14 @@ export const updateItem = createServerFn({ method: 'POST' })
   })
 
 export const deleteItem = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getItemService()
     const item = await service.findById(data.id)
     if (!item) throw new Error('Item not found')
-    const property = await getPropertyService().findById(item.propertyId, data.userId)
+    const property = await getPropertyService().findById(item.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
@@ -147,7 +153,7 @@ export const deleteItem = createServerFn({ method: 'POST' })
       getActivityService()
         .record({
           propertyId: item.propertyId,
-          userId: data.userId,
+          userId: user.id,
           action: 'deleted',
           entityType: 'item',
           entityId: data.id,

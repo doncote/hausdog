@@ -37,19 +37,21 @@ export const fetchPendingInvites = createServerFn({ method: 'GET' })
 
 export const inviteMember = createServerFn({ method: 'POST' })
   .inputValidator(
-    (d: { propertyId: string; userId: string; input: z.infer<typeof InviteMemberSchema> }) => d,
+    (d: { propertyId: string; input: z.infer<typeof InviteMemberSchema> }) => d,
   )
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const propertyService = getPropertyService()
-    const isOwner = await propertyService.isOwner(data.propertyId, data.userId)
+    const isOwner = await propertyService.isOwner(data.propertyId, user.id)
     if (!isOwner) throw new Error('Only the property owner can invite members')
     const input = InviteMemberSchema.parse(data.input)
-    const member = await getMemberService().invite(data.propertyId, data.userId, input)
+    const member = await getMemberService().invite(data.propertyId, user.id, input)
 
     getActivityService()
       .record({
         propertyId: data.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'invited',
         entityType: 'member',
         entityId: member.id,
@@ -63,7 +65,7 @@ export const inviteMember = createServerFn({ method: 'POST' })
         where: { id: data.propertyId },
         select: { name: true },
       }),
-      getUserEmail(data.userId),
+      getUserEmail(user.id),
     ])
       .then(([property, inviterEmail]) => {
         if (!inviterEmail) return
@@ -85,19 +87,21 @@ export const inviteMember = createServerFn({ method: 'POST' })
   })
 
 export const acceptInvite = createServerFn({ method: 'POST' })
-  .inputValidator((d: { memberId: string; userId: string; userEmail: string }) => d)
+  .inputValidator((d: { memberId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const memberService = getMemberService()
     const pending = await prisma.propertyMember.findFirst({
       where: { id: data.memberId, status: 'pending' },
     })
     if (!pending) throw new Error('Invitation not found or already resolved')
-    const member = await memberService.accept(data.memberId, data.userId, data.userEmail)
+    const member = await memberService.accept(data.memberId, user.id, user.email!)
 
     getActivityService()
       .record({
         propertyId: pending.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'accepted',
         entityType: 'member',
         entityId: member.id,
@@ -109,8 +113,10 @@ export const acceptInvite = createServerFn({ method: 'POST' })
   })
 
 export const declineInvite = createServerFn({ method: 'POST' })
-  .inputValidator((d: { memberId: string; userId: string }) => d)
+  .inputValidator((d: { memberId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const pending = await prisma.propertyMember.findFirst({
       where: { id: data.memberId, status: 'pending' },
     })
@@ -120,7 +126,7 @@ export const declineInvite = createServerFn({ method: 'POST' })
     getActivityService()
       .record({
         propertyId: pending.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'declined',
         entityType: 'member',
         entityId: member.id,
@@ -136,23 +142,26 @@ export const updateMemberRole = createServerFn({ method: 'POST' })
     (d: {
       memberId: string
       propertyId: string
-      requestingUserId: string
       input: z.infer<typeof UpdateMemberRoleSchema>
     }) => d,
   )
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const propertyService = getPropertyService()
-    const isOwner = await propertyService.isOwner(data.propertyId, data.requestingUserId)
+    const isOwner = await propertyService.isOwner(data.propertyId, user.id)
     if (!isOwner) throw new Error('Only the property owner can change member roles')
     const input = UpdateMemberRoleSchema.parse(data.input)
     return getMemberService().updateRole(data.memberId, input)
   })
 
 export const removeMember = createServerFn({ method: 'POST' })
-  .inputValidator((d: { memberId: string; propertyId: string; requestingUserId: string }) => d)
+  .inputValidator((d: { memberId: string; propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const propertyService = getPropertyService()
-    const isOwner = await propertyService.isOwner(data.propertyId, data.requestingUserId)
+    const isOwner = await propertyService.isOwner(data.propertyId, user.id)
     if (!isOwner) throw new Error('Only the property owner can remove members')
     const memberService = getMemberService()
     const member = await prisma.propertyMember.findUnique({ where: { id: data.memberId } })
@@ -162,7 +171,7 @@ export const removeMember = createServerFn({ method: 'POST' })
       getActivityService()
         .record({
           propertyId: data.propertyId,
-          userId: data.requestingUserId,
+          userId: user.id,
           action: 'removed',
           entityType: 'member',
           entityId: data.memberId,

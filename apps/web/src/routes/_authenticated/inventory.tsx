@@ -23,7 +23,6 @@ export const Route = createFileRoute('/_authenticated/inventory')({
 })
 
 function InventoryPage() {
-  const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
 
   const [searchQuery, setSearchQuery] = useState('')

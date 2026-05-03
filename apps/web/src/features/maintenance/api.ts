@@ -68,17 +68,19 @@ export const fetchMaintenanceTask = createServerFn({ method: 'GET' })
   })
 
 export const createMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateMaintenanceTaskInput }) => d)
+  .inputValidator((d: { input: CreateMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
-    const property = await getPropertyService().findById(data.input.propertyId, data.userId)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.input.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     const service = getMaintenanceService()
-    const task = await service.create(data.userId, data.input)
+    const task = await service.create(user.id, data.input)
 
     getActivityService()
       .record({
         propertyId: task.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'created',
         entityType: 'maintenance_task',
         entityId: task.id,
@@ -90,26 +92,30 @@ export const createMaintenanceTask = createServerFn({ method: 'POST' })
   })
 
 export const updateMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdateMaintenanceTaskInput }) => d)
+  .inputValidator((d: { id: string; input: UpdateMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Maintenance task not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
-    return service.update(data.id, data.userId, data.input)
+    return service.update(data.id, user.id, data.input)
   })
 
 export const completeMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: CompleteMaintenanceTaskInput }) => d)
+  .inputValidator((d: { id: string; input: CompleteMaintenanceTaskInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
-    const task = await service.complete(data.id, data.userId, data.input)
+    const task = await service.complete(data.id, user.id, data.input)
 
     getActivityService()
       .record({
         propertyId: task.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'completed',
         entityType: 'maintenance_task',
         entityId: task.id,
@@ -121,19 +127,23 @@ export const completeMaintenanceTask = createServerFn({ method: 'POST' })
   })
 
 export const snoozeMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
-    return service.snooze(data.id, data.userId)
+    return service.snooze(data.id, user.id)
   })
 
 export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getMaintenanceService()
     const task = await service.findById(data.id)
     if (!task) throw new Error('Maintenance task not found')
-    const property = await getPropertyService().findById(task.propertyId, data.userId)
+    const property = await getPropertyService().findById(task.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
@@ -141,7 +151,7 @@ export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
       getActivityService()
         .record({
           propertyId: task.propertyId,
-          userId: data.userId,
+          userId: user.id,
           action: 'deleted',
           entityType: 'maintenance_task',
           entityId: data.id,
@@ -154,13 +164,15 @@ export const deleteMaintenanceTask = createServerFn({ method: 'POST' })
   })
 
 export const triggerMaintenanceSuggestions = createServerFn({ method: 'POST' })
-  .inputValidator((d: { itemId: string; userId: string }) => d)
+  .inputValidator((d: { itemId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     try {
       const { tasks } = await import('@trigger.dev/sdk/v3')
       await tasks.trigger('suggest-maintenance', {
         itemId: data.itemId,
-        userId: data.userId,
+        userId: user.id,
       })
       logger.info('Triggered maintenance suggestions', { itemId: data.itemId })
       return { success: true, method: 'trigger' as const }
@@ -197,7 +209,7 @@ export const triggerMaintenanceSuggestions = createServerFn({ method: 'POST' })
         notes: item.notes,
       })
 
-      await service.createFromAI(data.userId, item.propertyId, item.id, suggestions)
+      await service.createFromAI(user.id, item.propertyId, item.id, suggestions)
 
       return { success: true, method: 'inline' as const, count: suggestions.length }
     }

@@ -36,17 +36,19 @@ export const fetchSpace = createServerFn({ method: 'GET' })
   })
 
 export const createSpace = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateSpaceInput }) => d)
+  .inputValidator((d: { input: CreateSpaceInput }) => d)
   .handler(async ({ data }) => {
-    const property = await getPropertyService().findById(data.input.propertyId, data.userId)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.input.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     const service = getSpaceService()
-    const space = await service.create(data.userId, data.input)
+    const space = await service.create(user.id, data.input)
 
     getActivityService()
       .record({
         propertyId: space.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'created',
         entityType: 'space',
         entityId: space.id,
@@ -58,19 +60,21 @@ export const createSpace = createServerFn({ method: 'POST' })
   })
 
 export const updateSpace = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdateSpaceInput }) => d)
+  .inputValidator((d: { id: string; input: UpdateSpaceInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getSpaceService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Space not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
-    const space = await service.update(data.id, data.userId, data.input)
+    const space = await service.update(data.id, user.id, data.input)
 
     getActivityService()
       .record({
         propertyId: space.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'updated',
         entityType: 'space',
         entityId: space.id,
@@ -82,12 +86,14 @@ export const updateSpace = createServerFn({ method: 'POST' })
   })
 
 export const deleteSpace = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getSpaceService()
     const space = await service.findById(data.id)
     if (!space) throw new Error('Space not found')
-    const property = await getPropertyService().findById(space.propertyId, data.userId)
+    const property = await getPropertyService().findById(space.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
@@ -95,7 +101,7 @@ export const deleteSpace = createServerFn({ method: 'POST' })
       getActivityService()
         .record({
           propertyId: space.propertyId,
-          userId: data.userId,
+          userId: user.id,
           action: 'deleted',
           entityType: 'space',
           entityId: data.id,

@@ -20,8 +20,8 @@ export function useCreateMaintenanceTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { userId: string; input: CreateMaintenanceTaskInput }) =>
-      createMaintenanceTask({ data: input }),
+    mutationFn: (input: { input: CreateMaintenanceTaskInput }) =>
+      createMaintenanceTask({ data: { input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: maintenanceKeys.listByProperty(variables.input.propertyId),
@@ -42,11 +42,10 @@ export function useUpdateMaintenanceTask() {
   return useMutation({
     mutationFn: (input: {
       id: string
-      userId: string
       propertyId: string
       input: UpdateMaintenanceTaskInput
     }) =>
-      updateMaintenanceTask({ data: { id: input.id, userId: input.userId, input: input.input } }),
+      updateMaintenanceTask({ data: { id: input.id, input: input.input } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: maintenanceKeys.listByProperty(variables.propertyId),
@@ -63,13 +62,12 @@ export function useCompleteMaintenanceTask() {
   return useMutation({
     mutationFn: (input: {
       id: string
-      userId: string
       propertyId: string
       itemId: string | null
       input: CompleteMaintenanceTaskInput
     }) =>
       completeMaintenanceTask({
-        data: { id: input.id, userId: input.userId, input: input.input },
+        data: { id: input.id, input: input.input },
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -90,8 +88,8 @@ export function useSnoozeMaintenanceTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
-      snoozeMaintenanceTask({ data: { id: input.id, userId: input.userId } }),
+    mutationFn: (input: { id: string; propertyId: string }) =>
+      snoozeMaintenanceTask({ data: { id: input.id } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: maintenanceKeys.listByProperty(variables.propertyId),
@@ -106,8 +104,8 @@ export function useDeleteMaintenanceTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; userId: string; propertyId: string }) =>
-      deleteMaintenanceTask({ data: { id: input.id, userId: input.userId } }),
+    mutationFn: (input: { id: string; propertyId: string }) =>
+      deleteMaintenanceTask({ data: { id: input.id } }),
     onSuccess: (_, variables) => {
       queryClient.removeQueries({ queryKey: maintenanceKeys.detail(variables.id) })
       queryClient.invalidateQueries({
@@ -122,8 +120,8 @@ export function useTriggerMaintenanceSuggestions() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { itemId: string; userId: string }) =>
-      triggerMaintenanceSuggestions({ data: input }),
+    mutationFn: (input: { itemId: string }) =>
+      triggerMaintenanceSuggestions({ data: { itemId: input.itemId } }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: maintenanceKeys.listByItem(variables.itemId),

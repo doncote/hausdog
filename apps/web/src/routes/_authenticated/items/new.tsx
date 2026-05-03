@@ -33,7 +33,7 @@ function NewItemPage() {
   const navigate = useNavigate()
   const createItem = useCreateItem()
 
-  const { data: property } = useProperty(propertyId ?? '', user?.id)
+  const { data: property } = useProperty(propertyId ?? '')
   const { data: spaces } = useSpacesForProperty(propertyId)
   const { data: categories } = useCategories()
 
@@ -88,7 +88,6 @@ function NewItemPage() {
 
     try {
       const item = await createItem.mutateAsync({
-        userId: user.id,
         input: result.data,
       })
       toast.success('Item created')

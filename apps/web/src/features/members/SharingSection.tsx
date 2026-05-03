@@ -72,7 +72,6 @@ function MemberRow({ member, isOwner, currentUserId, propertyId }: MemberRowProp
     try {
       await updateRole.mutateAsync({
         memberId: member.id,
-        requestingUserId: currentUserId,
         input: { role: newRole as 'editor' | 'viewer' },
       })
       toast.success('Role updated')
@@ -83,7 +82,7 @@ function MemberRow({ member, isOwner, currentUserId, propertyId }: MemberRowProp
 
   const handleRemove = async () => {
     try {
-      await removeMember.mutateAsync({ memberId: member.id, requestingUserId: currentUserId })
+      await removeMember.mutateAsync({ memberId: member.id })
       toast.success('Member removed')
     } catch {
       toast.error('Failed to remove member')
@@ -137,7 +136,7 @@ function MemberRow({ member, isOwner, currentUserId, propertyId }: MemberRowProp
   )
 }
 
-function InviteForm({ propertyId, userId }: { propertyId: string; userId: string }) {
+function InviteForm({ propertyId }: { propertyId: string }) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'editor' | 'viewer'>('viewer')
   const invite = useInviteMember(propertyId)
@@ -146,7 +145,7 @@ function InviteForm({ propertyId, userId }: { propertyId: string; userId: string
     e.preventDefault()
     if (!email.trim()) return
     try {
-      await invite.mutateAsync({ userId, input: { email: email.trim(), role } })
+      await invite.mutateAsync({ input: { email: email.trim(), role } })
       toast.success(`Invitation sent to ${email}`)
       setEmail('')
     } catch (err) {
@@ -258,7 +257,7 @@ export function SharingSection({ propertyId, userId, isOwner }: SharingSectionPr
       {isOwner && (
         <div className="border-t pt-4">
           <p className="text-sm font-medium mb-3">Invite a collaborator</p>
-          <InviteForm propertyId={propertyId} userId={userId} />
+          <InviteForm propertyId={propertyId} />
         </div>
       )}
 

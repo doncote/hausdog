@@ -163,7 +163,6 @@ function ItemDetailPage() {
     try {
       await updateItem.mutateAsync({
         id: itemId,
-        userId: user.id,
         propertyId: item.propertyId,
         input: result.data,
       })
@@ -178,7 +177,7 @@ function ItemDetailPage() {
     if (!item) return
 
     try {
-      await deleteItem.mutateAsync({ id: itemId, userId: user!.id, propertyId: item.propertyId })
+      await deleteItem.mutateAsync({ id: itemId, propertyId: item.propertyId })
       toast.success('Item deleted')
       navigate({ to: '/properties/$propertyId', params: { propertyId: item.propertyId } })
     } catch {
@@ -241,7 +240,6 @@ function ItemDetailPage() {
 
     try {
       await createEvent.mutateAsync({
-        userId: user.id,
         input: {
           itemId,
           type: eventType as EventTypeValue,
@@ -266,7 +264,6 @@ function ItemDetailPage() {
       await deleteEvent.mutateAsync({
         id: eventToDelete.id,
         itemId,
-        userId: user!.id,
       })
       toast.success('Event deleted')
       setShowDeleteEventDialog(false)
@@ -684,7 +681,7 @@ function ItemDetailPage() {
               size="sm"
               onClick={() =>
                 triggerSuggestions.mutate(
-                  { itemId, userId: user!.id },
+                  { itemId },
                   {
                     onSuccess: () => toast.success('Maintenance suggestions generated'),
                     onError: () => toast.error('Failed to generate suggestions'),
@@ -751,7 +748,6 @@ function ItemDetailPage() {
                               onClick={() =>
                                 snoozeMaintenance.mutate({
                                   id: task.id,
-                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                 })
                               }
@@ -762,7 +758,6 @@ function ItemDetailPage() {
                               onClick={() =>
                                 updateMaintenance.mutate({
                                   id: task.id,
-                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                   input: { status: task.status === 'paused' ? 'active' : 'paused' },
                                 })
@@ -775,7 +770,6 @@ function ItemDetailPage() {
                               onClick={() =>
                                 deleteMaintenance.mutate({
                                   id: task.id,
-                                  userId: user!.id,
                                   propertyId: task.propertyId,
                                 })
                               }
@@ -797,7 +791,7 @@ function ItemDetailPage() {
                   size="sm"
                   onClick={() =>
                     triggerSuggestions.mutate(
-                      { itemId, userId: user!.id },
+                      { itemId },
                       {
                         onSuccess: () => toast.success('Maintenance suggestions generated'),
                         onError: () => toast.error('Failed to generate suggestions'),
@@ -821,7 +815,6 @@ function ItemDetailPage() {
             itemId={itemId}
             itemName={item.name}
             propertyId={item.propertyId}
-            userId={user.id}
           />
         </div>
       )}
@@ -982,7 +975,6 @@ function ItemDetailPage() {
               completeMaintenance.mutate(
                 {
                   id: completingTask.id,
-                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input,
@@ -1000,7 +992,6 @@ function ItemDetailPage() {
               completeMaintenance.mutate(
                 {
                   id: completingTask.id,
-                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input: { date: new Date() },

@@ -39,7 +39,7 @@ function SpacesPage() {
   const { propertyId } = Route.useParams()
   const { user } = Route.useRouteContext()
 
-  const { data: property, isPending: propertyPending } = useProperty(propertyId, user?.id)
+  const { data: property, isPending: propertyPending } = useProperty(propertyId)
   const { data: spaces, isPending: spacesPending } = useSpacesForProperty(propertyId)
 
   const createSpace = useCreateSpace()
@@ -79,7 +79,6 @@ function SpacesPage() {
 
     try {
       await createSpace.mutateAsync({
-        userId: user.id,
         input: result.data,
       })
       toast.success('Space created')
@@ -112,7 +111,6 @@ function SpacesPage() {
     try {
       await updateSpace.mutateAsync({
         id: selectedSpace.id,
-        userId: user.id,
         propertyId,
         input: result.data,
       })
@@ -130,7 +128,6 @@ function SpacesPage() {
     try {
       await deleteSpace.mutateAsync({
         id: selectedSpace.id,
-        userId: user!.id,
         propertyId,
       })
       toast.success('Space deleted')

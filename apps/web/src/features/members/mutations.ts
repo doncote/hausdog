@@ -6,8 +6,8 @@ import type { InviteMemberInput, UpdateMemberRoleInput } from './types'
 export function useInviteMember(propertyId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { userId: string; input: InviteMemberInput }) =>
-      inviteMember({ data: { propertyId, userId: input.userId, input: input.input } }),
+    mutationFn: (input: { input: InviteMemberInput }) =>
+      inviteMember({ data: { propertyId, input: input.input } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: memberKeys.forProperty(propertyId) })
     },
@@ -17,16 +17,11 @@ export function useInviteMember(propertyId: string) {
 export function useUpdateMemberRole(propertyId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: {
-      memberId: string
-      requestingUserId: string
-      input: UpdateMemberRoleInput
-    }) =>
+    mutationFn: (input: { memberId: string; input: UpdateMemberRoleInput }) =>
       updateMemberRole({
         data: {
           memberId: input.memberId,
           propertyId,
-          requestingUserId: input.requestingUserId,
           input: input.input,
         },
       }),
@@ -39,9 +34,9 @@ export function useUpdateMemberRole(propertyId: string) {
 export function useRemoveMember(propertyId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { memberId: string; requestingUserId: string }) =>
+    mutationFn: (input: { memberId: string }) =>
       removeMember({
-        data: { memberId: input.memberId, propertyId, requestingUserId: input.requestingUserId },
+        data: { memberId: input.memberId, propertyId },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: memberKeys.forProperty(propertyId) })
@@ -52,21 +47,22 @@ export function useRemoveMember(propertyId: string) {
 export function useAcceptInvite() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { memberId: string; userId: string; userEmail: string }) =>
-      acceptInvite({ data: input }),
+    mutationFn: (input: { memberId: string }) =>
+      acceptInvite({ data: { memberId: input.memberId } }),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.pendingForEmail('') })
+      queryClient.invalidateQueries({ queryKey: memberKeys.pending() })
       queryClient.invalidateQueries({ queryKey: memberKeys.forProperty(data.propertyId) })
     },
   })
 }
 
-export function useDeclineInvite(userEmail: string) {
+export function useDeclineInvite() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { memberId: string; userId: string }) => declineInvite({ data: input }),
+    mutationFn: (input: { memberId: string }) =>
+      declineInvite({ data: { memberId: input.memberId } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.pendingForEmail(userEmail) })
+      queryClient.invalidateQueries({ queryKey: memberKeys.pending() })
     },
   })
 }

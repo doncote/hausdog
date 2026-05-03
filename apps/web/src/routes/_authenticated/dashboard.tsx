@@ -28,7 +28,7 @@ function DashboardPage() {
         <p className="mt-2 text-muted-foreground">Here's an overview of your home documentation.</p>
       </header>
 
-      {user?.email && <PendingInvitesBanner userId={user.id} userEmail={user.email} />}
+      <PendingInvitesBanner />
 
       {user && <OnboardingChecklist user={user} stats={stats} />}
 

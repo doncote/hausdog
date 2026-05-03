@@ -89,7 +89,6 @@ function NewPropertyPage() {
       }
 
       const property = await createProperty.mutateAsync({
-        userId: user.id,
         input: inputData,
       })
       await selectProperty({ id: property.id, name: property.name })

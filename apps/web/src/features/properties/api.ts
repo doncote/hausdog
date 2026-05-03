@@ -4,44 +4,55 @@ import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import type { PropertyLookupResponse } from '@/lib/llm/property-lookup'
 import { lookupPropertyWithGemini } from '@/lib/llm/property-lookup'
+import { getSafeSession } from '@/lib/supabase'
 import { PropertyService } from './service'
 import type { CreatePropertyInput, UpdatePropertyInput } from './types'
 
 const getPropertyService = () => new PropertyService({ db: prisma, logger })
 
 export const fetchProperties = createServerFn({ method: 'GET' })
-  .inputValidator((d: string) => d)
-  .handler(async ({ data: userId }) => {
+  .inputValidator((d: Record<string, never>) => d)
+  .handler(async () => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    return service.findAllForUserWithCounts(userId)
+    return service.findAllForUserWithCounts(user.id)
   })
 
 export const fetchProperty = createServerFn({ method: 'GET' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    return service.findById(data.id, data.userId)
+    return service.findById(data.id, user.id)
   })
 
 export const createProperty = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreatePropertyInput }) => d)
+  .inputValidator((d: { input: CreatePropertyInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    return service.create(data.userId, data.input)
+    return service.create(user.id, data.input)
   })
 
 export const updateProperty = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdatePropertyInput }) => d)
+  .inputValidator((d: { id: string; input: UpdatePropertyInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    return service.update(data.id, data.userId, data.input)
+    return service.update(data.id, user.id, data.input)
   })
 
 export const deleteProperty = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    await service.delete(data.id, data.userId)
+    await service.delete(data.id, user.id)
     return { success: true }
   })
 

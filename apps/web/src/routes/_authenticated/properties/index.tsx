@@ -25,7 +25,7 @@ export const Route = createFileRoute('/_authenticated/properties/')({
 
 function PropertiesPage() {
   const { user } = Route.useRouteContext()
-  const { data: properties, isPending, error } = useProperties(user?.id)
+  const { data: properties, isPending, error } = useProperties()
   const deleteProperty = useDeleteProperty()
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
@@ -33,7 +33,7 @@ function PropertiesPage() {
     if (!deleteId || !user) return
 
     try {
-      await deleteProperty.mutateAsync({ id: deleteId, userId: user.id })
+      await deleteProperty.mutateAsync({ id: deleteId })
       toast.success('Property deleted')
       setDeleteId(null)
     } catch {

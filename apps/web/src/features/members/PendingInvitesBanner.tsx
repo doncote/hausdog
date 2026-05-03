@@ -6,26 +6,13 @@ import { useAcceptInvite, useDeclineInvite } from './mutations'
 import { usePendingInvites } from './queries'
 import type { PropertyMember } from './types'
 
-interface PendingInvitesBannerProps {
-  userId: string
-  userEmail: string
-}
-
-function InviteCard({
-  invite,
-  userId,
-  userEmail,
-}: {
-  invite: PropertyMember
-  userId: string
-  userEmail: string
-}) {
+function InviteCard({ invite }: { invite: PropertyMember }) {
   const accept = useAcceptInvite()
-  const decline = useDeclineInvite(userEmail)
+  const decline = useDeclineInvite()
 
   const handleAccept = async () => {
     try {
-      await accept.mutateAsync({ memberId: invite.id, userId, userEmail })
+      await accept.mutateAsync({ memberId: invite.id })
       toast.success('Invitation accepted')
     } catch {
       toast.error('Failed to accept invitation')
@@ -34,7 +21,7 @@ function InviteCard({
 
   const handleDecline = async () => {
     try {
-      await decline.mutateAsync({ memberId: invite.id, userId })
+      await decline.mutateAsync({ memberId: invite.id })
       toast.success('Invitation declined')
     } catch {
       toast.error('Failed to decline invitation')
@@ -82,7 +69,7 @@ function InviteCard({
   )
 }
 
-export function PendingInvitesBanner({ userId, userEmail }: PendingInvitesBannerProps) {
+export function PendingInvitesBanner() {
   const { data: invites } = usePendingInvites()
 
   if (!invites || invites.length === 0) return null
@@ -94,7 +81,7 @@ export function PendingInvitesBanner({ userId, userEmail }: PendingInvitesBanner
       </h2>
       <div className="space-y-2">
         {invites.map((invite) => (
-          <InviteCard key={invite.id} invite={invite} userId={userId} userEmail={userEmail} />
+          <InviteCard key={invite.id} invite={invite} />
         ))}
       </div>
     </div>

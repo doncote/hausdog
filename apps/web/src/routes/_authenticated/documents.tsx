@@ -173,7 +173,6 @@ function DocumentsPage() {
     try {
       await deleteDocument.mutateAsync({
         id: documentToDelete.id,
-        userId: user!.id,
         propertyId: documentToDelete.propertyId,
       })
       toast.success('Document deleted')

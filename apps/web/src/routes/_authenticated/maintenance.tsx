@@ -39,7 +39,6 @@ export const Route = createFileRoute('/_authenticated/maintenance')({
 })
 
 function MaintenancePage() {
-  const { user } = Route.useRouteContext()
   const { data: tasks, isPending } = useUpcomingMaintenance()
   const completeMutation = useCompleteMaintenanceTask()
   const snoozeMutation = useSnoozeMaintenanceTask()
@@ -112,14 +111,12 @@ function MaintenancePage() {
               onSnooze={(t) =>
                 snoozeMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
               onPauseToggle={(t) =>
                 updateMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                   input: {
                     status: t.status === 'paused' ? 'active' : 'paused',
@@ -129,7 +126,6 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -144,14 +140,12 @@ function MaintenancePage() {
               onSnooze={(t) =>
                 snoozeMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
               onPauseToggle={(t) =>
                 updateMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                   input: {
                     status: t.status === 'paused' ? 'active' : 'paused',
@@ -161,7 +155,6 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -176,14 +169,12 @@ function MaintenancePage() {
               onSnooze={(t) =>
                 snoozeMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
               onPauseToggle={(t) =>
                 updateMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                   input: {
                     status: t.status === 'paused' ? 'active' : 'paused',
@@ -193,7 +184,6 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -208,14 +198,12 @@ function MaintenancePage() {
               onSnooze={(t) =>
                 snoozeMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
               onPauseToggle={(t) =>
                 updateMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                   input: {
                     status: t.status === 'paused' ? 'active' : 'paused',
@@ -225,7 +213,6 @@ function MaintenancePage() {
               onDelete={(t) =>
                 deleteMutation.mutate({
                   id: t.id,
-                  userId: user!.id,
                   propertyId: t.propertyId,
                 })
               }
@@ -246,7 +233,6 @@ function MaintenancePage() {
               completeMutation.mutate(
                 {
                   id: completingTask.id,
-                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input,
@@ -259,7 +245,6 @@ function MaintenancePage() {
               completeMutation.mutate(
                 {
                   id: completingTask.id,
-                  userId: user!.id,
                   propertyId: completingTask.propertyId,
                   itemId: completingTask.itemId,
                   input: { date: new Date() },
@@ -278,7 +263,7 @@ function MaintenancePage() {
           <DialogHeader>
             <DialogTitle>New Maintenance Task</DialogTitle>
           </DialogHeader>
-          <CreateMaintenanceForm userId={user!.id} onClose={() => setShowCreateDialog(false)} />
+          <CreateMaintenanceForm onClose={() => setShowCreateDialog(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -449,9 +434,9 @@ function CompleteMaintenanceForm({
 // CreateMaintenanceForm
 // ---------------------------------------------------------------------------
 
-function CreateMaintenanceForm({ userId, onClose }: { userId: string; onClose: () => void }) {
+function CreateMaintenanceForm({ onClose }: { onClose: () => void }) {
   const createMutation = useCreateMaintenanceTask()
-  const { data: properties, isPending: propertiesLoading } = useProperties(userId)
+  const { data: properties, isPending: propertiesLoading } = useProperties()
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -471,7 +456,6 @@ function CreateMaintenanceForm({ userId, onClose }: { userId: string; onClose: (
     if (!name || !propertyId) return
     createMutation.mutate(
       {
-        userId,
         input: {
           propertyId,
           name,

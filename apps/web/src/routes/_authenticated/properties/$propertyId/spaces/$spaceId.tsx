@@ -33,7 +33,7 @@ function SpaceDetailPage() {
   const { user } = Route.useRouteContext()
   const navigate = useNavigate()
 
-  const { data: property } = useProperty(propertyId, user?.id)
+  const { data: property } = useProperty(propertyId)
   const { data: space, isPending, error } = useSpace(spaceId)
   const { data: allItems } = useItemsForProperty(propertyId)
 
@@ -75,7 +75,6 @@ function SpaceDetailPage() {
     try {
       await updateSpace.mutateAsync({
         id: spaceId,
-        userId: user.id,
         propertyId,
         input: result.data,
       })
@@ -90,7 +89,6 @@ function SpaceDetailPage() {
     try {
       await deleteSpace.mutateAsync({
         id: spaceId,
-        userId: user!.id,
         propertyId,
       })
       toast.success('Space deleted')

@@ -89,48 +89,56 @@ export const fetchDocument = createServerFn({ method: 'GET' })
   })
 
 export const createDocument = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateDocumentInput }) => d)
+  .inputValidator((d: { input: CreateDocumentInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getDocumentService()
-    return service.create(data.userId, data.input)
+    return service.create(user.id, data.input)
   })
 
 export const updateDocument = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdateDocumentInput }) => d)
+  .inputValidator((d: { id: string; input: UpdateDocumentInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getDocumentService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Document not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     return service.update(data.id, data.input)
   })
 
 export const updateDocumentStatus = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; status: string }) => d)
+  .inputValidator((d: { id: string; status: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getDocumentService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Document not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     return service.updateStatus(data.id, data.status)
   })
 
 export const deleteDocument = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getDocumentService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Document not found')
-    const property = await getPropertyService().findById(existing.propertyId, data.userId)
+    const property = await getPropertyService().findById(existing.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     await service.delete(data.id)
 
     getActivityService()
       .record({
         propertyId: existing.propertyId,
-        userId: data.userId,
+        userId: user.id,
         action: 'deleted',
         entityType: 'document',
         entityId: data.id,
@@ -145,7 +153,6 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
   .inputValidator(
     (d: {
       documentId: string
-      userId: string
       propertyId: string
       // Optional overrides for the extracted data
       overrides?: {
@@ -159,7 +166,9 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
     }) => d,
   )
   .handler(async ({ data }) => {
-    const property = await getPropertyService().findById(data.propertyId, data.userId)
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const property = await getPropertyService().findById(data.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     const documentService = getDocumentService()
     const itemService = new ItemService({ db: prisma, logger })
@@ -190,7 +199,7 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
 
       const category = data.overrides?.category || extractedData?.suggestedCategory || 'other'
 
-      const newItem = await itemService.create(data.userId, {
+      const newItem = await itemService.create(user.id, {
         propertyId: data.propertyId,
         spaceId: data.overrides?.spaceId ?? undefined,
         parentId:
@@ -220,7 +229,7 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
         const { tasks } = await import('@trigger.dev/sdk/v3')
         await tasks.trigger('suggest-maintenance', {
           itemId: newItem.id,
-          userId: data.userId,
+          userId: user.id,
         })
         logger.info('Triggered maintenance suggestions', { itemId: newItem.id })
       } catch (err) {
@@ -243,7 +252,7 @@ export const confirmDocumentAndCreateItem = createServerFn({ method: 'POST' })
       const vendorInfo = extractedData?.extracted?.vendor
         ? ` (${extractedData.extracted.vendor})`
         : ''
-      const event = await eventService.create(data.userId, {
+      const event = await eventService.create(user.id, {
         itemId,
         type: validSuggestedType,
         date: extractedData?.extracted?.date ? new Date(extractedData.extracted.date) : new Date(),

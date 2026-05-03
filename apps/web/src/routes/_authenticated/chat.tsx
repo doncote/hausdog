@@ -69,7 +69,6 @@ function ChatPage() {
 
     try {
       const conversation = await createConversation.mutateAsync({
-        userId: user.id,
         input: { propertyId: currentProperty.id },
       })
       setSelectedConversationId(conversation.id)
@@ -89,7 +88,6 @@ function ChatPage() {
       await sendMessage.mutateAsync({
         conversationId: selectedConversationId,
         propertyId: currentProperty.id,
-        userId: user.id,
         message: messageContent,
       })
     } catch (error) {
@@ -104,7 +102,6 @@ function ChatPage() {
     try {
       await deleteConversation.mutateAsync({
         id: conversationToDelete.id,
-        userId: user!.id,
         propertyId: conversationToDelete.propertyId,
       })
       if (selectedConversationId === conversationToDelete.id) {

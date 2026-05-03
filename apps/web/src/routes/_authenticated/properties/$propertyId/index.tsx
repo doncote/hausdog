@@ -58,7 +58,7 @@ function PropertyDetailPage() {
   const { user } = Route.useRouteContext()
   const navigate = useNavigate()
 
-  const { data: property, isPending, error } = useProperty(propertyId, user?.id)
+  const { data: property, isPending, error } = useProperty(propertyId)
   const { data: items, isPending: itemsPending } = useRootItemsForProperty(propertyId)
   const { data: spaces, isPending: spacesPending } = useSpacesForProperty(propertyId)
   const updateProperty = useUpdateProperty()
@@ -119,7 +119,6 @@ function PropertyDetailPage() {
     try {
       await updateProperty.mutateAsync({
         id: propertyId,
-        userId: user.id,
         input: result.data,
       })
       toast.success('Property updated')
@@ -133,7 +132,7 @@ function PropertyDetailPage() {
     if (!user) return
 
     try {
-      await deleteProperty.mutateAsync({ id: propertyId, userId: user.id })
+      await deleteProperty.mutateAsync({ id: propertyId })
       toast.success('Property deleted')
       navigate({ to: '/properties' })
     } catch {
@@ -213,7 +212,6 @@ function PropertyDetailPage() {
     try {
       const result = await updateProperty.mutateAsync({
         id: propertyId,
-        userId: user.id,
         input,
       })
       console.log('Update result:', result)

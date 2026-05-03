@@ -17,31 +17,37 @@ export const fetchCategories = createServerFn({ method: 'GET' })
   })
 
 export const createCategory = createServerFn({ method: 'POST' })
-  .inputValidator((d: { userId: string; input: CreateCategoryInput }) => d)
+  .inputValidator((d: { input: CreateCategoryInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getCategoryService()
-    return service.create(data.userId, data.input)
+    return service.create(user.id, data.input)
   })
 
 export const updateCategory = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string; input: UpdateCategoryInput }) => d)
+  .inputValidator((d: { id: string; input: UpdateCategoryInput }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getCategoryService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Category not found')
-    if (existing.isSystem || existing.userId !== data.userId) {
+    if (existing.isSystem || existing.userId !== user.id) {
       throw new Error('Access denied')
     }
     return service.update(data.id, data.input)
   })
 
 export const deleteCategory = createServerFn({ method: 'POST' })
-  .inputValidator((d: { id: string; userId: string }) => d)
+  .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getCategoryService()
     const existing = await service.findById(data.id)
     if (!existing) throw new Error('Category not found')
-    if (existing.isSystem || existing.userId !== data.userId) {
+    if (existing.isSystem || existing.userId !== user.id) {
       throw new Error('Access denied')
     }
     await service.delete(data.id)
