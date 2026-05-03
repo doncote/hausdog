@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { useCategories } from '@/features/categories'
 import { useItemsForProperty } from '@/features/items'
+import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -24,6 +25,8 @@ export const Route = createFileRoute('/_authenticated/inventory')({
 
 function InventoryPage() {
   const { currentProperty, isLoaded } = useCurrentProperty()
+  const { data: property } = useProperty(currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
 
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -111,15 +114,17 @@ function InventoryPage() {
           <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
           <p className="text-muted-foreground mt-1">Items in {currentProperty.name}</p>
         </div>
-        <Link
-          to="/items/new"
-          search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
-        >
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
-        </Link>
+        {canEdit && (
+          <Link
+            to="/items/new"
+            search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
+          >
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -213,15 +218,17 @@ function InventoryPage() {
                   Use Capture
                 </Button>
               </Link>
-              <Link
-                to="/items/new"
-                search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
-              >
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Item
-                </Button>
-              </Link>
+              {canEdit && (
+                <Link
+                  to="/items/new"
+                  search={{ propertyId: currentProperty.id, spaceId: undefined, parentId: undefined }}
+                >
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Item
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
         </div>

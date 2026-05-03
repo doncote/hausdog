@@ -25,6 +25,8 @@ function PropertyItemsPage() {
   const { propertyId } = Route.useParams()
 
   const { data: property } = useProperty(propertyId)
+  const viewerRole = property?.viewerRole ?? 'viewer'
+  const canEdit = viewerRole !== 'viewer'
   const [page, setPage] = useState(1)
   const { data: pagedResult, isPending: itemsPending } = useItemsForPropertyPaginated(
     propertyId,
@@ -88,12 +90,14 @@ function PropertyItemsPage() {
               : `All items tracked for ${property?.name || 'this property'}`}
           </p>
         </div>
-        <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
-        </Link>
+        {canEdit && (
+          <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -176,12 +180,14 @@ function PropertyItemsPage() {
           <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
             Add items like appliances, HVAC systems, or furniture to track their details
           </p>
-          <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Your First Item
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Your First Item
+              </Button>
+            </Link>
+          )}
         </div>
       )}
 

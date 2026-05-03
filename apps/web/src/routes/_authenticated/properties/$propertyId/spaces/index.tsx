@@ -40,6 +40,8 @@ function SpacesPage() {
   const { user } = Route.useRouteContext()
 
   const { data: property, isPending: propertyPending } = useProperty(propertyId)
+  const viewerRole = property?.viewerRole ?? 'viewer'
+  const canEdit = viewerRole !== 'viewer'
   const { data: spaces, isPending: spacesPending } = useSpacesForProperty(propertyId)
 
   const createSpace = useCreateSpace()
@@ -177,10 +179,12 @@ function SpacesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Spaces</h1>
           <p className="text-muted-foreground mt-1">Organize your property into rooms and areas</p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Space
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Space
+          </Button>
+        )}
       </div>
 
       {isPending ? (
@@ -215,27 +219,29 @@ function SpacesPage() {
                     )}
                   </div>
                 </Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEditDialog(space)} className="gap-2">
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => openDeleteDialog(space)}
-                      className="text-destructive focus:text-destructive gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {canEdit && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEditDialog(space)} className="gap-2">
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => openDeleteDialog(space)}
+                        className="text-destructive focus:text-destructive gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           ))}
@@ -249,10 +255,12 @@ function SpacesPage() {
           <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
             Create spaces like rooms or areas to organize your items
           </p>
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Your First Space
-          </Button>
+          {canEdit && (
+            <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Your First Space
+            </Button>
+          )}
         </div>
       )}
 

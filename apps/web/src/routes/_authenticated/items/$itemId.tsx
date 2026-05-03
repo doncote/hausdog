@@ -64,6 +64,7 @@ import {
   useTriggerMaintenanceSuggestions,
   useUpdateMaintenanceTask,
 } from '@/features/maintenance'
+import { useProperty } from '@/features/properties'
 import { useSpacesForProperty } from '@/features/spaces'
 
 export const Route = createFileRoute('/_authenticated/items/$itemId')({
@@ -76,8 +77,12 @@ function ItemDetailPage() {
   const navigate = useNavigate()
 
   const { data: item, isPending, error } = useItem(itemId)
+  const { data: property } = useProperty(item?.propertyId ?? '')
   const { data: spaces } = useSpacesForProperty(item?.propertyId)
   const { data: categories } = useCategories()
+
+  const viewerRole = property?.viewerRole ?? 'viewer'
+  const canEdit = viewerRole !== 'viewer'
   const { data: events } = useEventsForItem(itemId)
   const { data: maintenanceTasks, isPending: maintenanceLoading } = useMaintenanceForItem(itemId)
   const triggerSuggestions = useTriggerMaintenanceSuggestions()
@@ -499,27 +504,29 @@ function ItemDetailPage() {
                 )}
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canEdit && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )}
       </div>
@@ -532,15 +539,17 @@ function ItemDetailPage() {
               <h2 className="text-lg font-semibold">Sub-Items</h2>
               <p className="text-sm text-muted-foreground">Components or parts of this item</p>
             </div>
-            <Link
-              to="/items/new"
-              search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
-            >
-              <Button variant="outline" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Sub-Item
-              </Button>
-            </Link>
+            {canEdit && (
+              <Link
+                to="/items/new"
+                search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
+              >
+                <Button variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Sub-Item
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -580,15 +589,17 @@ function ItemDetailPage() {
           <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
             Add sub-items to track components or parts
           </p>
-          <Link
-            to="/items/new"
-            search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
-          >
-            <Button variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Sub-Item
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link
+              to="/items/new"
+              search={{ propertyId: item.propertyId, parentId: item.id, spaceId: undefined }}
+            >
+              <Button variant="outline" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Sub-Item
+              </Button>
+            </Link>
+          )}
         </div>
       )}
 
@@ -601,10 +612,12 @@ function ItemDetailPage() {
               Track repairs, maintenance, and other events
             </p>
           </div>
-          <Button onClick={() => setShowEventDialog(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Event
-          </Button>
+          {canEdit && (
+            <Button onClick={() => setShowEventDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Event
+            </Button>
+          )}
         </div>
 
         {events && events.length > 0 ? (
@@ -636,17 +649,19 @@ function ItemDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setEventToDelete(event)
-                      setShowDeleteEventDialog(true)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setEventToDelete(event)
+                        setShowDeleteEventDialog(true)
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -660,10 +675,12 @@ function ItemDetailPage() {
             <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
               Track maintenance, repairs, and other events for this item
             </p>
-            <Button onClick={() => setShowEventDialog(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add First Event
-            </Button>
+            {canEdit && (
+              <Button onClick={() => setShowEventDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add First Event
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -676,22 +693,24 @@ function ItemDetailPage() {
               <CardTitle>Maintenance Schedule</CardTitle>
               <CardDescription>Recurring maintenance tasks for this item</CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                triggerSuggestions.mutate(
-                  { itemId },
-                  {
-                    onSuccess: () => toast.success('Maintenance suggestions generated'),
-                    onError: () => toast.error('Failed to generate suggestions'),
-                  },
-                )
-              }
-              disabled={triggerSuggestions.isPending}
-            >
-              {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
-            </Button>
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  triggerSuggestions.mutate(
+                    { itemId },
+                    {
+                      onSuccess: () => toast.success('Maintenance suggestions generated'),
+                      onError: () => toast.error('Failed to generate suggestions'),
+                    },
+                  )
+                }
+                disabled={triggerSuggestions.isPending}
+              >
+                {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {maintenanceLoading ? (
@@ -733,52 +752,60 @@ function ItemDetailPage() {
                           </span>
                         </p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => setCompletingTask(task)}>
-                          Complete
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                snoozeMaintenance.mutate({
-                                  id: task.id,
-                                  propertyId: task.propertyId,
-                                })
-                              }
-                            >
-                              Snooze
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateMaintenance.mutate({
-                                  id: task.id,
-                                  propertyId: task.propertyId,
-                                  input: { status: task.status === 'paused' ? 'active' : 'paused' },
-                                })
-                              }
-                            >
-                              {task.status === 'paused' ? 'Resume' : 'Pause'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() =>
-                                deleteMaintenance.mutate({
-                                  id: task.id,
-                                  propertyId: task.propertyId,
-                                })
-                              }
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      {canEdit && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCompletingTask(task)}
+                          >
+                            Complete
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  snoozeMaintenance.mutate({
+                                    id: task.id,
+                                    propertyId: task.propertyId,
+                                  })
+                                }
+                              >
+                                Snooze
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  updateMaintenance.mutate({
+                                    id: task.id,
+                                    propertyId: task.propertyId,
+                                    input: {
+                                      status: task.status === 'paused' ? 'active' : 'paused',
+                                    },
+                                  })
+                                }
+                              >
+                                {task.status === 'paused' ? 'Resume' : 'Pause'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() =>
+                                  deleteMaintenance.mutate({
+                                    id: task.id,
+                                    propertyId: task.propertyId,
+                                  })
+                                }
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -786,22 +813,24 @@ function ItemDetailPage() {
             ) : (
               <div className="py-6 text-center">
                 <p className="text-muted-foreground mb-3">No maintenance tasks yet</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    triggerSuggestions.mutate(
-                      { itemId },
-                      {
-                        onSuccess: () => toast.success('Maintenance suggestions generated'),
-                        onError: () => toast.error('Failed to generate suggestions'),
-                      },
-                    )
-                  }
-                  disabled={triggerSuggestions.isPending}
-                >
-                  {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      triggerSuggestions.mutate(
+                        { itemId },
+                        {
+                          onSuccess: () => toast.success('Maintenance suggestions generated'),
+                          onError: () => toast.error('Failed to generate suggestions'),
+                        },
+                      )
+                    }
+                    disabled={triggerSuggestions.isPending}
+                  >
+                    {triggerSuggestions.isPending ? 'Generating...' : 'Suggest Maintenance'}
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

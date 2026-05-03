@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useProperty } from '@/features/properties'
 import {
   type Space,
   useCreateSpace,
@@ -44,6 +45,8 @@ export const Route = createFileRoute('/_authenticated/spaces/')({
 function SpacesPage() {
   const { user } = Route.useRouteContext()
   const { currentProperty, isLoaded } = useCurrentProperty()
+  const { data: property } = useProperty(currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
 
   const { data: spaces, isPending: spacesLoading } = useSpacesForProperty(currentProperty?.id)
   const createSpace = useCreateSpace()
@@ -173,10 +176,12 @@ function SpacesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Spaces</h1>
           <p className="text-muted-foreground mt-1">Rooms and areas in {currentProperty.name}</p>
         </div>
-        <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4" />
-          Add Space
-        </Button>
+        {canEdit && (
+          <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4" />
+            Add Space
+          </Button>
+        )}
       </div>
 
       {spacesLoading ? (
@@ -192,10 +197,12 @@ function SpacesPage() {
           <p className="text-muted-foreground mb-6">
             Add spaces like Kitchen, Garage, or Master Bedroom to organize your items.
           </p>
-          <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4" />
-            Add Space
-          </Button>
+          {canEdit && (
+            <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4" />
+              Add Space
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -221,26 +228,28 @@ function SpacesPage() {
                   </div>
                 </Link>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEditDialog(space)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => openDeleteDialog(space)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {canEdit && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEditDialog(space)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => openDeleteDialog(space)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           ))}

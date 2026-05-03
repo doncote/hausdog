@@ -34,6 +34,8 @@ function SpaceDetailPage() {
   const navigate = useNavigate()
 
   const { data: property } = useProperty(propertyId)
+  const viewerRole = property?.viewerRole ?? 'viewer'
+  const canEdit = viewerRole !== 'viewer'
   const { data: space, isPending, error } = useSpace(spaceId)
   const { data: allItems } = useItemsForProperty(propertyId)
 
@@ -200,27 +202,29 @@ function SpaceDetailPage() {
                 </p>
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canEdit && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )}
       </div>
@@ -231,12 +235,14 @@ function SpaceDetailPage() {
             <h2 className="text-lg font-semibold">Items in this Space</h2>
             <p className="text-sm text-muted-foreground">Items located in {space.name}</p>
           </div>
-          <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId }}>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Item
-            </Button>
-          </Link>
+          {canEdit && (
+            <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId }}>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+            </Link>
+          )}
         </div>
 
         {itemsInSpace.length > 0 ? (
@@ -254,12 +260,14 @@ function SpaceDetailPage() {
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
               Add items to this space to keep track of everything
             </p>
-            <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId }}>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Item to {space.name}
-              </Button>
-            </Link>
+            {canEdit && (
+              <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId }}>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Item to {space.name}
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>

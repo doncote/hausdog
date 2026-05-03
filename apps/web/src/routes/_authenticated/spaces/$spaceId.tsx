@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useItemsForSpace } from '@/features/items'
+import { useProperty } from '@/features/properties'
 import { useDeleteSpace, useSpace, useUpdateSpace } from '@/features/spaces'
 import { useCurrentProperty } from '@/hooks/use-current-property'
 
@@ -34,6 +35,8 @@ function SpaceDetailPage() {
   const navigate = useNavigate()
 
   const { data: space, isPending: spaceLoading } = useSpace(spaceId)
+  const { data: property } = useProperty(space?.propertyId ?? currentProperty?.id ?? '')
+  const canEdit = property?.viewerRole !== 'viewer'
   const { data: items, isPending: itemsLoading } = useItemsForSpace(spaceId)
   const updateSpace = useUpdateSpace()
   const deleteSpace = useDeleteSpace()
@@ -130,33 +133,35 @@ function SpaceDetailPage() {
           </div>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={openEditDialog}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit Space
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setShowDeleteDialog(true)}
-              className="text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Space
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canEdit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={openEditDialog}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Space
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Space
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Items Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Items in this space</h2>
-          {currentProperty && (
+          {canEdit && currentProperty && (
             <Link
               to="/items/new"
               search={{ propertyId: currentProperty.id, spaceId: space.id, parentId: undefined }}
@@ -176,7 +181,7 @@ function SpaceDetailPage() {
         ) : !items || items.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed bg-muted/30 p-8 text-center">
             <p className="text-muted-foreground mb-4">No items in this space yet</p>
-            {currentProperty && (
+            {canEdit && currentProperty && (
               <Link
                 to="/items/new"
                 search={{ propertyId: currentProperty.id, spaceId: space.id, parentId: undefined }}
