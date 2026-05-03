@@ -25,7 +25,21 @@ export const fetchProperty = createServerFn({ method: 'GET' })
     const { user } = await getSafeSession()
     if (!user) throw new Error('Unauthorized')
     const service = getPropertyService()
-    return service.findById(data.id, user.id)
+    const property = await service.findById(data.id, user.id)
+    if (!property) return null
+
+    let viewerRole: 'owner' | 'editor' | 'viewer'
+    if (property.userId === user.id) {
+      viewerRole = 'owner'
+    } else {
+      const member = await prisma.propertyMember.findFirst({
+        where: { propertyId: data.id, userId: user.id, status: 'active' },
+        select: { role: true },
+      })
+      viewerRole = (member?.role as 'editor' | 'viewer') ?? 'viewer'
+    }
+
+    return { ...property, viewerRole }
   })
 
 export const createProperty = createServerFn({ method: 'POST' })

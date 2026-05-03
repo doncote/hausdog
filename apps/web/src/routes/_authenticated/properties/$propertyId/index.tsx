@@ -64,6 +64,10 @@ function PropertyDetailPage() {
   const updateProperty = useUpdateProperty()
   const deleteProperty = useDeleteProperty()
 
+  const viewerRole = property?.viewerRole ?? 'viewer'
+  const isOwner = viewerRole === 'owner'
+  const canEdit = viewerRole !== 'viewer'
+
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showLookupDialog, setShowLookupDialog] = useState(false)
@@ -315,39 +319,45 @@ function PropertyDetailPage() {
                   </p>
                 )}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleLookup}
-                    disabled={isLookingUp || !property.formattedAddress}
-                    className="gap-2"
-                  >
-                    {isLookingUp ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
+              {canEdit && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsEditing(true)} className="gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleLookup}
+                      disabled={isLookingUp || !property.formattedAddress}
+                      className="gap-2"
+                    >
+                      {isLookingUp ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      {isLookingUp ? 'Looking up...' : 'Lookup Property Info'}
+                    </DropdownMenuItem>
+                    {isOwner && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setShowDeleteDialog(true)}
+                          className="text-destructive focus:text-destructive gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
                     )}
-                    {isLookingUp ? 'Looking up...' : 'Lookup Property Info'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="text-destructive focus:text-destructive gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             {/* Property Details Grid */}
@@ -483,7 +493,7 @@ function PropertyDetailPage() {
         <SharingSection
           propertyId={propertyId}
           userId={user.id}
-          isOwner={property.userId === user.id}
+          isOwner={isOwner}
         />
       )}
 
@@ -527,12 +537,18 @@ function PropertyDetailPage() {
                 </div>
               </Link>
             ))}
-            <Link to="/properties/$propertyId/spaces" params={{ propertyId }} className="shrink-0">
-              <div className="rounded-xl border-2 border-dashed px-4 py-3 hover:border-primary/50 transition-all flex items-center gap-2 text-muted-foreground hover:text-foreground">
-                <Plus className="h-4 w-4" />
-                <span>Add Space</span>
-              </div>
-            </Link>
+            {canEdit && (
+              <Link
+                to="/properties/$propertyId/spaces"
+                params={{ propertyId }}
+                className="shrink-0"
+              >
+                <div className="rounded-xl border-2 border-dashed px-4 py-3 hover:border-primary/50 transition-all flex items-center gap-2 text-muted-foreground hover:text-foreground">
+                  <Plus className="h-4 w-4" />
+                  <span>Add Space</span>
+                </div>
+              </Link>
+            )}
           </div>
         ) : (
           <Link to="/properties/$propertyId/spaces" params={{ propertyId }}>
@@ -561,12 +577,17 @@ function PropertyDetailPage() {
                 View All
               </Button>
             </Link>
-            <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Item
-              </Button>
-            </Link>
+            {canEdit && (
+              <Link
+                to="/items/new"
+                search={{ propertyId, parentId: undefined, spaceId: undefined }}
+              >
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -590,12 +611,17 @@ function PropertyDetailPage() {
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
               Add items like appliances, HVAC systems, or furniture to track their details
             </p>
-            <Link to="/items/new" search={{ propertyId, parentId: undefined, spaceId: undefined }}>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Your First Item
-              </Button>
-            </Link>
+            {canEdit && (
+              <Link
+                to="/items/new"
+                search={{ propertyId, parentId: undefined, spaceId: undefined }}
+              >
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Your First Item
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
