@@ -6,6 +6,7 @@ import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
 import { sendPropertyInviteEmail } from '@/lib/email/transactional'
 import { getBaseUrl } from '@/lib/env'
+import { getSafeSession } from '@/lib/supabase'
 import { getUserEmail } from '@/lib/supabase-admin'
 import { PropertyMemberService } from './service'
 import { InviteMemberSchema, UpdateMemberRoleSchema } from './types'
@@ -15,18 +16,23 @@ const getPropertyService = () => new PropertyService({ db: prisma, logger })
 const getActivityService = () => new ActivityService(prisma)
 
 export const fetchPropertyMembers = createServerFn({ method: 'GET' })
-  .inputValidator((d: { propertyId: string; userId: string }) => d)
+  .inputValidator((d: { propertyId: string }) => d)
   .handler(async ({ data }) => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const propertyService = getPropertyService()
-    const property = await propertyService.findById(data.propertyId, data.userId)
+    const property = await propertyService.findById(data.propertyId, user.id)
     if (!property) throw new Error('Property not found or access denied')
     return getMemberService().findAllForProperty(data.propertyId)
   })
 
 export const fetchPendingInvites = createServerFn({ method: 'GET' })
-  .inputValidator((d: { userEmail: string }) => d)
-  .handler(async ({ data }) => {
-    return getMemberService().findPendingForEmail(data.userEmail)
+  .inputValidator((d: Record<string, never>) => d)
+  .handler(async () => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    if (!user.email) throw new Error('User email not available')
+    return getMemberService().findPendingForEmail(user.email)
   })
 
 export const inviteMember = createServerFn({ method: 'POST' })

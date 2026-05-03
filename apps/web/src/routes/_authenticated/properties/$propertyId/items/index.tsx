@@ -33,7 +33,7 @@ function PropertyItemsPage() {
     PAGE_SIZE,
   )
   const { data: spaces } = useSpacesForProperty(propertyId)
-  const { data: categories } = useCategories(user?.id)
+  const { data: categories } = useCategories()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')

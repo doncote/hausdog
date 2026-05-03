@@ -33,7 +33,7 @@ function InventoryPage() {
 
   const { data: items, isPending: itemsLoading } = useItemsForProperty(currentProperty?.id)
   const { data: spaces } = useSpacesForProperty(currentProperty?.id)
-  const { data: categories } = useCategories(user?.id)
+  const { data: categories } = useCategories()
 
   // Filter items across the full set
   const filteredItems =

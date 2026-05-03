@@ -490,7 +490,7 @@ function PropertyDetailPage() {
       )}
 
       {/* Activity Feed */}
-      {user && <ActivityFeed propertyId={propertyId} userId={user.id} currentUserId={user.id} />}
+      {user && <ActivityFeed propertyId={propertyId} currentUserId={user.id} />}
 
       {/* Spaces Section */}
       <div className="mb-8">

@@ -83,7 +83,7 @@ function InviteCard({
 }
 
 export function PendingInvitesBanner({ userId, userEmail }: PendingInvitesBannerProps) {
-  const { data: invites } = usePendingInvites(userEmail)
+  const { data: invites } = usePendingInvites()
 
   if (!invites || invites.length === 0) return null
 

@@ -4,7 +4,6 @@ import type { ActivityAction, ActivityEntityType, ActivityEvent } from './types'
 
 interface ActivityFeedProps {
   propertyId: string
-  userId: string
   currentUserId: string
 }
 
@@ -98,8 +97,8 @@ function ActivityRow({ event, currentUserId }: { event: ActivityEvent; currentUs
   )
 }
 
-export function ActivityFeed({ propertyId, userId, currentUserId }: ActivityFeedProps) {
-  const { data: events, isPending } = useActivityFeed(propertyId, userId, 20)
+export function ActivityFeed({ propertyId, currentUserId }: ActivityFeedProps) {
+  const { data: events, isPending } = useActivityFeed(propertyId, 20)
 
   return (
     <div className="rounded-xl border bg-card p-6 mb-8">

@@ -203,7 +203,7 @@ function InviteForm({ propertyId, userId }: { propertyId: string; userId: string
 }
 
 export function SharingSection({ propertyId, userId, isOwner }: SharingSectionProps) {
-  const { data: members, isPending } = usePropertyMembers(propertyId, userId)
+  const { data: members, isPending } = usePropertyMembers(propertyId)
 
   const activeAndPending = members?.filter((m) => m.status !== 'declined') ?? []
 

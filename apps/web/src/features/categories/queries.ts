@@ -3,18 +3,15 @@ import { fetchCategories } from './api'
 
 export const categoryKeys = {
   all: ['categories'] as const,
-  list: (userId: string) => [...categoryKeys.all, 'list', userId] as const,
+  list: () => [...categoryKeys.all, 'list'] as const,
 }
 
-export const categoriesQueryOptions = (userId: string) =>
+export const categoriesQueryOptions = () =>
   queryOptions({
-    queryKey: categoryKeys.list(userId),
-    queryFn: () => fetchCategories({ data: { userId } }),
+    queryKey: categoryKeys.list(),
+    queryFn: () => fetchCategories({ data: {} }),
   })
 
-export function useCategories(userId: string | undefined) {
-  return useQuery({
-    ...categoriesQueryOptions(userId ?? ''),
-    enabled: !!userId,
-  })
+export function useCategories() {
+  return useQuery(categoriesQueryOptions())
 }

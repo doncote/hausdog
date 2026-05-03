@@ -5,15 +5,15 @@ export const activityKeys = {
   forProperty: (propertyId: string) => ['activity', 'property', propertyId] as const,
 }
 
-export const activityFeedQueryOptions = (propertyId: string, userId: string, limit?: number) =>
+export const activityFeedQueryOptions = (propertyId: string, limit?: number) =>
   queryOptions({
     queryKey: activityKeys.forProperty(propertyId),
-    queryFn: () => fetchActivityFeed({ data: { propertyId, userId, limit } }),
+    queryFn: () => fetchActivityFeed({ data: { propertyId, limit } }),
   })
 
-export function useActivityFeed(propertyId: string, userId: string | undefined, limit?: number) {
+export function useActivityFeed(propertyId: string, limit?: number) {
   return useQuery({
-    ...activityFeedQueryOptions(propertyId, userId ?? '', limit),
-    enabled: !!userId && !!propertyId,
+    ...activityFeedQueryOptions(propertyId, limit),
+    enabled: !!propertyId,
   })
 }

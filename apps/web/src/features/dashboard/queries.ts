@@ -3,18 +3,15 @@ import { fetchDashboardStats } from './api'
 
 export const dashboardKeys = {
   all: ['dashboard'] as const,
-  stats: (userId: string) => [...dashboardKeys.all, 'stats', userId] as const,
+  stats: () => [...dashboardKeys.all, 'stats'] as const,
 }
 
-export const dashboardStatsQueryOptions = (userId: string) =>
+export const dashboardStatsQueryOptions = () =>
   queryOptions({
-    queryKey: dashboardKeys.stats(userId),
-    queryFn: () => fetchDashboardStats({ data: { userId } }),
+    queryKey: dashboardKeys.stats(),
+    queryFn: () => fetchDashboardStats({ data: {} }),
   })
 
-export function useDashboardStats(userId: string | undefined) {
-  return useQuery({
-    ...dashboardStatsQueryOptions(userId ?? ''),
-    enabled: !!userId,
-  })
+export function useDashboardStats() {
+  return useQuery(dashboardStatsQueryOptions())
 }

@@ -1,5 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
+import { PropertyService } from '@/features/properties/service'
+import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 
 export interface DashboardStats {
   propertyCount: number
@@ -23,14 +26,14 @@ export interface DashboardStats {
   overdueCount: number
 }
 
+const getPropertyService = () => new PropertyService({ db: prisma, logger })
+
 export const fetchDashboardStats = createServerFn({ method: 'GET' })
-  .inputValidator((d: { userId: string }) => d)
-  .handler(async ({ data }): Promise<DashboardStats> => {
-    // Get property IDs for user
-    const properties = await prisma.property.findMany({
-      where: { userId: data.userId },
-      select: { id: true, name: true },
-    })
+  .inputValidator((d: Record<string, never>) => d)
+  .handler(async (): Promise<DashboardStats> => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
+    const properties = await getPropertyService().findAllForUser(user.id)
 
     const propertyIds = properties.map((p) => p.id)
 

@@ -77,7 +77,7 @@ function ItemDetailPage() {
 
   const { data: item, isPending, error } = useItem(itemId)
   const { data: spaces } = useSpacesForProperty(item?.propertyId)
-  const { data: categories } = useCategories(user?.id)
+  const { data: categories } = useCategories()
   const { data: events } = useEventsForItem(itemId)
   const { data: maintenanceTasks, isPending: maintenanceLoading } = useMaintenanceForItem(itemId)
   const triggerSuggestions = useTriggerMaintenanceSuggestions()

@@ -10,7 +10,7 @@ export function useCreateCategory() {
     mutationFn: (input: { userId: string; input: CreateCategoryInput }) =>
       createCategory({ data: input }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.list(variables.userId) })
+      queryClient.invalidateQueries({ queryKey: categoryKeys.list() })
     },
   })
 }
@@ -22,7 +22,7 @@ export function useUpdateCategory() {
     mutationFn: (input: { id: string; userId: string; input: UpdateCategoryInput }) =>
       updateCategory({ data: { id: input.id, userId: input.userId, input: input.input } }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.list(variables.userId) })
+      queryClient.invalidateQueries({ queryKey: categoryKeys.list() })
     },
   })
 }
@@ -34,7 +34,7 @@ export function useDeleteCategory() {
     mutationFn: (input: { id: string; userId: string }) =>
       deleteCategory({ data: { id: input.id, userId: input.userId } }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.list(variables.userId) })
+      queryClient.invalidateQueries({ queryKey: categoryKeys.list() })
     },
   })
 }

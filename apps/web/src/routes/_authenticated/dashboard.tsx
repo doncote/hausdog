@@ -14,7 +14,7 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 
 function DashboardPage() {
   const { user } = Route.useRouteContext()
-  const { data: stats, isPending } = useDashboardStats(user?.id)
+  const { data: stats, isPending } = useDashboardStats()
   const firstName = (user?.user_metadata?.full_name || user?.email || 'User').split(' ')[0]
   const greeting = getGreeting()
   const [modalOpen, setModalOpen] = useState(user?.user_metadata?.onboarding_seen !== true)

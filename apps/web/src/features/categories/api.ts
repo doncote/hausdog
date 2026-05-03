@@ -1,16 +1,19 @@
 import { createServerFn } from '@tanstack/react-start'
 import { consoleLogger as logger } from '@/lib/console-logger'
 import { prisma } from '@/lib/db/client'
+import { getSafeSession } from '@/lib/supabase'
 import { CategoryService } from './service'
 import type { CreateCategoryInput, UpdateCategoryInput } from './types'
 
 const getCategoryService = () => new CategoryService({ db: prisma, logger })
 
 export const fetchCategories = createServerFn({ method: 'GET' })
-  .inputValidator((d: { userId: string }) => d)
-  .handler(async ({ data }) => {
+  .inputValidator((d: Record<string, never>) => d)
+  .handler(async () => {
+    const { user } = await getSafeSession()
+    if (!user) throw new Error('Unauthorized')
     const service = getCategoryService()
-    return service.findAllForUser(data.userId)
+    return service.findAllForUser(user.id)
   })
 
 export const createCategory = createServerFn({ method: 'POST' })

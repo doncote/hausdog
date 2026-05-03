@@ -4,31 +4,28 @@ import { fetchPendingInvites, fetchPropertyMembers } from './api'
 export const memberKeys = {
   all: ['members'] as const,
   forProperty: (propertyId: string) => [...memberKeys.all, 'property', propertyId] as const,
-  pendingForEmail: (email: string) => [...memberKeys.all, 'pending', email] as const,
+  pending: () => [...memberKeys.all, 'pending'] as const,
 }
 
-export const propertyMembersQueryOptions = (propertyId: string, userId: string) =>
+export const propertyMembersQueryOptions = (propertyId: string) =>
   queryOptions({
     queryKey: memberKeys.forProperty(propertyId),
-    queryFn: () => fetchPropertyMembers({ data: { propertyId, userId } }),
+    queryFn: () => fetchPropertyMembers({ data: { propertyId } }),
   })
 
-export const pendingInvitesQueryOptions = (userEmail: string) =>
+export const pendingInvitesQueryOptions = () =>
   queryOptions({
-    queryKey: memberKeys.pendingForEmail(userEmail),
-    queryFn: () => fetchPendingInvites({ data: { userEmail } }),
+    queryKey: memberKeys.pending(),
+    queryFn: () => fetchPendingInvites({ data: {} }),
   })
 
-export function usePropertyMembers(propertyId: string, userId: string | undefined) {
+export function usePropertyMembers(propertyId: string) {
   return useQuery({
-    ...propertyMembersQueryOptions(propertyId, userId ?? ''),
-    enabled: !!userId && !!propertyId,
+    ...propertyMembersQueryOptions(propertyId),
+    enabled: !!propertyId,
   })
 }
 
-export function usePendingInvites(userEmail: string | undefined) {
-  return useQuery({
-    ...pendingInvitesQueryOptions(userEmail ?? ''),
-    enabled: !!userEmail,
-  })
+export function usePendingInvites() {
+  return useQuery(pendingInvitesQueryOptions())
 }

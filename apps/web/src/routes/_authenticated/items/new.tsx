@@ -35,7 +35,7 @@ function NewItemPage() {
 
   const { data: property } = useProperty(propertyId ?? '', user?.id)
   const { data: spaces } = useSpacesForProperty(propertyId)
-  const { data: categories } = useCategories(user?.id)
+  const { data: categories } = useCategories()
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
